@@ -1,0 +1,2159 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RockJazz Müzik &amp; Silifke Satranç Atölyesi — Muhasebe</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<style>
+  :root{
+    --ink:#15131d;
+    --paper:#f2f0f6;
+    --panel:#ffffff;
+    --line:#dfdbe8;
+    --amber:#7c3aed;
+    --amber-dark:#5b21b6;
+    --green:#059669;
+    --red:#e11d48;
+    --muted:#6b6478;
+    --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+  }
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--font-body);
+    font-size:14px;
+    line-height:1.5;
+  }
+  ::selection{background:var(--amber);color:#fff;}
+
+  .app{max-width:1180px;margin:0 auto;padding:0 20px 60px;}
+
+  header.top{
+    padding:28px 0 20px;
+    border-bottom:2px solid var(--ink);
+    margin-bottom:0;
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:20px;
+    flex-wrap:wrap;
+  }
+  header.top .brand-eyebrow{
+    font-family:var(--font-mono);
+    font-size:11px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--amber-dark);
+    margin:0 0 6px;
+  }
+  header.top h1{
+    font-family:var(--font-display);
+    font-weight:600;
+    font-size:30px;
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+  header.top .fx-badge{
+    font-family:var(--font-mono);
+    font-size:12.5px;
+    background:var(--ink);
+    color:var(--paper);
+    padding:10px 16px;
+    border-radius:2px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  header.top .fx-badge b{color:#fbbf24;font-weight:600;}
+  header.top .fx-badge:hover{background:var(--amber-dark);}
+
+  nav.tabs{
+    display:flex;
+    gap:2px;
+    border-bottom:1px solid var(--line);
+    margin-bottom:26px;
+    overflow-x:auto;
+  }
+  nav.tabs button{
+    font-family:var(--font-body);
+    font-weight:600;
+    font-size:13.5px;
+    background:none;
+    border:none;
+    padding:14px 18px 12px;
+    cursor:pointer;
+    color:var(--muted);
+    border-bottom:3px solid transparent;
+    white-space:nowrap;
+  }
+  nav.tabs button.active{color:var(--ink);border-bottom-color:var(--amber);}
+  nav.tabs button:hover{color:var(--ink);}
+
+  .view{display:none;}
+  .view.active{display:block;animation:fadein .18s ease;}
+  @keyframes fadein{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+
+  .grid{display:grid;gap:16px;}
+  .grid.cols-3{grid-template-columns:repeat(3,1fr);}
+  .grid.cols-4{grid-template-columns:repeat(4,1fr);}
+  @media(max-width:820px){.grid.cols-3,.grid.cols-4{grid-template-columns:1fr 1fr;}}
+  @media(max-width:520px){.grid.cols-3,.grid.cols-4{grid-template-columns:1fr;}}
+
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:20px;
+  }
+  .card h3{
+    font-family:var(--font-mono);
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    font-size:11px;
+    color:var(--muted);
+    margin:0 0 10px;
+    font-weight:500;
+  }
+  .card .big{
+    font-family:var(--font-display);
+    font-size:26px;
+    font-weight:600;
+  }
+  .card .big.pos{color:var(--green);}
+  .card .big.neg{color:var(--red);}
+  .card .sub{font-size:12px;color:var(--muted);margin-top:4px;}
+
+  .panel-title{
+    font-family:var(--font-display);
+    font-size:20px;
+    font-weight:600;
+    margin:0 0 4px;
+  }
+  .panel-desc{color:var(--muted);font-size:13px;margin:0 0 20px;}
+
+  .two-col{display:grid;grid-template-columns:340px 1fr;gap:24px;align-items:start;}
+  @media(max-width:900px){.two-col{grid-template-columns:1fr;}}
+
+  form.stack label{
+    display:block;
+    font-size:12px;
+    font-weight:600;
+    color:var(--muted);
+    margin:14px 0 5px;
+    text-transform:uppercase;
+    letter-spacing:.03em;
+  }
+  form.stack label:first-of-type{margin-top:0;}
+  input,select,textarea{
+    width:100%;
+    font-family:var(--font-body);
+    font-size:14px;
+    padding:9px 11px;
+    border:1px solid #cfc6b4;
+    border-radius:3px;
+    background:#fffdf9;
+    color:var(--ink);
+  }
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--amber);box-shadow:0 0 0 3px rgba(184,114,46,.14);}
+  .btn{
+    display:inline-block;
+    font-family:var(--font-body);
+    font-weight:600;
+    font-size:13.5px;
+    padding:11px 18px;
+    border-radius:3px;
+    border:none;
+    cursor:pointer;
+    background:var(--ink);
+    color:#fff;
+  }
+  .btn:hover{background:#000;}
+  .btn.primary{background:var(--amber-dark);}
+  .btn.primary:hover{background:#733f16;}
+  .btn.ghost{background:none;border:1px solid var(--line);color:var(--ink);}
+  .btn.danger-ghost{background:none;border:1px solid #d9b3ac;color:var(--red);font-size:12px;padding:5px 10px;}
+  .btn.small{padding:6px 12px;font-size:12.5px;}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+
+  .vat-readout{
+    margin-top:14px;
+    padding:12px 14px;
+    background:#f3ecfd;
+    border:1px dashed #c4b5fd;
+    border-radius:3px;
+    font-family:var(--font-mono);
+    font-size:12.5px;
+  }
+  .vat-readout .row{display:flex;justify-content:space-between;padding:2px 0;}
+  .vat-readout .row.net b{color:var(--green);font-size:15px;}
+
+  .search-wrap{position:relative;}
+  .search-results{
+    position:absolute;left:0;right:0;top:100%;
+    background:#fff;border:1px solid var(--line);border-top:none;
+    max-height:220px;overflow-y:auto;z-index:20;
+    box-shadow:0 8px 20px rgba(0,0,0,.08);
+  }
+  .search-results .item{
+    padding:9px 11px;cursor:pointer;font-size:13px;
+    display:flex;justify-content:space-between;gap:10px;
+    border-bottom:1px solid #f0ece3;
+  }
+  .search-results .item:hover{background:#f6f0e4;}
+  .search-results .item .n{flex:1;}
+  .search-results .item .p{font-family:var(--font-mono);color:var(--muted);white-space:nowrap;}
+  .search-results .empty{padding:12px;color:var(--muted);font-size:12.5px;}
+
+  .picked-chip{
+    margin-top:8px;padding:8px 10px;background:#d1fae5;border:1px solid #6ee7b7;
+    border-radius:3px;font-size:12.5px;display:flex;justify-content:space-between;align-items:center;gap:8px;
+  }
+  .picked-chip button{background:none;border:none;color:var(--red);cursor:pointer;font-size:12px;font-weight:600;}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  thead th{
+    text-align:left;font-family:var(--font-mono);font-size:10.5px;text-transform:uppercase;
+    letter-spacing:.05em;color:var(--muted);font-weight:500;
+    border-bottom:1px solid var(--ink);padding:8px 10px;position:sticky;top:0;background:var(--panel);
+  }
+  tbody td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:middle;}
+  tbody tr:hover{background:#faf7f0;}
+  td.num,th.num{text-align:right;font-family:var(--font-mono);}
+  .tag{
+    display:inline-block;font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:10px;
+    text-transform:uppercase;letter-spacing:.02em;
+  }
+  .tag.alet{background:#7c3aed;color:#fff;}
+  .tag.aksesuar{background:#059669;color:#fff;}
+  .tag.metod{background:#db2777;color:#fff;}
+  .tag.ders{background:#ea580c;color:#fff;}
+
+  .table-scroll{max-height:520px;overflow-y:auto;border:1px solid var(--line);border-radius:4px;}
+  .table-toolbar{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center;}
+  .table-toolbar input[type=text]{max-width:280px;}
+  .table-toolbar select{max-width:200px;}
+
+  .empty-state{
+    padding:50px 20px;text-align:center;color:var(--muted);
+    border:1px dashed var(--line);border-radius:4px;
+  }
+
+  .month-picker{display:flex;gap:10px;align-items:center;margin-bottom:22px;}
+  .month-picker select{width:auto;}
+
+  .report-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:20px;}
+  @media(max-width:900px){.report-grid{grid-template-columns:1fr;}}
+
+  .breakdown-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px;}
+  .breakdown-row:last-child{border-bottom:none;}
+  .breakdown-row .lbl{color:var(--muted);}
+  .breakdown-row .val{font-family:var(--font-mono);font-weight:600;}
+
+  .kpi-strip{display:flex;gap:14px;margin-bottom:20px;flex-wrap:wrap;}
+  .kpi{flex:1;min-width:150px;background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:16px 18px;}
+  .kpi .l{font-family:var(--font-mono);font-size:10.5px;text-transform:uppercase;color:var(--muted);letter-spacing:.05em;}
+  .kpi .v{font-family:var(--font-display);font-size:22px;font-weight:600;margin-top:4px;}
+  .kpi .v.pos{color:var(--green);}.kpi .v.neg{color:var(--red);}
+
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(28,27,26,.55);z-index:100;
+    display:flex;align-items:center;justify-content:center;padding:20px;
+  }
+  .modal{
+    background:#fffdf9;border-radius:6px;max-width:420px;width:100%;padding:28px;
+    box-shadow:0 20px 60px rgba(0,0,0,.3);
+  }
+  .modal h2{font-family:var(--font-display);font-size:20px;margin:0 0 10px;}
+  .modal p{font-size:13px;color:var(--muted);margin:0 0 16px;line-height:1.6;}
+
+  .fx-history{margin-top:14px;font-size:12px;color:var(--muted);}
+  .fx-history table{font-size:12px;}
+
+  .toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+    background:var(--ink);color:#fff;padding:12px 20px;border-radius:4px;font-size:13px;
+    z-index:200;opacity:0;pointer-events:none;transition:opacity .25s, transform .25s;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(-6px);}
+
+  .helptext{font-size:11.5px;color:var(--muted);margin-top:4px;}
+  .divider{height:1px;background:var(--line);margin:22px 0;}
+  .flex-between{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div id="fatalErrorBanner" style="display:none;background:#5a2620;color:#fce8e4;padding:14px 18px;border-radius:4px;margin:18px 0;font-size:13px;line-height:1.6;white-space:pre-wrap;font-family:var(--font-mono);"></div>
+
+  <header class="top">
+    <div>
+      <p class="brand-eyebrow">RockJazz Müzik · Silifke Satranç Atölyesi</p>
+      <h1>Gelir · Gider · Stok Takip</h1>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <div class="fx-badge" id="fxBadge" title="Kur bilgisini güncellemek / elle girmek için tıkla">
+        USD/TRY <b id="fxBadgeRate">—</b> <span id="fxBadgeMeta" style="font-weight:400;color:#c9b088;"></span>
+      </div>
+      <div class="fx-badge" id="syncBadge" title="Firebase senkronizasyonunu ayarlamak için tıkla" style="background:#2a2438;">
+        <span id="syncBadgeText">☁ Yerel (senkron kapalı)</span>
+      </div>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button data-view="ozet" class="active">Özet</button>
+    <button data-view="gelir">Gelir</button>
+    <button data-view="gider">Gider</button>
+    <button data-view="stok">Stok</button>
+    <button data-view="rapor">Aylık Rapor</button>
+    <button data-view="arsiv">Arşiv</button>
+  </nav>
+
+  <!-- ÖZET -->
+  <section class="view active" id="view-ozet">
+    <p class="panel-title">Bu Ay Neredeyiz</p>
+    <p class="panel-desc">Cari ayın kayıtlarına göre otomatik özet.</p>
+    <div class="kpi-strip" id="ozetKpis"></div>
+    <div class="grid cols-3">
+      <div class="card">
+        <h3>Stokta Ürün Sayısı</h3>
+        <div class="big" id="ozetStockCount">—</div>
+        <div class="sub" id="ozetStockValue">—</div>
+      </div>
+      <div class="card">
+        <h3>Bu Ay Satılan Adet</h3>
+        <div class="big" id="ozetSoldCount">—</div>
+        <div class="sub">Müzik aleti + aksesuar</div>
+      </div>
+      <div class="card">
+        <h3>Güncel Kur</h3>
+        <div class="big" id="ozetFx">—</div>
+        <div class="sub" id="ozetFxDate">—</div>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <p class="panel-desc">Kur mantığı: her stok kalemi, sisteme ilk girildiği günkü kur üzerinden sabit bir dolar değerine çevrilir. Ürün 1 yıl satılmadan beklerse, o dolar değeri güncel kur ile yeniden TL'ye çevrilince, TL'nin erimesi otomatik olarak görünür. Detaylar için <b>Stok</b> sekmesine bakabilirsin.</p>
+    <p class="panel-desc"><b>Otomatik kur güncelleme:</b> Program açıkken saat 18:00'i geçtiğinde günün USD ve EUR kurlarını kendiliğinden çekip o günün "kesinleşmiş" kuru olarak kaydeder. 18:00'den önce açarsan anlık kur gösterilir ama gün henüz kilitlenmez. Bu dosyanın bir sunucusu olmadığı için, sekmeyi hiç açmadığın bir günde otomatik çekim de olmaz — bir sonraki açılışta o günü tamamlar. İnternet yoksa veya tarayıcı dış bağlantıyı engellerse (örn. sohbet içi önizleme), <b>Kur Gir</b> düğmesinden elle girebilirsin; elle girilen kur her zaman esas alınır. Stok maliyet hesapları (erime/kâr) hâlâ dolar bazlı; euro şimdilik yalnızca stok tablosunda referans karşılık olarak gösteriliyor.</p>
+  </section>
+
+  <!-- GELİR -->
+  <section class="view" id="view-gelir">
+    <p class="panel-title">Gelir Ekle</p>
+    <p class="panel-desc">KDV oranını seç; girdiğin tutar KDV dahil kabul edilir, net tutar otomatik hesaplanır.</p>
+    <div class="two-col">
+      <div class="card">
+        <form class="stack" id="incomeForm">
+          <label>Tarih</label>
+          <input type="date" id="incDate" required>
+
+          <label>Branş</label>
+          <select id="incBranch" required>
+            <option value="Müzik Aleti">Müzik Aleti</option>
+            <option value="Aksesuar">Aksesuar</option>
+            <option value="Ders">Ders</option>
+          </select>
+
+          <div id="incProductBlock">
+            <label>Ürün Ara (stoktan)</label>
+            <div class="search-wrap">
+              <input type="text" id="incProductSearch" placeholder="Ürün adı, marka veya model yaz…" autocomplete="off">
+              <div class="search-results" id="incProductResults" style="display:none;"></div>
+            </div>
+            <div id="incPickedChip"></div>
+            <label>Satılan Adet</label>
+            <input type="number" id="incQty" min="1" step="1" value="1">
+          </div>
+
+          <div id="incLessonBlock" style="display:none;">
+            <label>Açıklama (hangi ders / kim)</label>
+            <textarea id="incLessonDesc" rows="2" placeholder="Örn: Ahmet Yılmaz — Piyano dersi, Ağustos"></textarea>
+          </div>
+
+          <label>KDV Oranı</label>
+          <select id="incVatRate">
+            <option value="20" selected>%20 (Genel Oran)</option>
+            <option value="10">%10</option>
+            <option value="8">%8</option>
+            <option value="1">%1</option>
+            <option value="0">%0 (KDV'siz / Muaf)</option>
+          </select>
+
+          <label>Tutar (KDV Dahil, TL)</label>
+          <input type="number" id="incAmount" min="0" step="0.01" placeholder="0,00" required>
+
+          <div class="vat-readout" id="incVatReadout">
+            <div class="row"><span>KDV Dahil Tutar</span><span id="rGross">0,00 ₺</span></div>
+            <div class="row"><span id="rVatLabel">KDV (%20)</span><span id="rVat">0,00 ₺</span></div>
+            <div class="row net"><span>Net Tutar</span><b id="rNet">0,00 ₺</b></div>
+          </div>
+
+          <div style="margin-top:18px;">
+            <button type="submit" class="btn primary">Geliri Kaydet</button>
+          </div>
+        </form>
+      </div>
+
+      <div>
+        <div class="table-toolbar">
+          <input type="text" id="incFilterSearch" placeholder="Kayıtlarda ara…">
+          <select id="incFilterBranch">
+            <option value="">Tüm Branşlar</option>
+            <option value="Müzik Aleti">Müzik Aleti</option>
+            <option value="Aksesuar">Aksesuar</option>
+            <option value="Ders">Ders</option>
+          </select>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr>
+              <th>Tarih</th><th>Branş</th><th>Açıklama</th><th class="num">KDV%</th>
+              <th class="num">KDV Dahil</th><th class="num">Net</th><th></th>
+            </tr></thead>
+            <tbody id="incomeTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- GİDER -->
+  <section class="view" id="view-gider">
+    <p class="panel-title">Gider Ekle</p>
+    <p class="panel-desc">Kalemi seç, açıklamaya nereyi/neyi ödediğini yaz.</p>
+    <div class="two-col">
+      <div class="card">
+        <form class="stack" id="expenseForm">
+          <label>Tarih</label>
+          <input type="date" id="expDate" required>
+
+          <div class="flex-between" style="margin-top:14px;">
+            <label style="margin:0;">Gider Kalemi</label>
+            <button type="button" class="btn ghost small" id="manageCatBtn" style="padding:3px 9px;font-size:11.5px;">Kalemleri Yönet</button>
+          </div>
+          <select id="expCategory" required></select>
+
+          <label>Açıklama</label>
+          <input type="text" id="expDesc" placeholder="Örn: ev elektrik, RockJazz Müzik dükkan telefonu…">
+          <p class="helptext">Hangi hesabı / nereyi ödediğini buraya yaz — ileride ararken işine yarar.</p>
+
+          <label>Tutar (TL)</label>
+          <input type="number" id="expAmount" min="0" step="0.01" placeholder="0,00" required>
+
+          <div style="margin-top:18px;">
+            <button type="submit" class="btn primary">Gideri Kaydet</button>
+          </div>
+        </form>
+      </div>
+
+      <div>
+        <div class="table-toolbar">
+          <input type="text" id="expFilterSearch" placeholder="Kayıtlarda ara…">
+          <select id="expFilterCategory">
+            <option value="">Tüm Kalemler</option>
+          </select>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr>
+              <th>Tarih</th><th>Kalem</th><th>Açıklama</th><th class="num">Tutar</th><th></th>
+            </tr></thead>
+            <tbody id="expenseTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STOK -->
+  <section class="view" id="view-stok">
+    <div class="flex-between">
+      <div>
+        <p class="panel-title">Stok Listesi</p>
+        <p class="panel-desc">495 kalem yüklendi. Kategori sütununu dilediğin gibi düzeltebilirsin.</p>
+      </div>
+      <button class="btn ghost small" id="openFxModalBtn">Kur Gir / Geçmiş</button>
+    </div>
+    <div class="table-toolbar">
+      <input type="text" id="stockSearch" placeholder="Ürün ara (marka, model)…">
+      <select id="stockCategoryFilter">
+        <option value="">Tüm Kategoriler</option>
+        <option value="Müzik Aleti">Müzik Aleti</option>
+        <option value="Aksesuar">Aksesuar</option>
+        <option value="Metod/Kitap">Metod/Kitap</option>
+      </select>
+      <button class="btn ghost small" id="addStockBtn">+ Yeni Ürün Ekle</button>
+      <button class="btn danger-ghost" id="bulkDeleteStockBtn" style="display:none;">Seçilenleri Sil (<span id="bulkDeleteCount">0</span>)</button>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead><tr>
+          <th style="width:32px;"><input type="checkbox" id="selectAllStock"></th>
+          <th>Ürün</th><th>Kategori</th><th class="num">Adet</th>
+          <th class="num">Birim Fiyat (TL)</th><th class="num">USD Karşılığı (sabit)</th>
+          <th class="num">EUR Karşılığı (sabit)</th>
+          <th class="num">Bugünkü TL Karşılığı</th><th class="num">Fark</th><th></th>
+        </tr></thead>
+        <tbody id="stockTableBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- RAPOR -->
+  <section class="view" id="view-rapor">
+    <div class="flex-between">
+      <div>
+        <p class="panel-title">Kâr / Zarar Raporu</p>
+        <p class="panel-desc">Dönem seç, o döneme ait tüm gelir ve giderler otomatik toplanır.</p>
+      </div>
+      <div style="display:flex;gap:2px;border:1px solid var(--line);border-radius:4px;overflow:hidden;">
+        <button class="btn" id="reportModeMonthly" style="background:var(--ink);color:#fff;border-radius:0;">Aylık</button>
+        <button class="btn ghost" id="reportModeWeekly" style="border-radius:0;border:none;">Haftalık</button>
+      </div>
+    </div>
+    <div id="reportMonthlyControls" class="month-picker">
+      <select id="reportMonth"></select>
+      <select id="reportYear"></select>
+    </div>
+    <div id="reportWeeklyControls" class="month-picker" style="display:none;">
+      <select id="reportWeek" style="min-width:220px;"></select>
+    </div>
+    <div class="kpi-strip" id="reportKpis"></div>
+    <div class="report-grid">
+      <div class="card">
+        <h3>Branşa Göre Net Gelir</h3>
+        <div id="reportIncomeBreakdown"></div>
+      </div>
+      <div class="card">
+        <h3>Kaleme Göre Gider</h3>
+        <div id="reportExpenseBreakdown"></div>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="card">
+      <h3>Stok Satışı — Dolar Bazlı Gerçek Kâr</h3>
+      <p class="panel-desc" style="margin-bottom:14px;">Satılan müzik aleti/aksesuarın satış anındaki dolar-bazlı maliyeti, o günkü kur üzerinden güncel TL'ye çevrilip net satış tutarından düşülür. Bu, TL'nin erimesini hesaba katan gerçek kârdır.</p>
+      <div id="reportStockProfit"></div>
+    </div>
+    <div class="divider"></div>
+    <div class="card">
+      <h3 id="reportChartTitle" style="font-family:var(--font-display);font-size:16px;text-transform:none;letter-spacing:0;color:var(--ink);font-weight:600;">Trend</h3>
+      <div id="reportChartContainer" style="margin-top:10px;"></div>
+    </div>
+  </section>
+
+  <!-- ARŞİV -->
+  <section class="view" id="view-arsiv">
+    <div class="flex-between">
+      <div>
+        <p class="panel-title">Haftalık &amp; Aylık Arşiv</p>
+        <p class="panel-desc">Her ay son gününde (30'u veya 31'i, ay kaç çekiyorsa) o ayın arşivi otomatik oluşur ve kilitlenir. Haftalar da her pazar günü aynı şekilde kapanır. İstediğin an, herhangi bir dönemin veya tüm verinin Excel çıktısını alabilirsin.</p>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn ghost small" id="forceArchiveBtn">Şimdi Anlık Arşivle</button>
+        <button class="btn primary small" id="exportAllBtn">Tüm Veriyi Excel'e Aktar</button>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <h3 style="font-family:var(--font-mono);text-transform:uppercase;font-size:12px;color:var(--muted);margin-bottom:10px;">Aylık Arşiv</h3>
+    <div class="table-scroll" style="margin-bottom:28px;">
+      <table>
+        <thead><tr>
+          <th>Ay</th><th class="num">Net Gelir</th><th class="num">Gider</th>
+          <th class="num">Net Sonuç</th><th class="num">Stok Kârı</th><th>Durum</th><th></th>
+        </tr></thead>
+        <tbody id="monthlyArchiveBody"></tbody>
+      </table>
+    </div>
+
+    <h3 style="font-family:var(--font-mono);text-transform:uppercase;font-size:12px;color:var(--muted);margin-bottom:10px;">Haftalık Arşiv</h3>
+    <div class="table-scroll">
+      <table>
+        <thead><tr>
+          <th>Hafta</th><th class="num">Net Gelir</th><th class="num">Gider</th>
+          <th class="num">Net Sonuç</th><th>Durum</th><th></th>
+        </tr></thead>
+        <tbody id="weeklyArchiveBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script id="stockSeedData" type="application/json">[{"id": "stk1", "name": "MARTİN 11CMGPCX1AE2 AKUSTİK GİTAR", "qty": 1, "price": 2754.24, "category": "Müzik Aleti"}, {"id": "stk2", "name": "EJ45-3D KLASİK GİTAR TELİ", "qty": 1, "price": 1173.0, "category": "Aksesuar"}, {"id": "stk3", "name": "İ19 MİNİ AMFİ BLUETOOTH", "qty": 1, "price": 866.67, "category": "Müzik Aleti"}, {"id": "stk4", "name": "EJ46-3D KLASİK GİTAR TELİ", "qty": 1, "price": 1150.0, "category": "Aksesuar"}, {"id": "stk5", "name": "M5B DRUMSTICK", "qty": 1, "price": 1.32, "category": "Aksesuar"}, {"id": "stk6", "name": "egIItm vcd", "qty": 6, "price": 2.96, "category": "Aksesuar"}, {"id": "stk7", "name": "MELODİKA", "qty": 3, "price": 24.36, "category": "Müzik Aleti"}, {"id": "stk8", "name": "ALESIS DM6 BATERİ", "qty": 1, "price": 960.78, "category": "Müzik Aleti"}, {"id": "stk9", "name": "FLUT", "qty": 1, "price": 1.1, "category": "Müzik Aleti"}, {"id": "stk10", "name": "KEMAN STANTI", "qty": 1, "price": 5.75, "category": "Müzik Aleti"}, {"id": "stk11", "name": "SAZ TELI", "qty": 9, "price": 0.5, "category": "Aksesuar"}, {"id": "stk12", "name": "VALENCIA VC103BK SİYAH 3/4 GİTAR", "qty": 1, "price": 1578.0, "category": "Müzik Aleti"}, {"id": "stk13", "name": "ABANOZ KEMAN KLAVYESİ", "qty": 1, "price": 20.0, "category": "Müzik Aleti"}, {"id": "stk14", "name": "ALICE PENA", "qty": 290, "price": 0.15, "category": "Aksesuar"}, {"id": "stk15", "name": "FLAMENKO SANATI CD'U", "qty": 1, "price": 10.0, "category": "Aksesuar"}, {"id": "stk16", "name": "PW1DPA 250'LIK KARISIK PENA-KUTU", "qty": 1, "price": 42.64, "category": "Aksesuar"}, {"id": "stk17", "name": "MUHTELİF GİTAR", "qty": 1, "price": 1120.0, "category": "Aksesuar"}, {"id": "stk18", "name": "10 ADET PW1T351PENATHIN", "qty": 5, "price": 1.76, "category": "Aksesuar"}, {"id": "stk19", "name": "ROCK GiTAR METODU", "qty": 3, "price": 1.5, "category": "Metod/Kitap"}, {"id": "stk20", "name": "10 ADET PW1T351PENAMEIUM", "qty": 6, "price": 1.85, "category": "Aksesuar"}, {"id": "stk21", "name": "ROCK VE TEORi", "qty": 2, "price": 2.65, "category": "Aksesuar"}, {"id": "stk22", "name": "10ADETPWGP2P10TGARCIA", "qty": 3, "price": 4.0, "category": "Aksesuar"}, {"id": "stk23", "name": "NELER OLUYOR BiZE", "qty": 3, "price": 4.0, "category": "Aksesuar"}, {"id": "stk24", "name": "10ADETPWGP2P10TGARCIAMED", "qty": 2, "price": 4.0, "category": "Aksesuar"}, {"id": "stk25", "name": "STG101L GİTAR STAND", "qty": 5, "price": 166.66, "category": "Aksesuar"}, {"id": "stk26", "name": "BONA", "qty": 1, "price": 5.5, "category": "Aksesuar"}, {"id": "stk27", "name": "DADi PENALAR", "qty": 70, "price": 0.23, "category": "Aksesuar"}, {"id": "stk28", "name": "PA16XSRD", "qty": 1, "price": 39.0, "category": "Aksesuar"}, {"id": "stk29", "name": "AP-SERlSl 0.46-0,71 mm ALICE GiTAR PEN", "qty": 60, "price": 0.12, "category": "Müzik Aleti"}, {"id": "stk30", "name": "DARABUKA", "qty": 13, "price": 10.0, "category": "Müzik Aleti"}, {"id": "stk31", "name": "GH525 DUVAR ASKI SEHPASI", "qty": 10, "price": 4.15, "category": "Aksesuar"}, {"id": "stk32", "name": "METELAFON", "qty": 2, "price": 52.76, "category": "Aksesuar"}, {"id": "stk33", "name": "GH240 DUVAR ASKI SEHPASI", "qty": 5, "price": 4.05, "category": "Aksesuar"}, {"id": "stk34", "name": "STAGG 3LÜ GİTAR STAND", "qty": 1, "price": 19.0, "category": "Aksesuar"}, {"id": "stk35", "name": "DANDREA PR0351 PENA", "qty": 1, "price": 25.0, "category": "Aksesuar"}, {"id": "stk36", "name": "MARTİNE MP1 PRE CE ELEKTRO KLASİK GİTAR", "qty": 1, "price": 6483.0, "category": "Müzik Aleti"}, {"id": "stk37", "name": "NOTA SEHPASI MS110", "qty": 11, "price": 166.66, "category": "Aksesuar"}, {"id": "stk38", "name": "RİCO 1 NO KLARNET KAMIŞI", "qty": 1, "price": 730.0, "category": "Müzik Aleti"}, {"id": "stk39", "name": "ŞEF NOTA SEHPASI SANGWELL", "qty": 2, "price": 583.33, "category": "Aksesuar"}, {"id": "stk40", "name": "RENKLERLE ORG ÖĞRETİMİ", "qty": 2, "price": 41.3, "category": "Metod/Kitap"}, {"id": "stk41", "name": "KISA SAP B AĞLAMA İMECE1", "qty": 1, "price": 1666.0, "category": "Aksesuar"}, {"id": "stk42", "name": "AF-017C ALICE KLASIK GİTAR  ANAHTAR", "qty": 5, "price": 2.61, "category": "Aksesuar"}, {"id": "stk43", "name": "PGS1 TEKLİ GİTAR  STAND", "qty": 4, "price": 6.43, "category": "Aksesuar"}, {"id": "stk44", "name": "NEMESİS DK460WH PİYANO", "qty": 1, "price": 2966.0, "category": "Müzik Aleti"}, {"id": "stk45", "name": "PA16XSBK IBANEZ PENA", "qty": 1, "price": 52.77, "category": "Aksesuar"}, {"id": "stk46", "name": "TAKAMİNE GN10CE AKUSTİK GİTAR", "qty": 1, "price": 902.14, "category": "Müzik Aleti"}, {"id": "stk47", "name": "BAĞLAMA TELİ", "qty": 17, "price": 2.0, "category": "Aksesuar"}, {"id": "stk48", "name": "ASUS X59SR200V C2D T6400 LAPTOP", "qty": 1, "price": 1251.23, "category": "Aksesuar"}, {"id": "stk49", "name": "DARBUKA  VATAN", "qty": 6, "price": 1500.0, "category": "Müzik Aleti"}, {"id": "stk50", "name": "LUNAX PS60 ORG", "qty": 2, "price": 2868.0, "category": "Müzik Aleti"}, {"id": "stk51", "name": "WCP60V KEMAN MANYETİK", "qty": 1, "price": 7.19, "category": "Aksesuar"}, {"id": "stk52", "name": "PYRAMİD KISA VE UZUN TEL 018-020", "qty": 49, "price": 15.0, "category": "Aksesuar"}, {"id": "stk53", "name": "GİTAR KULAK SARICI", "qty": 4, "price": 1.57, "category": "Müzik Aleti"}, {"id": "stk54", "name": "H-308 GİTAR ASMA APARATI", "qty": 5, "price": 5.59, "category": "Aksesuar"}, {"id": "stk55", "name": "BEYER OP 101 PİYANO METODU", "qty": 1, "price": 35.0, "category": "Metod/Kitap"}, {"id": "stk56", "name": "K-5088 4LÜ GİTAR STAND", "qty": 2, "price": 58.77, "category": "Aksesuar"}, {"id": "stk57", "name": "CAD25 MİKROFON", "qty": 1, "price": 220.25, "category": "Müzik Aleti"}, {"id": "stk58", "name": "4/4 KEMAN KUYRUK", "qty": 2, "price": 4.77, "category": "Aksesuar"}, {"id": "stk59", "name": "FL10 FUGUE 3METRE GİTAR KABLOSU", "qty": 2, "price": 88.04, "category": "Aksesuar"}, {"id": "stk60", "name": "ALICE AKUSTİK GİTAR PİM SET", "qty": 8, "price": 0.5, "category": "Aksesuar"}, {"id": "stk61", "name": "ELEKTRO SAZ TELİ", "qty": 5, "price": 6.0, "category": "Aksesuar"}, {"id": "stk62", "name": "STAGG PBOX1-46 PENA", "qty": 1, "price": 83.9, "category": "Aksesuar"}, {"id": "stk63", "name": "ELEKTRO GİTAR KİTABI", "qty": 2, "price": 6.38, "category": "Metod/Kitap"}, {"id": "stk64", "name": "THOM", "qty": 1, "price": 55.08, "category": "Aksesuar"}, {"id": "stk65", "name": "1000PGBK IBANEZ PENA", "qty": 1, "price": 26.51, "category": "Aksesuar"}, {"id": "stk66", "name": "SANCHEZ KLASİK GİTAR", "qty": 2, "price": 1364.16, "category": "Müzik Aleti"}, {"id": "stk67", "name": "TC-45B PLASTIK MARAKAS", "qty": 1, "price": 5.66, "category": "Aksesuar"}, {"id": "stk68", "name": "GHS A57 PENA MEDIUM KIRMIZI", "qty": 1, "price": 30.71, "category": "Aksesuar"}, {"id": "stk69", "name": "GHS A59 PENA İNCE BEYAZ", "qty": 1, "price": 23.03, "category": "Aksesuar"}, {"id": "stk70", "name": "KEMAN TARAK SUSTURUCU", "qty": 1, "price": 4.53, "category": "Aksesuar"}, {"id": "stk71", "name": "SUNRISE SGC851 KLASİK GİTAR", "qty": 1, "price": 34.75, "category": "Müzik Aleti"}, {"id": "stk72", "name": "KÜÇÜK YAŞLAR İÇİN PİYANO METODU", "qty": 4, "price": 82.25, "category": "Metod/Kitap"}, {"id": "stk73", "name": "SAZ TELİ TAKIM", "qty": 6, "price": 1.5, "category": "Aksesuar"}, {"id": "stk74", "name": "STEPHAN SİYAH 4/4 KLASİK GİTAR", "qty": 2, "price": 30.72, "category": "Müzik Aleti"}, {"id": "stk75", "name": "3DBK4-10 10SM PENA SİYAH", "qty": 1, "price": 4.03, "category": "Aksesuar"}, {"id": "stk76", "name": "STEPHAN KIRMIZI 4/4 KLASİK GİTAR", "qty": 1, "price": 30.72, "category": "Müzik Aleti"}, {"id": "stk77", "name": "MS041 KLASİK ÜŞT EŞİK 10 ADET", "qty": 1, "price": 2.05, "category": "Aksesuar"}, {"id": "stk78", "name": "BARKOBEL 4/4 NATUREL KLASİK", "qty": 1, "price": 36.86, "category": "Aksesuar"}, {"id": "stk79", "name": "KARİN REÇİNE YUVARLAK", "qty": 7, "price": 2.58, "category": "Aksesuar"}, {"id": "stk80", "name": "ALVARO 3/4 ALVIO100", "qty": 1, "price": 587.73, "category": "Aksesuar"}, {"id": "stk81", "name": "ELEKTRO GİTAR KILIFI", "qty": 6, "price": 2.5, "category": "Aksesuar"}, {"id": "stk82", "name": "ALVARO AVL0210 NO29", "qty": 1, "price": 230.15, "category": "Aksesuar"}, {"id": "stk83", "name": "KENDİ KENDİNE KOLAY PİYANO METODU", "qty": 5, "price": 87.0, "category": "Metod/Kitap"}, {"id": "stk84", "name": "HG560 CLARİSS KLASİK GİTAR", "qty": 1, "price": 2178.0, "category": "Müzik Aleti"}, {"id": "stk85", "name": "S800WH Mooer GTRS Intelligent Elektro Gitar WHITE", "qty": 1, "price": 1.0, "category": "Aksesuar"}, {"id": "stk86", "name": "KLASİK GİTAR", "qty": 3, "price": 666.31, "category": "Müzik Aleti"}, {"id": "stk87", "name": "KEMAN ASMA APARATI VGH-27", "qty": 3, "price": 4.64, "category": "Aksesuar"}, {"id": "stk88", "name": "MELODİKA METODU", "qty": 1, "price": 8.5, "category": "Metod/Kitap"}, {"id": "stk89", "name": "BAĞLAMA TELİ KISA", "qty": 13, "price": 1.0, "category": "Aksesuar"}, {"id": "stk90", "name": "DADİ 0,58MM PENA", "qty": 3, "price": 1.0, "category": "Aksesuar"}, {"id": "stk91", "name": "MANUEL RODRİGUEZ MOD11", "qty": 1, "price": 380.81, "category": "Aksesuar"}, {"id": "stk92", "name": "ÖMERCAN", "qty": 7, "price": 3.02, "category": "Aksesuar"}, {"id": "stk93", "name": "PARA MAKBUZU 2 NÜSHA", "qty": 20, "price": 2.62, "category": "Aksesuar"}, {"id": "stk94", "name": "SPREAD KEMAN TELİ", "qty": 7, "price": 4.38, "category": "Aksesuar"}, {"id": "stk95", "name": "RENKLİ ASKI", "qty": 4, "price": 57.33, "category": "Aksesuar"}, {"id": "stk96", "name": "EJ25-B FLAMENKO GİTAR TELİ", "qty": 1, "price": 631.0, "category": "Aksesuar"}, {"id": "stk97", "name": "BOULT ORG 61 TUŞ BD638BK", "qty": 1, "price": 2291.0, "category": "Müzik Aleti"}, {"id": "stk98", "name": "EJ30 KLASİK GİTAR TELİ", "qty": 1, "price": 457.0, "category": "Aksesuar"}, {"id": "stk99", "name": "KISA SAP BAĞLAMA METODU 3CİLT", "qty": 2, "price": 12.0, "category": "Metod/Kitap"}, {"id": "stk100", "name": "DUYGULAR PİYANO EĞİTİMİ", "qty": 1, "price": 12.0, "category": "Metod/Kitap"}, {"id": "stk101", "name": "UZUN SAP BAĞLAMA METODU", "qty": 2, "price": 9.0, "category": "Metod/Kitap"}, {"id": "stk102", "name": "ELEKTRO ORG EĞİTİM VE POP MÜZİK", "qty": 1, "price": 19.0, "category": "Metod/Kitap"}, {"id": "stk103", "name": "ŞARKILARLA GİTAR ÖĞRENİYORUM", "qty": 1, "price": 20.0, "category": "Metod/Kitap"}, {"id": "stk104", "name": "DRCA ARA KABLO 3METRE", "qty": 2, "price": 200.0, "category": "Aksesuar"}, {"id": "stk105", "name": "EJ10-3D AKUSTİK GİTAR TELİ", "qty": 1, "price": 758.0, "category": "Aksesuar"}, {"id": "stk106", "name": "ALICE GİTAR ASKI", "qty": 1, "price": 38.62, "category": "Aksesuar"}, {"id": "stk107", "name": "ELEKTRO GİTAR KILIFI", "qty": 1, "price": 42.38, "category": "Aksesuar"}, {"id": "stk108", "name": "GİTAR", "qty": 3, "price": 1388.0, "category": "Müzik Aleti"}, {"id": "stk109", "name": "VR200 REÇİNE", "qty": 3, "price": 143.0, "category": "Aksesuar"}, {"id": "stk110", "name": "AD5 CASIO ADAPTÖR", "qty": 2, "price": 31.0, "category": "Aksesuar"}, {"id": "stk111", "name": "TURABİ DEĞERLİ ÇÖĞÜR 1", "qty": 1, "price": 5.0, "category": "Müzik Aleti"}, {"id": "stk112", "name": "B AĞLAMA ÇÖĞÜR KISA", "qty": 3, "price": 60.75, "category": "Müzik Aleti"}, {"id": "stk113", "name": "SAZ TELİ TAKIM", "qty": 2, "price": 88.57, "category": "Aksesuar"}, {"id": "stk114", "name": "BAĞLAMA KILIF", "qty": 24, "price": 1.5, "category": "Aksesuar"}, {"id": "stk115", "name": "BAĞLAMA KILIF KISA", "qty": 7, "price": 1.5, "category": "Aksesuar"}, {"id": "stk116", "name": "RENKELRLE ORG EĞİTİMİ", "qty": 3, "price": 45.9, "category": "Metod/Kitap"}, {"id": "stk117", "name": "SOFT KILIF KISA", "qty": 4, "price": 15.0, "category": "Aksesuar"}, {"id": "stk118", "name": "UNUTULMAYAN ŞARKILARLA ORG METODU", "qty": 2, "price": 24.9, "category": "Metod/Kitap"}, {"id": "stk119", "name": "CLARİSS MİKROFON KABLOSU", "qty": 1, "price": 14.0, "category": "Aksesuar"}, {"id": "stk120", "name": "ASHTON GS55 GİTAR SEHPA 5Lİ", "qty": 1, "price": 48.75, "category": "Aksesuar"}, {"id": "stk121", "name": "SW3006 REÇİNE SİYAH", "qty": 4, "price": 60.78, "category": "Aksesuar"}, {"id": "stk122", "name": "KÜÇÜK YAŞLAR İÇİN PİYANO METODU", "qty": 3, "price": 87.5, "category": "Metod/Kitap"}, {"id": "stk123", "name": "VALLER AG-250 NA 4/4 CUT-AWAY AKUSTIK GITAR", "qty": 1, "price": 4100.0, "category": "Müzik Aleti"}, {"id": "stk124", "name": "PYRAMID 018 BAĞLAMA TELİ", "qty": 10, "price": 4.71, "category": "Aksesuar"}, {"id": "stk125", "name": "PYRAMID 018 TEL KISA SAP TEL", "qty": 4, "price": 4.09, "category": "Aksesuar"}, {"id": "stk126", "name": "PYRAMID 020 BAĞLAMA TELİ", "qty": 10, "price": 4.71, "category": "Aksesuar"}, {"id": "stk127", "name": "PYRAMID 020 UZUN SAP TEL", "qty": 2, "price": 4.09, "category": "Aksesuar"}, {"id": "stk128", "name": "ELEKTRO GİTAR KILIFI", "qty": 9, "price": 2.5, "category": "Aksesuar"}, {"id": "stk129", "name": "PYRAMID 020 UZUN SAP TEL", "qty": 6, "price": 2.37, "category": "Aksesuar"}, {"id": "stk130", "name": "3/4 JUNIOR GİTAR KILIFI", "qty": 10, "price": 2.5, "category": "Aksesuar"}, {"id": "stk131", "name": "VANETTA VL1A 3/4 KEMAN", "qty": 1, "price": 104.55, "category": "Müzik Aleti"}, {"id": "stk132", "name": "BAS GİTAR KILIFI", "qty": 1, "price": 2.5, "category": "Aksesuar"}, {"id": "stk133", "name": "WASHBURN WA90CRDB KILIF GİGBAG", "qty": 1, "price": 185.19, "category": "Aksesuar"}, {"id": "stk134", "name": "ELEKTRO GİTAR KILIFI", "qty": 1, "price": 33.85, "category": "Aksesuar"}, {"id": "stk135", "name": "ELEKTRO GİTAR KILIFI", "qty": 4, "price": 2.0, "category": "Aksesuar"}, {"id": "stk136", "name": "IBANEZ heavy pena 50'lik paket", "qty": 1, "price": 52.77, "category": "Aksesuar"}, {"id": "stk137", "name": "ÇÖĞÜR METODU", "qty": 9, "price": 6.94, "category": "Metod/Kitap"}, {"id": "stk138", "name": "ALVARO NO27 3/4  GİTAR", "qty": 1, "price": 684.23, "category": "Müzik Aleti"}, {"id": "stk139", "name": "ŞARKI SOLOLARI", "qty": 1, "price": 13.38, "category": "Metod/Kitap"}, {"id": "stk140", "name": "ELIXIR ACOU 11027", "qty": 3, "price": 666.0, "category": "Aksesuar"}, {"id": "stk141", "name": "ÇOCUKLAR İÇİN GİTAR METODU", "qty": 3, "price": 14.17, "category": "Metod/Kitap"}, {"id": "stk142", "name": "ELIXIR AKUSTİK TEL 11002", "qty": 2, "price": 612.0, "category": "Aksesuar"}, {"id": "stk143", "name": "BAĞLAMA METODU KISA", "qty": 1, "price": 11.02, "category": "Metod/Kitap"}, {"id": "stk144", "name": "IBANEZ GSR180 BAS GİTAR", "qty": 1, "price": 333.57, "category": "Müzik Aleti"}, {"id": "stk145", "name": "ELİXİR AKUSTİK GİTAR TELİ 11002", "qty": 1, "price": 616.0, "category": "Aksesuar"}, {"id": "stk146", "name": "CASIO ADAPTÖR", "qty": 2, "price": 21.19, "category": "Aksesuar"}, {"id": "stk147", "name": "ERNIEBALL AKUSTİK 010 2150", "qty": 4, "price": 14.93, "category": "Aksesuar"}, {"id": "stk148", "name": "STAGG 2Lİ GİTAR STAND", "qty": 1, "price": 31.0, "category": "Aksesuar"}, {"id": "stk149", "name": "MANDOLİN TELİ SET 8020 BRONZ J62", "qty": 5, "price": 16.37, "category": "Aksesuar"}, {"id": "stk150", "name": "CASIO CTK245", "qty": 1, "price": 271.18, "category": "Aksesuar"}, {"id": "stk151", "name": "ALÜMİNYUM ÇERÇEVE", "qty": 10, "price": 6.78, "category": "Aksesuar"}, {"id": "stk152", "name": "ALICE KLASİK TEL A106", "qty": 8, "price": 9.48, "category": "Aksesuar"}, {"id": "stk153", "name": "LABELLA 4.TEL TEK", "qty": 22, "price": 1.37, "category": "Aksesuar"}, {"id": "stk154", "name": "KARIN KEMAN TELİ 4703", "qty": 6, "price": 10.15, "category": "Aksesuar"}, {"id": "stk155", "name": "LABELLA 010 ELEKTRO 1.TEL TEK", "qty": 22, "price": 0.92, "category": "Aksesuar"}, {"id": "stk156", "name": "J103D AKUSTİK GİTAR TEL SET", "qty": 1, "price": 660.0, "category": "Aksesuar"}, {"id": "stk157", "name": "UKULELE TELİ ALICE AU02", "qty": 5, "price": 5.73, "category": "Aksesuar"}, {"id": "stk158", "name": "3/4 KLASİK GİTAR KILIFI", "qty": 2, "price": 2.5, "category": "Aksesuar"}, {"id": "stk159", "name": "KLASİK KILIF", "qty": 28, "price": 0.25, "category": "Aksesuar"}, {"id": "stk160", "name": "AKUSTİK KILIF", "qty": 10, "price": 0.25, "category": "Aksesuar"}, {"id": "stk161", "name": "BAS GİTAR KILIFI", "qty": 2, "price": 2.5, "category": "Aksesuar"}, {"id": "stk162", "name": "BAĞLAMA KILI", "qty": 19, "price": 0.2, "category": "Müzik Aleti"}, {"id": "stk163", "name": "SP1CR GİTAR ASKI PİMİ", "qty": 2, "price": 21.26, "category": "Aksesuar"}, {"id": "stk164", "name": "A828 ORG", "qty": 2, "price": 1875.0, "category": "Müzik Aleti"}, {"id": "stk165", "name": "ELEKTRO GİTAR METODU", "qty": 2, "price": 16.0, "category": "Metod/Kitap"}, {"id": "stk166", "name": "CLARİSS KLASİK ALT EŞİK", "qty": 8, "price": 0.22, "category": "Aksesuar"}, {"id": "stk167", "name": "CLARİSS ÜST EŞİK", "qty": 2, "price": 0.22, "category": "Aksesuar"}, {"id": "stk168", "name": "SOLO GİTAR METODU", "qty": 1, "price": 35.0, "category": "Metod/Kitap"}, {"id": "stk169", "name": "ŞARKI SOLALARI", "qty": 1, "price": 16.67, "category": "Metod/Kitap"}, {"id": "stk170", "name": "ALICE BURGU ÇEVİRİCİ", "qty": 2, "price": 11.4, "category": "Aksesuar"}, {"id": "stk171", "name": "SOPRANO UKULELE TELİ AGUİRA", "qty": 1, "price": 13.81, "category": "Aksesuar"}, {"id": "stk172", "name": "TENOR UKULELE TELİ AGUİLA", "qty": 1, "price": 18.77, "category": "Aksesuar"}, {"id": "stk173", "name": "SUNRISE BURGU ÇEVİRME", "qty": 2, "price": 2.5, "category": "Aksesuar"}, {"id": "stk174", "name": "KEMAN CASE", "qty": 1, "price": 24.27, "category": "Müzik Aleti"}, {"id": "stk175", "name": "SATURN SOL KLARNET CL318N-L", "qty": 1, "price": 42.65, "category": "Müzik Aleti"}, {"id": "stk176", "name": "RENKELRLE ORG EĞİTİMİ", "qty": 5, "price": 39.0, "category": "Metod/Kitap"}, {"id": "stk177", "name": "SONOR ŞEFFA BEK", "qty": 1, "price": 52.62, "category": "Aksesuar"}, {"id": "stk178", "name": "AD5 ADAPTÖR", "qty": 2, "price": 15.25, "category": "Aksesuar"}, {"id": "stk179", "name": "ÇÖĞÜR METODU1", "qty": 9, "price": 7.0, "category": "Metod/Kitap"}, {"id": "stk180", "name": "ELEKTRO GİTAR METODU", "qty": 1, "price": 16.0, "category": "Metod/Kitap"}, {"id": "stk181", "name": "KLARNET PLASTİK PARMAK TUTACAĞI", "qty": 2, "price": 4.98, "category": "Aksesuar"}, {"id": "stk182", "name": "CLARİSS CCG100NT NATURELKLASİK GİTAR", "qty": 2, "price": 2288.0, "category": "Müzik Aleti"}, {"id": "stk183", "name": "PK10002EQ PUKA AKUSTİK GİTAR", "qty": 1, "price": 4189.0, "category": "Müzik Aleti"}, {"id": "stk184", "name": "SPREAD KEMAN TELİ", "qty": 5, "price": 3.67, "category": "Aksesuar"}, {"id": "stk185", "name": "BAĞLAMA KILIFI", "qty": 8, "price": 2.0, "category": "Aksesuar"}, {"id": "stk186", "name": "AD5 ADAPTÖR", "qty": 1, "price": 15.15, "category": "Aksesuar"}, {"id": "stk187", "name": "LUNAS PS555 KATLANABİLİR PİYANO", "qty": 2, "price": 4850.0, "category": "Müzik Aleti"}, {"id": "stk188", "name": "DONNER RISING-G1 ACOUSTIC gitar", "qty": 1, "price": 6750.0, "category": "Müzik Aleti"}, {"id": "stk189", "name": "VALLER UK-200MIX SOPRANO UKULELE", "qty": 1, "price": 483.0, "category": "Müzik Aleti"}, {"id": "stk190", "name": "SNOPY KULAKLIK", "qty": 2, "price": 11.9, "category": "Aksesuar"}, {"id": "stk191", "name": "ELIXIR AKUSTİK TEL 11027", "qty": 2, "price": 666.67, "category": "Aksesuar"}, {"id": "stk192", "name": "XP26 AKUSTİK GİTAR TELİ", "qty": 1, "price": 15.44, "category": "Aksesuar"}, {"id": "stk193", "name": "ELIXIR AKUSTİK TEL11002", "qty": 3, "price": 666.67, "category": "Aksesuar"}, {"id": "stk194", "name": "AG250NA VALLER AG-250 NA 4/4 CUT-AWAY AKUSTIK GITAR", "qty": 1, "price": 3875.0, "category": "Müzik Aleti"}, {"id": "stk195", "name": "FENDER 100 KLASİK TEL", "qty": 2, "price": 210.17, "category": "Aksesuar"}, {"id": "stk196", "name": "AG213SB VALLER AG-213 SB AKUSTIK GITAR", "qty": 1, "price": 3375.0, "category": "Müzik Aleti"}, {"id": "stk197", "name": "ÇÖĞÜR METODU 1", "qty": 5, "price": 7.5, "category": "Metod/Kitap"}, {"id": "stk198", "name": "FT18 NEMESİS AKORT ALETİ", "qty": 3, "price": 91.66, "category": "Aksesuar"}, {"id": "stk199", "name": "ÇOCUKLAR İÇİN BAĞLAMA METODU", "qty": 1, "price": 25.0, "category": "Metod/Kitap"}, {"id": "stk200", "name": "XTC45 KLASİK GİTAR TEL", "qty": 2, "price": 100.72, "category": "Aksesuar"}, {"id": "stk201", "name": "KO970 3 METRE KABLO", "qty": 2, "price": 112.5, "category": "Aksesuar"}, {"id": "stk202", "name": "XTC46 KLASİK GİTAR TEL", "qty": 2, "price": 100.72, "category": "Aksesuar"}, {"id": "stk203", "name": "KO992 3 METRE KABLO", "qty": 3, "price": 137.5, "category": "Aksesuar"}, {"id": "stk204", "name": "ABH83C ŞEFFAF DERİ", "qty": 5, "price": 108.33, "category": "Aksesuar"}, {"id": "stk205", "name": "RENKLERLE ORG EĞİİTMİ", "qty": 3, "price": 27.3, "category": "Müzik Aleti"}, {"id": "stk206", "name": "PENA TUTACAĞI", "qty": 1, "price": 94.99, "category": "Aksesuar"}, {"id": "stk207", "name": "SWG GİTAR BURGU ÇEVİRİCİ", "qty": 2, "price": 16.66, "category": "Aksesuar"}, {"id": "stk208", "name": "CM070 TABURE", "qty": 1, "price": 16.0, "category": "Aksesuar"}, {"id": "stk209", "name": "JİM DUNLOP 63CBK TRIGGER KAPO", "qty": 2, "price": 305.08, "category": "Aksesuar"}, {"id": "stk210", "name": "VMUTE521 KEMAN SUSTURUCU", "qty": 3, "price": 6.71, "category": "Aksesuar"}, {"id": "stk211", "name": "A206 ALICE AKUSTİK GİTAR TELİ", "qty": 8, "price": 58.33, "category": "Aksesuar"}, {"id": "stk212", "name": "VMUTE521PVC KEMAN SUSTURUCU", "qty": 1, "price": 23.25, "category": "Aksesuar"}, {"id": "stk213", "name": "004/CBT KISA SAP ÇÖĞÜR BAĞLAMA TELİ", "qty": 20, "price": 21.66, "category": "Aksesuar"}, {"id": "stk214", "name": "MT6121A TEF", "qty": 1, "price": 22.55, "category": "Aksesuar"}, {"id": "stk215", "name": "WM701 WEİSRE MİKROFON", "qty": 2, "price": 10.65, "category": "Müzik Aleti"}, {"id": "stk216", "name": "KIZ NEY", "qty": 1, "price": 25.0, "category": "Müzik Aleti"}, {"id": "stk217", "name": "RİCO 1 NO KAMIŞ", "qty": 2, "price": 41.0, "category": "Aksesuar"}, {"id": "stk218", "name": "KO 970  KARIN 6METRE KABLO", "qty": 2, "price": 166.66, "category": "Aksesuar"}, {"id": "stk219", "name": "SAZ UD BURGU ÇEVİRİCİ", "qty": 2, "price": 16.67, "category": "Aksesuar"}, {"id": "stk220", "name": "BELCAT EGT-101 MANYETİK", "qty": 2, "price": 15.38, "category": "Aksesuar"}, {"id": "stk221", "name": "GALLİ G24 KEMAN LA TELİ 2.TEL", "qty": 13, "price": 6.46, "category": "Aksesuar"}, {"id": "stk222", "name": "BELCAT EGT202 MANYETİK", "qty": 2, "price": 10.77, "category": "Aksesuar"}, {"id": "stk223", "name": "GALLİ G25 KEMAN RE TELİ 3.TEL", "qty": 9, "price": 7.76, "category": "Aksesuar"}, {"id": "stk224", "name": "EZ900 AKUSTİK GİTAR TELİ", "qty": 3, "price": 215.48, "category": "Aksesuar"}, {"id": "stk225", "name": "İDM100 METRONOM", "qty": 1, "price": 936.0, "category": "Müzik Aleti"}, {"id": "stk226", "name": "ZİL KEÇESİ", "qty": 2, "price": 13.0, "category": "Aksesuar"}, {"id": "stk227", "name": "LEA TUNER", "qty": 3, "price": 112.0, "category": "Aksesuar"}, {"id": "stk228", "name": "VSR20044 KEMAN YASTIĞI UCUZ", "qty": 2, "price": 15.42, "category": "Müzik Aleti"}, {"id": "stk229", "name": "BAGET NOVA 5A", "qty": 2, "price": 203.84, "category": "Aksesuar"}, {"id": "stk230", "name": "PK2001EQ LEA AKUSTİK GİTAR", "qty": 1, "price": 4306.0, "category": "Müzik Aleti"}, {"id": "stk231", "name": "CLARİSS AGB-B AKUSTİK ALT EŞİK", "qty": 9, "price": 0.22, "category": "Aksesuar"}, {"id": "stk232", "name": "A703A 2 NO TEL", "qty": 21, "price": 0.56, "category": "Aksesuar"}, {"id": "stk233", "name": "MIZRAP", "qty": 2, "price": 4.0, "category": "Aksesuar"}, {"id": "stk234", "name": "A703A 3 NO TEL", "qty": 27, "price": 0.85, "category": "Aksesuar"}, {"id": "stk235", "name": "VR200 DADDARIO REÇİNE", "qty": 1, "price": 132.86, "category": "Aksesuar"}, {"id": "stk236", "name": "1/4 KEMAN KÖPRÜ VBR10012", "qty": 1, "price": 9.97, "category": "Aksesuar"}, {"id": "stk237", "name": "ALICE KEMAN REÇİNESİ", "qty": 7, "price": 0.79, "category": "Aksesuar"}, {"id": "stk238", "name": "VCMH0150CR VALENCİA KLASİK KULAK", "qty": 1, "price": 124.65, "category": "Aksesuar"}, {"id": "stk239", "name": "CÜMBÜŞ TELİ ONER", "qty": 2, "price": 16.94, "category": "Aksesuar"}, {"id": "stk240", "name": "KARİN KLARNET STANDI", "qty": 1, "price": 18.5, "category": "Aksesuar"}, {"id": "stk241", "name": "PENA PAKET", "qty": 2, "price": 18.0, "category": "Aksesuar"}, {"id": "stk242", "name": "KISA SAP KILIF", "qty": 6, "price": 1.5, "category": "Aksesuar"}, {"id": "stk243", "name": "ELİXİR AKUSTİK 010 PHOS BRONZE", "qty": 1, "price": 508.33, "category": "Aksesuar"}, {"id": "stk244", "name": "MUSEDO M20 BEYAZ", "qty": 1, "price": 700.0, "category": "Aksesuar"}, {"id": "stk245", "name": "HM0310 MIZIKA 10 DELİKLİ", "qty": 1, "price": 122.94, "category": "Müzik Aleti"}, {"id": "stk246", "name": "MUHTELİF İGİTAR", "qty": 1, "price": 1666.0, "category": "Aksesuar"}, {"id": "stk247", "name": "CLARİSS CG100 NT  KLASİK GİTAR", "qty": 1, "price": 2252.0, "category": "Müzik Aleti"}, {"id": "stk248", "name": "MUHTELİF BENDİR", "qty": 1, "price": 833.0, "category": "Aksesuar"}, {"id": "stk249", "name": "CLARISS CG200 BK KLASİK GİTAR", "qty": 1, "price": 2329.0, "category": "Müzik Aleti"}, {"id": "stk250", "name": "MUHTELİF TEL", "qty": 10, "price": 41.67, "category": "Aksesuar"}, {"id": "stk251", "name": "SOLARES HG560", "qty": 1, "price": 3245.0, "category": "Aksesuar"}, {"id": "stk252", "name": "LC 28 LEA KLASİK TEL", "qty": 10, "price": 33.4, "category": "Aksesuar"}, {"id": "stk253", "name": "DORAZIO 018 BAĞLAMA TELİ", "qty": 5, "price": 8.58, "category": "Aksesuar"}, {"id": "stk254", "name": "KEMAN KUYRUĞU", "qty": 1, "price": 7.74, "category": "Müzik Aleti"}, {"id": "stk255", "name": "KEMAN KUYRUK BAĞI", "qty": 2, "price": 2.32, "category": "Aksesuar"}, {"id": "stk256", "name": "IBANEZ DÜZ PENA 50ADET", "qty": 1, "price": 24.67, "category": "Aksesuar"}, {"id": "stk257", "name": "SPREAD 100ADET PENA", "qty": 1, "price": 23.01, "category": "Aksesuar"}, {"id": "stk258", "name": "MAXTONE OKUL FLÜTÜ", "qty": 2, "price": 7.82, "category": "Müzik Aleti"}, {"id": "stk259", "name": "ERNIEBALL KARIŞIK PENA", "qty": 1, "price": 49.08, "category": "Aksesuar"}, {"id": "stk260", "name": "IBANEZ PENA TUTUCU", "qty": 1, "price": 6.75, "category": "Aksesuar"}, {"id": "stk261", "name": "BONSON GÜDERİ", "qty": 3, "price": 8.7, "category": "Aksesuar"}, {"id": "stk262", "name": "KARRMA CONCERT UKULELE AĞAÇ", "qty": 1, "price": 749.99, "category": "Müzik Aleti"}, {"id": "stk263", "name": "PRASTRO KEMAN TELİ TONICA", "qty": 1, "price": 39.86, "category": "Aksesuar"}, {"id": "stk264", "name": "PRASTRO KEMAN TELİ KROMATİK", "qty": 1, "price": 45.85, "category": "Aksesuar"}, {"id": "stk265", "name": "HG500C CLASRISS KLASİK GİTAR", "qty": 1, "price": 2727.36, "category": "Müzik Aleti"}, {"id": "stk266", "name": "CCG100 CLARSISS KLASİK GİTAR BAŞLANGIÇ", "qty": 1, "price": 2011.36, "category": "Müzik Aleti"}, {"id": "stk267", "name": "PRASTRO REÇİNE GOLD", "qty": 1, "price": 17.94, "category": "Aksesuar"}, {"id": "stk268", "name": "TX620 ORPHEE AKUSTİK TEL", "qty": 9, "price": 33.4, "category": "Aksesuar"}, {"id": "stk269", "name": "PRASTRO REÇİNE SCHWARZ", "qty": 1, "price": 11.96, "category": "Aksesuar"}, {"id": "stk270", "name": "BARREKIRMIZI 1 NO KAMIŞ", "qty": 1, "price": 184.82, "category": "Aksesuar"}, {"id": "stk271", "name": "PRASTRO REÇİNE CELLİSTO", "qty": 1, "price": 20.93, "category": "Aksesuar"}, {"id": "stk272", "name": "ÇALIŞMA PEDİ BATERİ", "qty": 1, "price": 45.14, "category": "Aksesuar"}, {"id": "stk273", "name": "3DBK2-10  10 ADET PENA PLANET WAVES", "qty": 1, "price": 177.0, "category": "Aksesuar"}, {"id": "stk274", "name": "MİKROFON AYI", "qty": 1, "price": 2.54, "category": "Müzik Aleti"}, {"id": "stk275", "name": "NX35 ORPHEE KLASİK TEL", "qty": 8, "price": 36.58, "category": "Aksesuar"}, {"id": "stk276", "name": "A705 ALIOCE KEMAN TELİ", "qty": 1, "price": 36.57, "category": "Aksesuar"}, {"id": "stk277", "name": "UK21 RENKLİ UKULELER PUKA", "qty": 1, "price": 286.4, "category": "Müzik Aleti"}, {"id": "stk278", "name": "TURABİ DEĞERLİ ÇÖĞÜR METODU1", "qty": 9, "price": 13.82, "category": "Metod/Kitap"}, {"id": "stk279", "name": "STAGG TUM 50 AKORT ALETİ", "qty": 1, "price": 37.71, "category": "Aksesuar"}, {"id": "stk280", "name": "J27N DADDARIO KLASİK GİTAR TELİ", "qty": 3, "price": 188.0, "category": "Aksesuar"}, {"id": "stk281", "name": "ADIM ADIM PİYANO METODU KİTAP", "qty": 7, "price": 136.4, "category": "Metod/Kitap"}, {"id": "stk282", "name": "J27 3D DADDARIO SET KLASİK GİTAR TELİ", "qty": 1, "price": 166.0, "category": "Aksesuar"}, {"id": "stk283", "name": "EXL125 ELEKTRO GİTAR TELİ", "qty": 1, "price": 280.0, "category": "Aksesuar"}, {"id": "stk284", "name": "İLK PİYANO KİTABIM", "qty": 1, "price": 25.0, "category": "Metod/Kitap"}, {"id": "stk285", "name": "PL010 Mİ TEK TEL", "qty": 10, "price": 72.0, "category": "Aksesuar"}, {"id": "stk286", "name": "ACE 30 TEL TEMİZLEYİCİ", "qty": 2, "price": 224.62, "category": "Aksesuar"}, {"id": "stk287", "name": "1CAP2-25   25 ADET PLANET WAVES PENA", "qty": 1, "price": 380.0, "category": "Aksesuar"}, {"id": "stk288", "name": "OYNAYARAK EĞLENEREK MÜZİK", "qty": 1, "price": 12.75, "category": "Aksesuar"}, {"id": "stk289", "name": "PW1CMPT25  25 ADET PENA", "qty": 1, "price": 335.0, "category": "Aksesuar"}, {"id": "stk290", "name": "NEMESİS UNIVERSAL KAPO FC100", "qty": 3, "price": 100.0, "category": "Aksesuar"}, {"id": "stk291", "name": "P10PR VICFRITH BAG HICORY", "qty": 1, "price": 29.14, "category": "Aksesuar"}, {"id": "stk292", "name": "UNUTULMAYAN 202 ŞARKI", "qty": 2, "price": 12.35, "category": "Metod/Kitap"}, {"id": "stk293", "name": "MARSHAL ACCS-00083 KAPO", "qty": 1, "price": 16.61, "category": "Aksesuar"}, {"id": "stk294", "name": "EJ10 3D AKUSTİK GİTAR TELİ", "qty": 1, "price": 700.9, "category": "Aksesuar"}, {"id": "stk295", "name": "DUNLOP PENA", "qty": 33, "price": 0.59, "category": "Aksesuar"}, {"id": "stk296", "name": "DUNLOP PENA", "qty": 82, "price": 0.76, "category": "Aksesuar"}, {"id": "stk297", "name": "YARIM AY TEF MİTELLO PM39", "qty": 1, "price": 20.38, "category": "Aksesuar"}, {"id": "stk298", "name": "PARMAK ZİLİ", "qty": 2, "price": 3.89, "category": "Aksesuar"}, {"id": "stk299", "name": "SİYAH TAHTA SAPLI MARAKAS", "qty": 1, "price": 28.93, "category": "Aksesuar"}, {"id": "stk300", "name": "6DGN4-10 MEDIUM PLANET WAVES PENA", "qty": 2, "price": 92.0, "category": "Aksesuar"}, {"id": "stk301", "name": "M-20WH  ETRONOM", "qty": 1, "price": 700.25, "category": "Aksesuar"}, {"id": "stk302", "name": "45CM AYARLI BENDİR", "qty": 1, "price": 65.25, "category": "Müzik Aleti"}, {"id": "stk303", "name": "EXL110-3D  ELEKTRO GİTAR TELİ", "qty": 1, "price": 628.28, "category": "Aksesuar"}, {"id": "stk304", "name": "OURA R300 88-KEY HOME DIGITAL PIANO LIGHT WOOD EC7132", "qty": 1, "price": 20833.0, "category": "Aksesuar"}, {"id": "stk305", "name": "BAĞLAMA KILIF", "qty": 5, "price": 12.05, "category": "Aksesuar"}, {"id": "stk306", "name": "BAĞLAMA KISA TEL TAKIM", "qty": 5, "price": 2.2, "category": "Aksesuar"}, {"id": "stk307", "name": "MARTİN KLASİK TEL", "qty": 2, "price": 429.17, "category": "Aksesuar"}, {"id": "stk308", "name": "PYRAMID 020 TAKIM TEL", "qty": 7, "price": 4.63, "category": "Aksesuar"}, {"id": "stk309", "name": "SWING MINI PERKUSYON ZSET", "qty": 1, "price": 40.84, "category": "Aksesuar"}, {"id": "stk310", "name": "PYRAMID 018 TAKIM TEL", "qty": 9, "price": 4.63, "category": "Aksesuar"}, {"id": "stk311", "name": "UMUTULMAYAN ŞARKILARLA ORG METODU", "qty": 2, "price": 24.2, "category": "Metod/Kitap"}, {"id": "stk312", "name": "MARTİN KLASİK TEL", "qty": 14, "price": 14.42, "category": "Aksesuar"}, {"id": "stk313", "name": "RENKELRLE ORG METODU", "qty": 3, "price": 45.9, "category": "Metod/Kitap"}, {"id": "stk314", "name": "MUHTELİF UZUN BAĞLAMA", "qty": 1, "price": 1625.0, "category": "Aksesuar"}, {"id": "stk315", "name": "RT011-44 YASTIK KEMAN", "qty": 2, "price": 83.62, "category": "Müzik Aleti"}, {"id": "stk316", "name": "SATURN CL3181NL SOL KLARNET", "qty": 1, "price": 496.07, "category": "Müzik Aleti"}, {"id": "stk317", "name": "ALICE 100LÜ PENA", "qty": 1, "price": 16.34, "category": "Aksesuar"}, {"id": "stk318", "name": "CL-M3181 KLARNET BEK KAPAK", "qty": 2, "price": 59.53, "category": "Müzik Aleti"}, {"id": "stk319", "name": "ABANOZ KEMAN BURGUSU", "qty": 4, "price": 1.84, "category": "Aksesuar"}, {"id": "stk320", "name": "DUNLOP PENA", "qty": 1, "price": 114.0, "category": "Aksesuar"}, {"id": "stk321", "name": "ICCG4 CEL-GLO MEDIUM PENA", "qty": 1, "price": 53.99, "category": "Aksesuar"}, {"id": "stk322", "name": "DUNLOP HETFİELD PENA", "qty": 2, "price": 33.5, "category": "Aksesuar"}, {"id": "stk323", "name": "MARTİN ELEKTRO 010", "qty": 2, "price": 7.91, "category": "Aksesuar"}, {"id": "stk324", "name": "DUNLOP HERCO PENA", "qty": 1, "price": 10.5, "category": "Aksesuar"}, {"id": "stk325", "name": "MARTİN ELEKTRO 09", "qty": 7, "price": 7.91, "category": "Aksesuar"}, {"id": "stk326", "name": "DUNLOP GEL MAVİ PENA", "qty": 1, "price": 21.0, "category": "Aksesuar"}, {"id": "stk327", "name": "AURO BAĞLAMA TELİ", "qty": 15, "price": 85.0, "category": "Aksesuar"}, {"id": "stk328", "name": "DUNLOP TEL TEMİZLEYİCİ", "qty": 1, "price": 14.0, "category": "Aksesuar"}, {"id": "stk329", "name": "AUSTER-1 10 DELİKLİ MIZIKA", "qty": 1, "price": 171.0, "category": "Müzik Aleti"}, {"id": "stk330", "name": "NEMESİS FT-18 KLİPSLİ AKORT ALETİ", "qty": 5, "price": 171.0, "category": "Aksesuar"}, {"id": "stk331", "name": "EASTTOP T10-4C 10 DELİKLİ MIZIKA BLUES", "qty": 2, "price": 213.0, "category": "Müzik Aleti"}, {"id": "stk332", "name": "MARLA KR01 KEMAN REÇİNESİ KÜÇÜK BOY", "qty": 4, "price": 24.0, "category": "Aksesuar"}, {"id": "stk333", "name": "ICWH2-10 CEL GLO MEDIUM PENA", "qty": 1, "price": 55.99, "category": "Aksesuar"}, {"id": "stk334", "name": "INFX2-10NYLFLEX0.50 PENA", "qty": 1, "price": 49.2, "category": "Aksesuar"}, {"id": "stk335", "name": "1UCT4-10 PICK CEL WHITE LIGHT PENA", "qty": 1, "price": 81.34, "category": "Aksesuar"}, {"id": "stk336", "name": "ICAP4-25 MEDIUM 25 ADET PENA", "qty": 1, "price": 124.94, "category": "Aksesuar"}, {"id": "stk337", "name": "ÇÖĞÜR METODU1", "qty": 5, "price": 9.26, "category": "Metod/Kitap"}, {"id": "stk338", "name": "PYRAMID PREMIUM018", "qty": 2, "price": 7.06, "category": "Aksesuar"}, {"id": "stk339", "name": "ICCF4+10 CEL CAMO MEDIUM PENA", "qty": 1, "price": 55.99, "category": "Aksesuar"}, {"id": "stk340", "name": "PYRAMID PREMIUM 020", "qty": 1, "price": 7.06, "category": "Aksesuar"}, {"id": "stk341", "name": "ŞARKI SOLOLARI", "qty": 1, "price": 8.11, "category": "Metod/Kitap"}, {"id": "stk342", "name": "ALICE KEMAN REÇİNE", "qty": 14, "price": 1.15, "category": "Aksesuar"}, {"id": "stk343", "name": "ŞARKI SOLOLARI", "qty": 1, "price": 8.11, "category": "Metod/Kitap"}, {"id": "stk344", "name": "POLULARIE 1 NO KAMIŞ", "qty": 2, "price": 33.3, "category": "Aksesuar"}, {"id": "stk345", "name": "VOLUME 110U PROFESYONEL UZUN SAP BAĞLAMA TELİ 0.20", "qty": 6, "price": 166.0, "category": "Aksesuar"}, {"id": "stk346", "name": "UKULELE SOPRANO ONER MÜZİK", "qty": 2, "price": 333.33, "category": "Müzik Aleti"}, {"id": "stk347", "name": "DARBUKA FİLM DERİ ÇİN", "qty": 2, "price": 83.33, "category": "Müzik Aleti"}, {"id": "stk348", "name": "MİTELLO DARBUKA FİLMİ", "qty": 1, "price": 183.33, "category": "Aksesuar"}, {"id": "stk349", "name": "STGL90L   GİTAR DUVAR STANDI", "qty": 4, "price": 190.0, "category": "Aksesuar"}, {"id": "stk350", "name": "VRS22 REÇİNE VALENCIA", "qty": 3, "price": 0.75, "category": "Aksesuar"}, {"id": "stk351", "name": "ERNIEBALL SİYAH TOPUZLU P02406", "qty": 2, "price": 17.15, "category": "Aksesuar"}, {"id": "stk352", "name": "EPS510 LEKTRO TEL", "qty": 1, "price": 197.25, "category": "Aksesuar"}, {"id": "stk353", "name": "ALİCE GİTAR PENASI", "qty": 100, "price": 7.07, "category": "Aksesuar"}, {"id": "stk354", "name": "ALİCE AC106 KLASİK GİTAR TELİ", "qty": 20, "price": 86.9, "category": "Aksesuar"}, {"id": "stk355", "name": "GİTAR BURGU ÇEVİRİCİ", "qty": 2, "price": 25.03, "category": "Aksesuar"}, {"id": "stk356", "name": "ALİCE A703 KEMAN TELİ", "qty": 7, "price": 106.34, "category": "Aksesuar"}, {"id": "stk357", "name": "ARBENA GÜNEŞ DESENLİ", "qty": 1, "price": 60.16, "category": "Aksesuar"}, {"id": "stk358", "name": "NEMESİS TABANCA KAPO", "qty": 8, "price": 0, "category": "Aksesuar"}, {"id": "stk359", "name": "45CM BENDİR", "qty": 2, "price": 49.15, "category": "Müzik Aleti"}, {"id": "stk360", "name": "CN62 İP KAPO", "qty": 12, "price": 0, "category": "Aksesuar"}, {"id": "stk361", "name": "KARİN REÇİNE", "qty": 12, "price": 2.63, "category": "Aksesuar"}, {"id": "stk362", "name": "J46 3D DADDARIO KLASİK TEL", "qty": 1, "price": 1041.0, "category": "Aksesuar"}, {"id": "stk363", "name": "AKUSTİK GİTAR SİYA PİM", "qty": 6, "price": 2.06, "category": "Aksesuar"}, {"id": "stk364", "name": "KARIN KEMAN SUSTURUCU", "qty": 2, "price": 19.14, "category": "Aksesuar"}, {"id": "stk365", "name": "KARİN KLASİK GİTAR TELİ", "qty": 13, "price": 4.82, "category": "Aksesuar"}, {"id": "stk366", "name": "J10 3D DADDARIO AKUSTİK TEL", "qty": 1, "price": 685.88, "category": "Aksesuar"}, {"id": "stk367", "name": "45CM ARBANE", "qty": 1, "price": 49.15, "category": "Aksesuar"}, {"id": "stk368", "name": "JIM DUNLOP GELS HVY 12Lİ PAKET", "qty": 1, "price": 12.25, "category": "Aksesuar"}, {"id": "stk369", "name": "JIM DUNLOP  TORTEX JAZZ3 1 PAKET", "qty": 1, "price": 17.71, "category": "Aksesuar"}, {"id": "stk370", "name": "JIM DUNLOP GELS MIDIUM 12Lİ PAKET", "qty": 1, "price": 12.25, "category": "Aksesuar"}, {"id": "stk371", "name": "TGA NOTA SEHPASI", "qty": 3, "price": 168.33, "category": "Aksesuar"}, {"id": "stk372", "name": "BEK KAPAKLI", "qty": 2, "price": 22.13, "category": "Aksesuar"}, {"id": "stk373", "name": "A703 ALICE 1NO KEMAN TELİ", "qty": 24, "price": 0.75, "category": "Aksesuar"}, {"id": "stk374", "name": "PQP 0068 V6 TUSQ PENA", "qty": 1, "price": 164.16, "category": "Aksesuar"}, {"id": "stk375", "name": "A703 ALICE 2NO KEMAN TELİ", "qty": 26, "price": 1.22, "category": "Aksesuar"}, {"id": "stk376", "name": "6DRD1 10 PLANET WAVES PENA", "qty": 1, "price": 120.76, "category": "Aksesuar"}, {"id": "stk377", "name": "3DBK4-10 MEDİUM PENA PLANET WAVES", "qty": 1, "price": 142.17, "category": "Aksesuar"}, {"id": "stk378", "name": "KILIF ORG", "qty": 1, "price": 0.1, "category": "Aksesuar"}, {"id": "stk379", "name": "ALICE YUVARLAK KEMAN REİNE", "qty": 18, "price": 1.89, "category": "Müzik Aleti"}, {"id": "stk380", "name": "ADAPTÖR ORG", "qty": 1, "price": 0.1, "category": "Aksesuar"}, {"id": "stk381", "name": "KARİN YUVARLAK REÇİNE", "qty": 4, "price": 3.82, "category": "Aksesuar"}, {"id": "stk382", "name": "BAĞLAMA VE SAZ TELİ", "qty": 18, "price": 2.2, "category": "Aksesuar"}, {"id": "stk383", "name": "NEMESİS AKORT ALETİ", "qty": 3, "price": 95.81, "category": "Aksesuar"}, {"id": "stk384", "name": "PP6 GİTAR AKORT DÜDÜĞÜ", "qty": 2, "price": 3.36, "category": "Müzik Aleti"}, {"id": "stk385", "name": "KLASİK GİTAR KULAĞI", "qty": 2, "price": 68.2, "category": "Müzik Aleti"}, {"id": "stk386", "name": "VARIGRIP", "qty": 1, "price": 22.11, "category": "Aksesuar"}, {"id": "stk387", "name": "PQP 088  TUSQ 6 LI PENA", "qty": 1, "price": 164.16, "category": "Aksesuar"}, {"id": "stk388", "name": "ALICE 200 ADET KUTULU PENA", "qty": 1, "price": 359.29, "category": "Aksesuar"}, {"id": "stk389", "name": "1CAPX-25 25 ADET PLANET WAVES", "qty": 1, "price": 302.34, "category": "Aksesuar"}, {"id": "stk390", "name": "ME044 FOM YASTIK", "qty": 1, "price": 124.59, "category": "Aksesuar"}, {"id": "stk391", "name": "ÇÖĞÜR KISA SAP BAĞLAMA TELİ", "qty": 20, "price": 18.93, "category": "Aksesuar"}, {"id": "stk392", "name": "SR SK66 KEMAN YASTIK KALİTYELİ", "qty": 1, "price": 158.57, "category": "Müzik Aleti"}, {"id": "stk393", "name": "ÇÖĞÜR UZUN SAP SAZ TELİ", "qty": 20, "price": 19.83, "category": "Aksesuar"}, {"id": "stk394", "name": "SR05 YASTIK UCUZ", "qty": 5, "price": 67.96, "category": "Aksesuar"}, {"id": "stk395", "name": "LİLYA KLASİK GİTAR TELİ UCUZ TEL", "qty": 10, "price": 52.0, "category": "Aksesuar"}, {"id": "stk396", "name": "PENA ÇİN", "qty": 150, "price": 0.5, "category": "Aksesuar"}, {"id": "stk397", "name": "VG250 VALLER BK 4/4 KLASİK GİTAR", "qty": 1, "price": 2583.0, "category": "Müzik Aleti"}, {"id": "stk398", "name": "CONCERT UKULELE 1783 AĞAÇ", "qty": 2, "price": 899.0, "category": "Müzik Aleti"}, {"id": "stk399", "name": "CGK500CEQ CLARISS ELEKTRO KLASIK GİTAR", "qty": 1, "price": 4352.0, "category": "Müzik Aleti"}, {"id": "stk400", "name": "IBANEZ ISW10 KULAK ÇEVİRME", "qty": 2, "price": 5.01, "category": "Aksesuar"}, {"id": "stk401", "name": "PL010 AKUSTİK TEK TEL Mİ 010", "qty": 10, "price": 16.75, "category": "Aksesuar"}, {"id": "stk402", "name": "PQP 001 TUSQ PENA 6LI", "qty": 1, "price": 164.16, "category": "Aksesuar"}, {"id": "stk403", "name": "VBR01 KEMAN KÖPRÜ", "qty": 2, "price": 20.39, "category": "Aksesuar"}, {"id": "stk404", "name": "1NFX4 10 PLANET WAVES PENA  0.75", "qty": 1, "price": 119.34, "category": "Aksesuar"}, {"id": "stk405", "name": "A703 ALİCE KEMAN TELİ", "qty": 2, "price": 45.57, "category": "Aksesuar"}, {"id": "stk406", "name": "KLASİK GİTAR KULAK KGM", "qty": 3, "price": 54.16, "category": "Müzik Aleti"}, {"id": "stk407", "name": "BARRE MAVİ KUŞAK 1 NO", "qty": 1, "price": 339.81, "category": "Aksesuar"}, {"id": "stk408", "name": "GST611LG-BK IBANEZ ASKI", "qty": 1, "price": 28.22, "category": "Aksesuar"}, {"id": "stk409", "name": "TX620 ORPHEO AKUSTİK TEL", "qty": 9, "price": 45.57, "category": "Aksesuar"}, {"id": "stk410", "name": "7DGN4 10 PLANET WAVES MEDIUM PENA", "qty": 1, "price": 243.81, "category": "Aksesuar"}, {"id": "stk411", "name": "TN1 TUNER AKOR ALETİ lea", "qty": 5, "price": 67.96, "category": "Aksesuar"}, {"id": "stk412", "name": "AD5 ADAPTÖR", "qty": 1, "price": 14.68, "category": "Aksesuar"}, {"id": "stk413", "name": "7DYL3 10 MEDIUM PLANET WAVES PENA", "qty": 1, "price": 243.81, "category": "Aksesuar"}, {"id": "stk414", "name": "UKULELE SOPRANO TEL DADDARIO", "qty": 1, "price": 20.67, "category": "Aksesuar"}, {"id": "stk415", "name": "UKULELE TELİ 110U", "qty": 2, "price": 18.08, "category": "Aksesuar"}, {"id": "stk416", "name": "UKULELE TELİ 15U", "qty": 2, "price": 19.45, "category": "Aksesuar"}, {"id": "stk417", "name": "ORG KILIFI", "qty": 1, "price": 0.1, "category": "Aksesuar"}, {"id": "stk418", "name": "EBR4C VALENCIA ELEKTRO TREMELO", "qty": 1, "price": 78.64, "category": "Aksesuar"}, {"id": "stk419", "name": "ÇEVİRİCİ BÜYÜK KÜÇÜK", "qty": 10, "price": 0.8, "category": "Aksesuar"}, {"id": "stk420", "name": "VALLER VG250C KLASİK GİTAR", "qty": 1, "price": 2208.0, "category": "Müzik Aleti"}, {"id": "stk421", "name": "J47 KLASİK TEL", "qty": 1, "price": 20.33, "category": "Aksesuar"}, {"id": "stk422", "name": "LUNAX PS35 KATLANABİLİR PİYANO", "qty": 1, "price": 5125.0, "category": "Müzik Aleti"}, {"id": "stk423", "name": "CB10 BEK", "qty": 1, "price": 20.0, "category": "Aksesuar"}, {"id": "stk424", "name": "ŞEFFA BEK", "qty": 2, "price": 56.62, "category": "Aksesuar"}, {"id": "stk425", "name": "KLARNET İÇİN PLASTİK PARMAK TUTACAĞI", "qty": 2, "price": 4.98, "category": "Aksesuar"}, {"id": "stk426", "name": "SK100 YARIM AY TEF", "qty": 2, "price": 9.51, "category": "Aksesuar"}, {"id": "stk427", "name": "PM39 MARAKAS", "qty": 2, "price": 12.76, "category": "Aksesuar"}, {"id": "stk428", "name": "SRK002 SHAKER GUIRO", "qty": 2, "price": 4.99, "category": "Aksesuar"}, {"id": "stk429", "name": "EGG27/B YUMURTA", "qty": 2, "price": 3.87, "category": "Aksesuar"}, {"id": "stk430", "name": "EJ 27 3D KLASİK GİTAR TELİ", "qty": 1, "price": 831.0, "category": "Aksesuar"}, {"id": "stk431", "name": "EJ50 KALSİK GİTAR TELİ", "qty": 1, "price": 442.0, "category": "Aksesuar"}, {"id": "stk432", "name": "EXL110-3D ELEKTRO GİTAR TELİ DADDARIO", "qty": 1, "price": 625.18, "category": "Aksesuar"}, {"id": "stk433", "name": "CA525 ARA KABLO", "qty": 2, "price": 387.0, "category": "Aksesuar"}, {"id": "stk434", "name": "A010SR KAPO", "qty": 5, "price": 82.77, "category": "Aksesuar"}, {"id": "stk435", "name": "DADDARIO LİMON YAĞI", "qty": 2, "price": 163.92, "category": "Aksesuar"}, {"id": "stk436", "name": "VCMH0150GD VALENCIAI KLASİK GİTAR KULAĞI", "qty": 2, "price": 184.32, "category": "Müzik Aleti"}, {"id": "stk437", "name": "KEMAN KUYRUK ABANOZ", "qty": 1, "price": 14.0, "category": "Aksesuar"}, {"id": "stk438", "name": "PL010 Mİ TELİ TEK", "qty": 10, "price": 1.91, "category": "Aksesuar"}, {"id": "stk439", "name": "JİMİ GİGBAG TENOR", "qty": 1, "price": 30.65, "category": "Aksesuar"}, {"id": "stk440", "name": "JEL SİYAH LİGHT PENA 25Lİ PLANETWAVES", "qty": 1, "price": 28.58, "category": "Aksesuar"}, {"id": "stk441", "name": "JEL SİYAH HEAVY PENA 25Lİ PLANET WAVES", "qty": 1, "price": 28.58, "category": "Aksesuar"}, {"id": "stk442", "name": "MELODİKA HORTUMU", "qty": 2, "price": 5.9, "category": "Müzik Aleti"}, {"id": "stk443", "name": "PLASTİK NEY", "qty": 1, "price": 12.71, "category": "Müzik Aleti"}, {"id": "stk444", "name": "PLANET WAVES 10LU PENA LİGHT", "qty": 2, "price": 11.75, "category": "Aksesuar"}, {"id": "stk445", "name": "BONGO", "qty": 1, "price": 101.39, "category": "Aksesuar"}, {"id": "stk446", "name": "PLANET WAVES 10LU PENA MEDIUM", "qty": 2, "price": 11.75, "category": "Aksesuar"}, {"id": "stk447", "name": "ALICE 1 NO KEMAN TELİ", "qty": 23, "price": 0.71, "category": "Aksesuar"}, {"id": "stk448", "name": "PLANET WAVES 10LU PENA MEDIUM", "qty": 1, "price": 15.45, "category": "Aksesuar"}, {"id": "stk449", "name": "PLANET WAVES 10LU PENA BLACICE MEDIUM", "qty": 1, "price": 13.03, "category": "Aksesuar"}, {"id": "stk450", "name": "ALICE KEMAN TELİ NO3", "qty": 23, "price": 1.77, "category": "Aksesuar"}, {"id": "stk451", "name": "VR200 DADDARIO REÇİNE", "qty": 3, "price": 131.3, "category": "Aksesuar"}, {"id": "stk452", "name": "ALICE KEMAN TELİ NO4", "qty": 5, "price": 2.56, "category": "Aksesuar"}, {"id": "stk453", "name": "PQ-9280-C0 AKUSTİK GİTAR ALT EŞİK", "qty": 1, "price": 48.5, "category": "Aksesuar"}, {"id": "stk454", "name": "PQ-9650-00 AKUSTİK GİTAR ALT EŞİK", "qty": 1, "price": 50.56, "category": "Aksesuar"}, {"id": "stk455", "name": "PLANET WAVES 10LU PENA CORTEX MEDIUM", "qty": 1, "price": 19.64, "category": "Aksesuar"}, {"id": "stk456", "name": "KEMAN REÇİNE YUVARLAK", "qty": 5, "price": 1.65, "category": "Aksesuar"}, {"id": "stk457", "name": "JIM DUNLOP PENA", "qty": 10, "price": 8.33, "category": "Aksesuar"}, {"id": "stk458", "name": "JIM DUNLOP PENA", "qty": 10, "price": 10.0, "category": "Aksesuar"}, {"id": "stk459", "name": "XL110-3D DADDARIO ELEKTRO TEL", "qty": 1, "price": 67.08, "category": "Aksesuar"}, {"id": "stk460", "name": "JIM DUNLOP PENA", "qty": 10, "price": 6.25, "category": "Aksesuar"}, {"id": "stk461", "name": "JIM DUNLOP PENA", "qty": 10, "price": 7.5, "category": "Aksesuar"}, {"id": "stk462", "name": "PL010 Mİ TELİ TEK", "qty": 5, "price": 3.61, "category": "Aksesuar"}, {"id": "stk463", "name": "JIM DUNLOP PENA", "qty": 10, "price": 7.5, "category": "Aksesuar"}, {"id": "stk464", "name": "H-40B GİTAR ASMA APARATI GİTAR SEHPASI", "qty": 5, "price": 35.8, "category": "Aksesuar"}, {"id": "stk465", "name": "JIM DUNLOP PENA", "qty": 10, "price": 10.0, "category": "Aksesuar"}, {"id": "stk466", "name": "UD MIZRABI İSKENDER KUTMANİ", "qty": 1, "price": 1.61, "category": "Aksesuar"}, {"id": "stk467", "name": "JIM DUNLOP PENA", "qty": 10, "price": 10.0, "category": "Aksesuar"}, {"id": "stk468", "name": "JIM DUNLOP PENA", "qty": 10, "price": 129.17, "category": "Aksesuar"}, {"id": "stk469", "name": "JIM DUNLOP PENA", "qty": 1, "price": 176.67, "category": "Aksesuar"}, {"id": "stk470", "name": "EP-01BK  KULAKLIK", "qty": 6, "price": 24.27, "category": "Aksesuar"}, {"id": "stk471", "name": "CREMONIA AT KILI", "qty": 2, "price": 12.64, "category": "Aksesuar"}, {"id": "stk472", "name": "XP45 KLASİK GTAR TELİ", "qty": 2, "price": 34.05, "category": "Aksesuar"}, {"id": "stk473", "name": "J47 KLASİK TEL", "qty": 1, "price": 39.24, "category": "Aksesuar"}, {"id": "stk474", "name": "PLANET WAVES 10LU DURALIN PENA", "qty": 2, "price": 12.46, "category": "Aksesuar"}, {"id": "stk475", "name": "PLANET WAVES 10LU DURAGRIP PENA", "qty": 3, "price": 26.25, "category": "Aksesuar"}, {"id": "stk476", "name": "VRS22 DİKDÖRTGEN REÇİNE VALENCIA", "qty": 3, "price": 2.49, "category": "Aksesuar"}, {"id": "stk477", "name": "EZ900 AKUSTİK GİTAR TELİ", "qty": 2, "price": 214.7, "category": "Aksesuar"}, {"id": "stk478", "name": "VCR100HB44 ÇENELİK", "qty": 1, "price": 14.06, "category": "Aksesuar"}, {"id": "stk479", "name": "MARLA SVB-134 KEMAN YAYI ÖĞRENCİ 3/4", "qty": 1, "price": 400.0, "category": "Müzik Aleti"}, {"id": "stk480", "name": "EJ27 KLASİK GİTAR TELİ", "qty": 1, "price": 280.0, "category": "Aksesuar"}, {"id": "stk481", "name": "MARLA SVB-144 KEMAN YAYI ÖĞRENCİ 4/4", "qty": 2, "price": 400.0, "category": "Müzik Aleti"}, {"id": "stk482", "name": "EJ27 3D KLASİK GİTAR TELİ", "qty": 1, "price": 765.0, "category": "Aksesuar"}, {"id": "stk483", "name": "KISA SAP BAĞLAMA TELİ 0.18", "qty": 10, "price": 108.0, "category": "Aksesuar"}, {"id": "stk484", "name": "SWİFF K8 KLASİK GİTAR KAPO PROFESYONEL", "qty": 4, "price": 353.0, "category": "Aksesuar"}, {"id": "stk485", "name": "SUNDMANN PROFESYONEL AKUSTİK- ELEKTRO GİTAR KAPO", "qty": 5, "price": 211.0, "category": "Aksesuar"}, {"id": "stk486", "name": "RİTİM ÇUBUĞU", "qty": 4, "price": 5.64, "category": "Aksesuar"}, {"id": "stk487", "name": "MARLA ESM20 KRİSTAL VAKUMLU MANYETİK", "qty": 5, "price": 130.0, "category": "Aksesuar"}, {"id": "stk488", "name": "RİTİM SHAKER", "qty": 1, "price": 9.92, "category": "Aksesuar"}, {"id": "stk489", "name": "HONER H1005 PROFESYONEL AĞIZ MIZIKASI 10 DELİK", "qty": 2, "price": 211.0, "category": "Müzik Aleti"}, {"id": "stk490", "name": "ZİLLİ TEF", "qty": 2, "price": 21.18, "category": "Aksesuar"}, {"id": "stk491", "name": "EASTTOP T10-4C 10 DELİKLİ MIZIKA BLUES", "qty": 2, "price": 235.0, "category": "Müzik Aleti"}, {"id": "stk492", "name": "MİTELLO ÇELİK ÜÇGEN", "qty": 2, "price": 34.65, "category": "Aksesuar"}, {"id": "stk493", "name": "İMECE GÜL SAZ BURGUSU TAKIM", "qty": 3, "price": 138.0, "category": "Aksesuar"}, {"id": "stk494", "name": "ÇOCUK DAVULU", "qty": 2, "price": 25.42, "category": "Aksesuar"}, {"id": "stk495", "name": "EES10012 1/2 NO ERDAL ERZİNCAN", "qty": 1, "price": 156.0, "category": "Aksesuar"}]</script>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- Storage helpers (yerel + Firebase senkron) ----------
+  let fbApp = null, fbDb = null, fbReady = false, fbWorkspaceCode = null;
+  let lastSyncError = null;
+
+  function showFatalBanner(msg){
+    const el = document.getElementById('fatalErrorBanner');
+    if(!el) return;
+    el.style.display = 'block';
+    el.textContent = msg;
+  }
+  function clearFatalBanner(){
+    const el = document.getElementById('fatalErrorBanner');
+    if(el) el.style.display = 'none';
+  }
+  const LOCAL_ONLY_KEYS = new Set(['meta:firebaseConfig','meta:workspaceCode']);
+
+  function fbPath(key){ return 'workspaces/'+fbWorkspaceCode+'/'+key.split(':').join('/'); }
+
+  async function sGet(key){
+    if(fbReady && !LOCAL_ONLY_KEYS.has(key)){
+      try{
+        const snap = await fbDb.ref(fbPath(key)).once('value');
+        if(snap.exists()){
+          const val = snap.val();
+          try{ await window.storage.set(key, JSON.stringify(val), false); }catch(e){}
+          return val;
+        }
+      }catch(e){ console.warn('Firebase okuma hatası, yerel depoya dönülüyor:', e); }
+    }
+    try{ const r = await window.storage.get(key, false); return r ? JSON.parse(r.value) : null; }
+    catch(e){ return null; }
+  }
+  async function sSet(key, value){
+    let ok = false;
+    try{ const r = await window.storage.set(key, JSON.stringify(value), false); ok = !!r; }
+    catch(e){ console.error('storage set failed', key, e); }
+    if(fbReady && !LOCAL_ONLY_KEYS.has(key)){
+      try{ await fbDb.ref(fbPath(key)).set(value); }
+      catch(e){ console.warn('Firebase yazma hatası:', e); }
+    }
+    return ok;
+  }
+
+  function uid(prefix){ return prefix + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+  function todayISO(){ return new Date().toISOString().slice(0,10); }
+  function fmtTRY(n){ return (n||0).toLocaleString('tr-TR', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' ₺'; }
+  function fmtUSD(n){ return '$' + (n||0).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+  function fmtEUR(n){ return '€' + (n||0).toLocaleString('de-DE', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+  function fmtPct(n){ const s = (n>=0?'+':'') + (n*100).toFixed(1) + '%'; return s; }
+  function monthKey(dateStr){ return dateStr ? dateStr.slice(0,7) : ''; } // YYYY-MM
+
+  function toast(msg){
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'), 2200);
+  }
+
+  // ---------- App state ----------
+  let stock = [];      // {id,name,qty,price,category}
+  let income = [];     // {id,date,branch,description,grossAmount,vat,netAmount,stockItemId,qtyUsed,unitCostUsd,profitTRY}
+  let expenses = [];    // {id,date,category,description,amount}
+  // fxRates: { USD: [{date, rate, source, final}], EUR: [...] }  rate = TRY karşılığı 1 birim döviz
+  let fxRates = { USD: [], EUR: [] };
+
+  const FX_API_URL = 'https://open.er-api.com/v6/latest/USD';
+  const FX_LOCK_HOUR = 18; // yerel saatle gün sonu kilitleme saati
+  const CURRENCIES = ['USD','EUR'];
+
+  function ratesList(cur){ return (fxRates[cur] || []); }
+
+  function latestRate(cur, onOrBeforeDate){
+    const list = ratesList(cur);
+    if(!list.length) return null;
+    const sorted = [...list].sort((a,b)=>a.date.localeCompare(b.date));
+    if(!onOrBeforeDate) return sorted[sorted.length-1].rate;
+    let candidate = null;
+    for(const r of sorted){ if(r.date <= onOrBeforeDate) candidate = r; }
+    return candidate ? candidate.rate : sorted[0].rate;
+  }
+  function firstRate(cur){
+    const list = ratesList(cur);
+    if(!list.length) return null;
+    const sorted = [...list].sort((a,b)=>a.date.localeCompare(b.date));
+    return sorted[0].rate;
+  }
+
+  // Tek istekle hem USD/TRY hem EUR/TRY çeker (baz USD; EUR/TRY = TRY oranı / EUR oranı).
+  async function fetchLiveRates(){
+    try{
+      const resp = await fetch(FX_API_URL, {cache:'no-store'});
+      if(!resp.ok) throw new Error('http '+resp.status);
+      const data = await resp.json();
+      const usdTry = data && data.rates && data.rates.TRY;
+      const usdEur = data && data.rates && data.rates.EUR;
+      if(typeof usdTry !== 'number' || !isFinite(usdTry) || usdTry<=0) throw new Error('TRY kuru bulunamadı');
+      const out = { USD: usdTry, EUR: null };
+      if(typeof usdEur === 'number' && isFinite(usdEur) && usdEur>0){
+        out.EUR = usdTry / usdEur; // TRY karşılığı 1 EUR
+      }
+      return out;
+    }catch(err){
+      console.warn('Otomatik kur çekilemedi:', err);
+      return null;
+    }
+  }
+
+  // Açık kaldığı sürece / her açılışta günü tamamlamaya çalışır.
+  // Saat 18:00'i geçtiyse o günü "final" (kesin) olarak kilitler.
+  // Elle girilen kayıtlar (source:'manual') asla otomatik tarafından ezilmez.
+  async function autoUpdateFx(opts){
+    opts = opts || {};
+    const today = todayISO();
+    const now = new Date();
+    const pastLock = now.getHours() >= FX_LOCK_HOUR;
+
+    const needsUpdate = CURRENCIES.some(cur=>{
+      const existing = ratesList(cur).find(r=>r.date===today);
+      return !(existing && (existing.source==='manual' || existing.final) && !opts.force);
+    });
+    if(!needsUpdate) return false;
+
+    const live = await fetchLiveRates();
+    if(live===null){
+      if(opts.notifyOnFail) toast('Kur otomatik çekilemedi — internet yok ya da bağlantı engellendi. "Kur Gir" ile elle girebilirsin.');
+      return false;
+    }
+
+    let updatedAny = false;
+    for(const cur of CURRENCIES){
+      const rate = live[cur];
+      if(rate===null || rate===undefined) continue;
+      const existing = ratesList(cur).find(r=>r.date===today);
+      if(existing && (existing.source==='manual' || existing.final) && !opts.force) continue;
+      fxRates[cur] = ratesList(cur).filter(r=>r.date!==today);
+      fxRates[cur].push({date: today, rate, source:'auto', final: pastLock});
+      updatedAny = true;
+    }
+    if(updatedAny){
+      await sSet('fx:rates', fxRates);
+      renderFxBadge();
+      renderOzet();
+    }
+    return updatedAny;
+  }
+
+  // ---------- Init / seed ----------
+  async function init(){
+    await loadFirebaseConfigAndConnect();
+
+    const seededFlag = await sGet('meta:seeded');
+    const savedStock = await sGet('stock:list');
+    const savedIncome = await sGet('income:list');
+    const savedExpenses = await sGet('expense:list');
+    const savedFx = await sGet('fx:rates');
+
+    if(Array.isArray(savedFx)){
+      // eski format (sadece USD dizisi) — göç ettir
+      fxRates = { USD: savedFx, EUR: [] };
+    } else if(savedFx && typeof savedFx === 'object'){
+      fxRates = { USD: savedFx.USD || [], EUR: savedFx.EUR || [] };
+    } else {
+      fxRates = { USD: [], EUR: [] };
+    }
+    income = savedIncome || [];
+    expenses = savedExpenses || [];
+    await loadExpenseCategories();
+
+    if(savedStock && seededFlag){
+      stock = savedStock;
+    } else {
+      const raw = document.getElementById('stockSeedData').textContent;
+      stock = JSON.parse(raw);
+    }
+
+    if(!ratesList('USD').length){
+      const live = await fetchLiveRates();
+      if(live!==null){
+        const pastLock = new Date().getHours() >= FX_LOCK_HOUR;
+        fxRates.USD.push({date: todayISO(), rate: live.USD, source:'auto', final: pastLock});
+        if(live.EUR!==null) fxRates.EUR.push({date: todayISO(), rate: live.EUR, source:'auto', final: pastLock});
+        await sSet('fx:rates', fxRates);
+        await persistStockIfNeeded(seededFlag);
+        boot();
+      } else {
+        showFxOnboarding();
+      }
+    } else {
+      await persistStockIfNeeded(seededFlag);
+      boot();
+      autoUpdateFx({notifyOnFail:false});
+    }
+  }
+
+  async function persistStockIfNeeded(seededFlag){
+    if(!seededFlag){
+      await sSet('stock:list', stock);
+      await sSet('meta:seeded', true);
+    }
+  }
+
+  function showFxOnboarding(){
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal">
+        <h2>Önce bugünün kurunu gir</h2>
+        <p>Stoktaki 495 ürün TL cinsinden kayıtlı. Her ürünü sabit bir döviz değerine çevirebilmek için bugünkü kurları girmen gerekiyor. Bu kurlar, ürünlerin "dondurulmuş" döviz karşılığını hesaplamak için kullanılır; ileride kur güncellendikçe, ürünlerin bugünkü TL karşılığı otomatik güncellenecek. Euro'yu boş bırakabilirsin, istersen sonra eklersin.</p>
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;">USD/TRY Kuru</label>
+        <input type="number" id="onboardRateUsd" step="0.01" min="0" placeholder="Örn: 33.20" style="margin-bottom:14px;">
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;">EUR/TRY Kuru (opsiyonel)</label>
+        <input type="number" id="onboardRateEur" step="0.01" min="0" placeholder="Örn: 36.10" style="margin-bottom:16px;">
+        <button class="btn primary" id="onboardSave">Kaydet ve Başla</button>
+      </div>`;
+    document.body.appendChild(overlay);
+    document.getElementById('onboardSave').addEventListener('click', async ()=>{
+      const usdVal = parseFloat(document.getElementById('onboardRateUsd').value);
+      const eurVal = parseFloat(document.getElementById('onboardRateEur').value);
+      if(!usdVal || usdVal<=0){ toast('Geçerli bir USD/TRY kuru gir.'); return; }
+      fxRates.USD.push({date: todayISO(), rate: usdVal, source:'manual', final:true});
+      if(eurVal && eurVal>0) fxRates.EUR.push({date: todayISO(), rate: eurVal, source:'manual', final:true});
+      await sSet('fx:rates', fxRates);
+      await persistStockIfNeeded(false);
+      overlay.remove();
+      boot();
+    });
+  }
+
+  // ---------- Boot UI ----------
+  function boot(){
+    document.getElementById('incDate').value = todayISO();
+    document.getElementById('expDate').value = todayISO();
+    setupTabs();
+    setupFxBadge();
+    setupSyncBadge();
+    renderSyncBadge();
+    setupIncomeForm();
+    setupExpenseForm();
+    setupStockView();
+    setupReportView();
+    setupArchiveView();
+    renderAll();
+    runAutoArchiving();
+
+    // Sekme açıkken periyodik olarak 18:00 kilidini ve ay/hafta sonu arşivini kontrol et
+    setInterval(()=>{ autoUpdateFx({notifyOnFail:false}); runAutoArchiving(); }, 15*60*1000);
+    document.addEventListener('visibilitychange', ()=>{
+      if(document.visibilityState==='visible'){
+        autoUpdateFx({notifyOnFail:false});
+        runAutoArchiving();
+      }
+    });
+  }
+
+  function renderAll(){
+    renderFxBadge();
+    renderOzet();
+    renderIncomeTable();
+    renderExpenseTable();
+    renderStockTable();
+    renderReport();
+    renderArchiveView();
+  }
+
+  // ---------- Tabs ----------
+  function setupTabs(){
+    document.querySelectorAll('nav.tabs button').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+        document.getElementById('view-'+btn.dataset.view).classList.add('active');
+      });
+    });
+  }
+
+  // ---------- FX badge + modal ----------
+  function renderFxBadge(){
+    const rUsd = latestRate('USD');
+    const rEur = latestRate('EUR');
+    document.getElementById('fxBadgeRate').textContent =
+      (rUsd ? ('$'+rUsd.toFixed(2)) : '—') + '  ·  EUR ' + (rEur ? ('€'+rEur.toFixed(2)) : '—');
+    const today = todayISO();
+    const entryUsd = ratesList('USD').find(x=>x.date===today);
+    let meta = '';
+    if(entryUsd){
+      meta = entryUsd.final ? '(kesin)' : '(geçici)';
+    } else if(ratesList('USD').length){
+      meta = '(dünkü kur)';
+    }
+    document.getElementById('fxBadgeMeta').textContent = meta;
+  }
+  function setupFxBadge(){
+    document.getElementById('fxBadge').addEventListener('click', openFxModal);
+    document.getElementById('openFxModalBtn').addEventListener('click', openFxModal);
+  }
+  function openFxModal(){
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    const combined = [
+      ...ratesList('USD').map(r=>({...r, cur:'USD'})),
+      ...ratesList('EUR').map(r=>({...r, cur:'EUR'}))
+    ].sort((a,b)=> b.date.localeCompare(a.date) || a.cur.localeCompare(b.cur));
+    const historyRows = combined.slice(0,12).map(r=>{
+      const src = r.source==='manual' ? 'elle' : 'otomatik';
+      const lock = r.final ? '🔒 kesin' : '⏳ geçici';
+      return `<tr><td>${r.date}</td><td>${r.cur}</td><td class="num">${r.rate.toFixed(2)}</td><td style="color:var(--muted);font-size:11px;">${src} · ${lock}</td></tr>`;
+    }).join('');
+    overlay.innerHTML = `
+      <div class="modal">
+        <h2>Kur Girişi</h2>
+        <p>Program her gün 18:00'den sonra USD ve EUR kurlarını kendiliğinden çekip kilitler. Acil çekmek ya da elle düzeltmek istersen aşağıdan yapabilirsin.</p>
+        <button class="btn ghost" id="fxAutoNowBtn" style="width:100%;margin-bottom:16px;">↻ Şimdi Otomatik Çek (USD + EUR)</button>
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;">Tarih (elle giriş)</label>
+        <input type="date" id="fxDateInput" value="${todayISO()}" style="margin-bottom:14px;">
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;">USD/TRY Kuru</label>
+        <input type="number" id="fxRateInputUsd" step="0.01" min="0" placeholder="Örn: 33.20" style="margin-bottom:14px;">
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;">EUR/TRY Kuru</label>
+        <input type="number" id="fxRateInputEur" step="0.01" min="0" placeholder="Örn: 36.10" style="margin-bottom:16px;">
+        <div class="flex-between">
+          <button class="btn primary" id="fxSaveBtn">Elle Kaydet</button>
+          <button class="btn ghost" id="fxCloseBtn">Kapat</button>
+        </div>
+        <div class="fx-history">
+          <div style="margin:14px 0 6px;font-weight:600;">Son kayıtlar</div>
+          <table><tbody>${historyRows || '<tr><td>Henüz kayıt yok</td></tr>'}</tbody></table>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    document.getElementById('fxCloseBtn').addEventListener('click', ()=>overlay.remove());
+    document.getElementById('fxSaveBtn').addEventListener('click', async ()=>{
+      const date = document.getElementById('fxDateInput').value;
+      const usdVal = parseFloat(document.getElementById('fxRateInputUsd').value);
+      const eurVal = parseFloat(document.getElementById('fxRateInputEur').value);
+      if(!date || (!usdVal && !eurVal)){ toast('Tarih ve en az bir kur gir.'); return; }
+      if(usdVal && usdVal>0){
+        fxRates.USD = ratesList('USD').filter(r=>r.date!==date);
+        fxRates.USD.push({date, rate: usdVal, source:'manual', final:true});
+      }
+      if(eurVal && eurVal>0){
+        fxRates.EUR = ratesList('EUR').filter(r=>r.date!==date);
+        fxRates.EUR.push({date, rate: eurVal, source:'manual', final:true});
+      }
+      await sSet('fx:rates', fxRates);
+      overlay.remove();
+      toast('Kur kaydedildi.');
+      renderAll();
+    });
+    document.getElementById('fxAutoNowBtn').addEventListener('click', async ()=>{
+      const btn = document.getElementById('fxAutoNowBtn');
+      btn.disabled = true; btn.textContent = 'Çekiliyor…';
+      const ok = await autoUpdateFx({notifyOnFail:true, force:true});
+      overlay.remove();
+      if(ok) toast('Güncel kurlar otomatik çekildi.');
+    });
+  }
+
+  // ---------- FIREBASE SENKRONİZASYON ----------
+  // RockJazz Müzik / Silifke Satranç Atölyesi için önceden tanımlı proje.
+  // apiKey burada görünmesi normaldir — asıl güvenlik Realtime Database kurallarında
+  // ve anonim girişte sağlanır, gizli bir anahtar değildir.
+  const DEFAULT_FIREBASE_CONFIG = {
+    apiKey: "AIzaSyBWIspkxh-WpSbd48l5vxIRvErydzu2PD0",
+    authDomain: "muhasebe-b3849.firebaseapp.com",
+    databaseURL: "https://muhasebe-b3849-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "muhasebe-b3849",
+    storageBucket: "muhasebe-b3849.firebasestorage.app",
+    messagingSenderId: "639894929266",
+    appId: "1:639894929266:web:255a3e9d19a37c5529e7eb"
+  };
+  const DEFAULT_WORKSPACE_CODE = "gilter74";
+
+  async function loadFirebaseConfigAndConnect(){
+    let cfgRaw = await safeLocalGet('meta:firebaseConfig');
+    let code = await safeLocalGet('meta:workspaceCode');
+
+    if(!cfgRaw || !code){
+      // Hiç ayarlanmamışsa, bu programa gömülü varsayılan projeye otomatik bağlan.
+      await connectFirebase(DEFAULT_FIREBASE_CONFIG, DEFAULT_WORKSPACE_CODE, {silent:true});
+      return;
+    }
+    await connectFirebase(cfgRaw, code, {silent:true});
+  }
+
+  async function safeLocalSet(key, value){
+    try{
+      if(typeof window.storage === 'undefined' || !window.storage) return false;
+      await window.storage.set(key, JSON.stringify(value), false);
+      return true;
+    }catch(e){
+      console.warn('Yerel depoya yazılamadı (bu cihazda kalıcı hafıza olmayabilir):', key, e);
+      return false;
+    }
+  }
+  async function safeLocalGet(key){
+    try{
+      if(typeof window.storage === 'undefined' || !window.storage) return null;
+      const r = await window.storage.get(key, false);
+      return r ? JSON.parse(r.value) : null;
+    }catch(e){ return null; }
+  }
+
+  async function connectFirebase(config, code, opts){
+    opts = opts || {};
+    try{
+      if(typeof firebase === 'undefined'){
+        throw new Error('Firebase kütüphanesi yüklenemedi (internet yok ya da dış bağlantı engellendi).');
+      }
+      if(fbApp){ try{ await fbApp.delete(); }catch(e){} fbApp=null; fbDb=null; fbReady=false; }
+      fbApp = firebase.initializeApp(config, 'rockjazzApp_'+Date.now());
+
+      // file:// üzerinden açılan sayfalarda IndexedDB/localStorage tabanlı oturum
+      // kalıcılığı bazı mobil tarayıcılarda tıkanabiliyor; bunu bellek-içi yaparak atlıyoruz.
+      try{ await fbApp.auth().setPersistence(firebase.auth.Auth.Persistence.NONE); }catch(e){ console.warn('setPersistence atlandı:', e); }
+
+      const signInPromise = fbApp.auth().signInAnonymously();
+      const timeoutPromise = new Promise((_,rej)=>setTimeout(()=>rej(new Error('Giriş zaman aşımına uğradı (10sn) — internet bağlantısını kontrol et.')), 10000));
+      await Promise.race([signInPromise, timeoutPromise]);
+
+      fbDb = fbApp.database();
+      fbWorkspaceCode = code;
+      fbReady = true; // Firebase bağlantısı burada kesinleşti — aşağıdaki yerel kayıt bunu etkilemesin.
+      lastSyncError = null;
+      clearFatalBanner();
+      renderSyncBadge();
+      if(!opts.silent) toast('Firebase bağlantısı kuruldu — senkronizasyon aktif.');
+
+      // Yerel önbelleğe kaydetmeye çalış; bu adım başarısız olsa bile (örn. bu cihazda
+      // kalıcı hafıza yoksa) Firebase bağlantısını "başarısız" saymıyoruz.
+      const savedLocally = await safeLocalSet('meta:firebaseConfig', config) && await safeLocalSet('meta:workspaceCode', code);
+      if(!savedLocally && !opts.silent){
+        toast('Bağlandı, ama bu cihaz ayarı hatırlamayabilir (kalıcı hafıza yok). Varsayılan çalışma kodu zaten aynı olduğu için sorun olmaz.');
+      }
+      return true;
+    }catch(err){
+      console.warn('Firebase bağlantı hatası:', err);
+      fbReady = false;
+      lastSyncError = (err && err.message) ? err.message : String(err);
+      renderSyncBadge();
+      if(!opts.silent) toast('Firebase bağlantısı kurulamadı: ' + lastSyncError);
+      return false;
+    }
+  }
+
+  async function disconnectFirebase(){
+    fbReady = false; fbDb = null; fbWorkspaceCode = null;
+    if(fbApp){ try{ await fbApp.delete(); }catch(e){} fbApp = null; }
+    await safeLocalSet('meta:firebaseConfig', null);
+    await safeLocalSet('meta:workspaceCode', null);
+    renderSyncBadge();
+    toast('Senkronizasyonu kapattın — bu oturumda veriler yalnızca bu cihazda tutulacak.');
+  }
+
+  function renderSyncBadge(){
+    const el = document.getElementById('syncBadgeText');
+    if(!el) return;
+    if(fbReady){ el.textContent = '☁ Senkron: ' + fbWorkspaceCode; }
+    else if(lastSyncError){ el.textContent = '☁ Bağlanamadı — dokun (detay)'; }
+    else { el.textContent = '☁ Yerel (senkron kapalı)'; }
+  }
+
+  function setupSyncBadge(){
+    document.getElementById('syncBadge').addEventListener('click', openSyncModal);
+  }
+
+  async function openSyncModal(){
+    let existingCfg = await safeLocalGet('meta:firebaseConfig');
+    let existingCode = await safeLocalGet('meta:workspaceCode');
+    if(!existingCfg) existingCfg = DEFAULT_FIREBASE_CONFIG;
+    if(!existingCode) existingCode = DEFAULT_WORKSPACE_CODE;
+
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    const errorBox = lastSyncError ? `<div style="background:#5a2620;color:#fce8e4;padding:10px 12px;border-radius:3px;font-size:12px;font-family:var(--font-mono);margin-bottom:14px;white-space:pre-wrap;">Son hata: ${lastSyncError}</div>` : '';
+    overlay.innerHTML = `
+      <div class="modal" style="max-width:480px;">
+        <h2>Firebase Senkronizasyonu</h2>
+        ${errorBox}
+        <p>Firebase konsolunda oluşturduğun projenin "Web app" ayarlarındaki <b>firebaseConfig</b> değerlerini buraya yapıştır. Ardından bir <b>çalışma alanı kodu</b> belirle — bu kodu diğer cihazlarında da girersen veriler otomatik senkronize olur.</p>
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin:10px 0 6px;text-transform:uppercase;">API Key</label>
+        <input type="text" id="fbApiKey" placeholder="AIzaSy…" value="${existingCfg?existingCfg.apiKey||'':''}">
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin:12px 0 6px;text-transform:uppercase;">Auth Domain</label>
+        <input type="text" id="fbAuthDomain" placeholder="proje-adi.firebaseapp.com" value="${existingCfg?existingCfg.authDomain||'':''}">
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin:12px 0 6px;text-transform:uppercase;">Database URL</label>
+        <input type="text" id="fbDatabaseURL" placeholder="https://proje-adi-default-rtdb.europe-west1.firebasedatabase.app" value="${existingCfg?existingCfg.databaseURL||'':''}">
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin:12px 0 6px;text-transform:uppercase;">Project ID</label>
+        <input type="text" id="fbProjectId" placeholder="proje-adi" value="${existingCfg?existingCfg.projectId||'':''}">
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin:12px 0 6px;text-transform:uppercase;">App ID</label>
+        <input type="text" id="fbAppId" placeholder="1:1234567890:web:abcdef" value="${existingCfg?existingCfg.appId||'':''}">
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin:12px 0 6px;text-transform:uppercase;">Çalışma Alanı Kodu</label>
+        <input type="text" id="fbWorkspaceCode" placeholder="Örn: rockjazz2026" value="${existingCode||''}" style="margin-bottom:16px;">
+        <div class="flex-between">
+          <button class="btn primary" id="fbSaveBtn">Bağlan ve Kaydet</button>
+          <button class="btn ghost" id="fbCloseBtn">Kapat</button>
+        </div>
+        ${fbReady ? '<button class="btn danger-ghost" id="fbDisconnectBtn" style="margin-top:14px;width:100%;">Senkronizasyonu Kapat</button>' : ''}
+        <p class="helptext" style="margin-top:14px;">Bu bilgiler yalnızca senin bu cihazındaki uygulama kopyasında saklanır; Anthropic'e ya da başka bir yere gönderilmez.</p>
+      </div>`;
+    document.body.appendChild(overlay);
+    document.getElementById('fbCloseBtn').addEventListener('click', ()=>overlay.remove());
+    const disconnectBtn = document.getElementById('fbDisconnectBtn');
+    if(disconnectBtn) disconnectBtn.addEventListener('click', async ()=>{ await disconnectFirebase(); overlay.remove(); });
+    document.getElementById('fbSaveBtn').addEventListener('click', async ()=>{
+      const config = {
+        apiKey: document.getElementById('fbApiKey').value.trim(),
+        authDomain: document.getElementById('fbAuthDomain').value.trim(),
+        databaseURL: document.getElementById('fbDatabaseURL').value.trim(),
+        projectId: document.getElementById('fbProjectId').value.trim(),
+        appId: document.getElementById('fbAppId').value.trim()
+      };
+      const code = document.getElementById('fbWorkspaceCode').value.trim();
+      if(!config.apiKey || !config.databaseURL || !config.projectId || !code){
+        toast('API Key, Database URL, Project ID ve çalışma alanı kodu zorunlu.');
+        return;
+      }
+      const btn = document.getElementById('fbSaveBtn');
+      btn.disabled = true; btn.textContent = 'Bağlanıyor…';
+      const ok = await connectFirebase(config, code);
+      overlay.remove();
+      if(ok){
+        toast('Bağlandı — veriler bu cihazla senkronize edilecek.');
+        await pushLocalDataToFirebaseIfEmpty();
+        renderAll();
+      }
+    });
+  }
+
+  // İlk bağlantıda Firebase tarafı boşsa, bu cihazdaki mevcut verileri bir kerelik yukarı gönderir.
+  async function pushLocalDataToFirebaseIfEmpty(){
+    if(!fbReady) return;
+    try{
+      const snap = await fbDb.ref('workspaces/'+fbWorkspaceCode).once('value');
+      if(snap.exists()) return; // uzakta zaten veri var, üzerine yazma
+      const keys = ['stock:list','income:list','expense:list','fx:rates','meta:seeded',
+        'meta:firstUseDate','archive:monthly','archive:weekly'];
+      for(const k of keys){
+        try{
+          const r = await window.storage.get(k, false);
+          if(r){ await fbDb.ref(fbPath(k)).set(JSON.parse(r.value)); }
+        }catch(e){}
+      }
+    }catch(e){ console.warn('İlk senkron yüklemesi başarısız:', e); }
+  }
+
+  // ---------- ÖZET ----------
+  function renderOzet(){
+    const thisMonth = todayISO().slice(0,7);
+    const incThisMonth = income.filter(i=>monthKey(i.date)===thisMonth);
+    const expThisMonth = expenses.filter(e=>monthKey(e.date)===thisMonth);
+    const netIncome = incThisMonth.reduce((s,i)=>s+i.netAmount,0);
+    const totalExpense = expThisMonth.reduce((s,e)=>s+e.amount,0);
+    const netResult = netIncome - totalExpense;
+
+    const kpis = [
+      {l:'Bu Ay Net Gelir (KDV Hariç)', v: fmtTRY(netIncome), cls:''},
+      {l:'Bu Ay Toplam Gider', v: fmtTRY(totalExpense), cls:''},
+      {l:'Bu Ay Net Sonuç', v: fmtTRY(netResult), cls: netResult>=0?'pos':'neg'},
+    ];
+    document.getElementById('ozetKpis').innerHTML = kpis.map(k=>`
+      <div class="kpi"><div class="l">${k.l}</div><div class="v ${k.cls}">${k.v}</div></div>
+    `).join('');
+
+    document.getElementById('ozetStockCount').textContent = stock.length;
+    const totalStockValueTRY = stock.reduce((s,it)=>s+it.price*it.qty,0);
+    document.getElementById('ozetStockValue').textContent = 'Kayıtlı toplam değer: ' + fmtTRY(totalStockValueTRY);
+
+    const soldCount = incThisMonth.filter(i=>i.stockItemId).reduce((s,i)=>s+(i.qtyUsed||0),0);
+    document.getElementById('ozetSoldCount').textContent = soldCount;
+
+    const rUsd = latestRate('USD');
+    const rEur = latestRate('EUR');
+    document.getElementById('ozetFx').textContent = rUsd ? ('$'+rUsd.toFixed(2)+' / €'+(rEur?rEur.toFixed(2):'—')) : '—';
+    const sortedUsd = [...ratesList('USD')].sort((a,b)=>b.date.localeCompare(a.date));
+    document.getElementById('ozetFxDate').textContent = sortedUsd.length ? ('Son güncelleme: '+sortedUsd[0].date) : 'Kur girilmedi';
+  }
+
+  // ---------- GELİR ----------
+  let pickedStockItem = null;
+
+  function setupIncomeForm(){
+    const branchSel = document.getElementById('incBranch');
+    branchSel.addEventListener('change', updateIncomeFormMode);
+    updateIncomeFormMode();
+
+    const searchInput = document.getElementById('incProductSearch');
+    const resultsBox = document.getElementById('incProductResults');
+    searchInput.addEventListener('input', ()=>{
+      const q = searchInput.value.trim().toUpperCase();
+      const branch = branchSel.value;
+      if(q.length < 1){ resultsBox.style.display='none'; return; }
+      const matches = stock.filter(it => it.category===branch && it.name.toUpperCase().includes(q) && it.qty>0).slice(0,25);
+      if(!matches.length){
+        resultsBox.innerHTML = '<div class="empty">Eşleşen ürün yok (stok tükenmiş olabilir)</div>';
+      } else {
+        resultsBox.innerHTML = matches.map(it=>`
+          <div class="item" data-id="${it.id}">
+            <span class="n">${it.name}</span>
+            <span class="p">${fmtTRY(it.price)} · ${it.qty} ad.</span>
+          </div>`).join('');
+      }
+      resultsBox.style.display='block';
+    });
+    document.addEventListener('click', (e)=>{
+      if(!searchInput.contains(e.target) && !resultsBox.contains(e.target)) resultsBox.style.display='none';
+    });
+    resultsBox.addEventListener('click', (e)=>{
+      const row = e.target.closest('.item[data-id]');
+      if(!row) return;
+      const item = stock.find(s=>s.id===row.dataset.id);
+      if(!item) return;
+      pickedStockItem = item;
+      renderPickedChip();
+      searchInput.value = '';
+      resultsBox.style.display='none';
+    });
+
+    document.getElementById('incAmount').addEventListener('input', updateVatReadout);
+    document.getElementById('incVatRate').addEventListener('change', updateVatReadout);
+    document.getElementById('incomeForm').addEventListener('submit', onIncomeSubmit);
+
+    document.getElementById('incFilterSearch').addEventListener('input', renderIncomeTable);
+    document.getElementById('incFilterBranch').addEventListener('change', renderIncomeTable);
+  }
+
+  function renderPickedChip(){
+    const box = document.getElementById('incPickedChip');
+    if(!pickedStockItem){ box.innerHTML=''; return; }
+    box.innerHTML = `
+      <div class="picked-chip">
+        <span><b>${pickedStockItem.name}</b> — stokta ${pickedStockItem.qty} adet, birim ${fmtTRY(pickedStockItem.price)}</span>
+        <button type="button" id="clearPickedBtn">Kaldır</button>
+      </div>`;
+    document.getElementById('clearPickedBtn').addEventListener('click', ()=>{
+      pickedStockItem = null;
+      renderPickedChip();
+    });
+  }
+
+  function updateIncomeFormMode(){
+    const branch = document.getElementById('incBranch').value;
+    document.getElementById('incProductBlock').style.display = branch==='Ders' ? 'none' : 'block';
+    document.getElementById('incLessonBlock').style.display = branch==='Ders' ? 'block' : 'none';
+    pickedStockItem = null;
+    renderPickedChip();
+  }
+
+  function updateVatReadout(){
+    const gross = parseFloat(document.getElementById('incAmount').value) || 0;
+    const vatRate = parseFloat(document.getElementById('incVatRate').value) || 0;
+    const net = gross / (1 + vatRate/100);
+    const vat = gross - net;
+    document.getElementById('rGross').textContent = fmtTRY(gross);
+    document.getElementById('rVatLabel').textContent = 'KDV (%' + vatRate + ')';
+    document.getElementById('rVat').textContent = fmtTRY(vat);
+    document.getElementById('rNet').textContent = fmtTRY(net);
+  }
+
+  async function onIncomeSubmit(e){
+    e.preventDefault();
+    const date = document.getElementById('incDate').value;
+    const branch = document.getElementById('incBranch').value;
+    const gross = parseFloat(document.getElementById('incAmount').value);
+    const vatRate = parseFloat(document.getElementById('incVatRate').value) || 0;
+    if(!date || !gross || gross<=0){ toast('Tarih ve tutar gerekli.'); return; }
+
+    let description = '';
+    let stockItemId = null, qtyUsed = null, unitCostUsd = null, profitTRY = null;
+    const net = gross / (1 + vatRate/100);
+
+    if(branch === 'Ders'){
+      description = document.getElementById('incLessonDesc').value.trim();
+      if(!description){ toast('Ders açıklaması gerekli (kim, hangi ders).'); return; }
+    } else {
+      if(!pickedStockItem){ toast('Lütfen stoktan bir ürün seç.'); return; }
+      const qty = parseInt(document.getElementById('incQty').value) || 1;
+      if(qty > pickedStockItem.qty){ toast('Stokta bu kadar adet yok (mevcut: '+pickedStockItem.qty+').'); return; }
+      description = pickedStockItem.name;
+      stockItemId = pickedStockItem.id;
+      qtyUsed = qty;
+
+      const rate0 = firstRate('USD');
+      const rateNow = latestRate('USD', date) || rate0;
+      unitCostUsd = rate0 ? (pickedStockItem.price / rate0) : 0;
+      const costBasisNow = unitCostUsd * rateNow * qty;
+      profitTRY = net - costBasisNow;
+
+      pickedStockItem.qty -= qty;
+      await sSet('stock:list', stock);
+    }
+
+    const record = {
+      id: uid('inc'), date, branch, description,
+      grossAmount: gross, vatRate, vat: gross-net, netAmount: net,
+      stockItemId, qtyUsed, unitCostUsd, profitTRY
+    };
+    income.push(record);
+    await sSet('income:list', income);
+
+    document.getElementById('incomeForm').reset();
+    document.getElementById('incDate').value = todayISO();
+    document.getElementById('incVatRate').value = '20';
+    pickedStockItem = null;
+    renderPickedChip();
+    updateVatReadout();
+    updateIncomeFormMode();
+    toast('Gelir kaydedildi.');
+    renderAll();
+  }
+
+  function renderIncomeTable(){
+    const q = (document.getElementById('incFilterSearch').value||'').toUpperCase();
+    const branchFilter = document.getElementById('incFilterBranch').value;
+    let rows = [...income].sort((a,b)=>b.date.localeCompare(a.date));
+    if(branchFilter) rows = rows.filter(r=>r.branch===branchFilter);
+    if(q) rows = rows.filter(r=>r.description.toUpperCase().includes(q));
+
+    const tbody = document.getElementById('incomeTableBody');
+    if(!rows.length){
+      tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state">Henüz gelir kaydı yok.</div></td></tr>`;
+      return;
+    }
+    tbody.innerHTML = rows.map(r=>{
+      const tagClass = r.branch==='Müzik Aleti' ? 'alet' : (r.branch==='Aksesuar' ? 'aksesuar' : 'ders');
+      const rate = (r.vatRate!==undefined && r.vatRate!==null) ? r.vatRate : 20;
+      return `<tr>
+        <td>${r.date}</td>
+        <td><span class="tag ${tagClass}">${r.branch}</span></td>
+        <td>${r.description}</td>
+        <td class="num">%${rate}</td>
+        <td class="num">${fmtTRY(r.grossAmount)}</td>
+        <td class="num">${fmtTRY(r.netAmount)}</td>
+        <td><button class="btn danger-ghost" data-del="${r.id}">Sil</button></td>
+      </tr>`;
+    }).join('');
+    tbody.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click', async ()=>{
+      if(!confirm('Bu gelir kaydını silmek istediğine emin misin?')) return;
+      const rec = income.find(x=>x.id===b.dataset.del);
+      if(rec && rec.stockItemId){
+        const item = stock.find(s=>s.id===rec.stockItemId);
+        if(item){ item.qty += (rec.qtyUsed||0); await sSet('stock:list', stock); }
+      }
+      income = income.filter(x=>x.id!==b.dataset.del);
+      await sSet('income:list', income);
+      toast('Kayıt silindi.');
+      renderAll();
+    }));
+  }
+
+  // ---------- GİDER ----------
+  let expenseCategories = [];
+  const DEFAULT_EXPENSE_CATEGORIES = ['Cep Telefonu','İnternet','Elektrik','Aidat','Su Faturası','MTV',
+    'Ticaret Odası','Sigortalar','Belediye Vergileri','Muhasebe','Stopaj','Defter Tasdik','Diğer'];
+
+  async function loadExpenseCategories(){
+    let cats = await sGet('expense:categories');
+    if(!cats || !cats.length){
+      cats = [...DEFAULT_EXPENSE_CATEGORIES];
+      await sSet('expense:categories', cats);
+    } else if(!cats.includes('İnternet')){
+      // Önceden kaydedilmiş listelerde yoksa İnternet'i ekle
+      cats = [...cats];
+      const idx = cats.indexOf('Elektrik');
+      if(idx>=0) cats.splice(idx+1,0,'İnternet'); else cats.push('İnternet');
+      await sSet('expense:categories', cats);
+    }
+    expenseCategories = cats;
+  }
+
+  function renderExpenseCategorySelects(){
+    const sel = document.getElementById('expCategory');
+    const filterSel = document.getElementById('expFilterCategory');
+    if(!sel || !filterSel) return;
+    const prevVal = sel.value;
+    sel.innerHTML = expenseCategories.map(c=>`<option value="${c}">${c}</option>`).join('');
+    if(expenseCategories.includes(prevVal)) sel.value = prevVal;
+
+    const prevFilter = filterSel.value;
+    filterSel.innerHTML = '<option value="">Tüm Kalemler</option>' + expenseCategories.map(c=>`<option value="${c}">${c}</option>`).join('');
+    if(expenseCategories.includes(prevFilter)) filterSel.value = prevFilter;
+  }
+
+  function setupExpenseForm(){
+    document.getElementById('expenseForm').addEventListener('submit', onExpenseSubmit);
+    document.getElementById('expFilterSearch').addEventListener('input', renderExpenseTable);
+    document.getElementById('expFilterCategory').addEventListener('change', renderExpenseTable);
+    document.getElementById('manageCatBtn').addEventListener('click', openManageCategoriesModal);
+    renderExpenseCategorySelects();
+  }
+
+  function openManageCategoriesModal(){
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal" style="max-width:440px;">
+        <h2>Gider Kalemlerini Yönet</h2>
+        <p>Sırayı ok tuşlarıyla değiştir, gerekirse kalem sil, en alttan yeni kalem ekle.</p>
+        <div id="catManageList" style="margin:14px 0;"></div>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="newCatInput" placeholder="Yeni kalem adı…" style="flex:1;">
+          <button class="btn primary small" id="addCatBtn">Ekle</button>
+        </div>
+        <button class="btn ghost" id="catCloseBtn" style="width:100%;margin-top:16px;">Kapat</button>
+      </div>`;
+    document.body.appendChild(overlay);
+
+    function renderList(){
+      const box = overlay.querySelector('#catManageList');
+      box.innerHTML = expenseCategories.map((c,i)=>`
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);">
+          <span style="flex:1;font-size:13.5px;">${c}</span>
+          <button type="button" class="btn ghost small" data-up="${i}" ${i===0?'disabled':''} style="padding:3px 8px;">↑</button>
+          <button type="button" class="btn ghost small" data-down="${i}" ${i===expenseCategories.length-1?'disabled':''} style="padding:3px 8px;">↓</button>
+          <button type="button" class="btn danger-ghost" data-remove="${i}">Sil</button>
+        </div>`).join('');
+      box.querySelectorAll('[data-up]').forEach(b=>b.addEventListener('click', async ()=>{
+        const i = parseInt(b.dataset.up);
+        [expenseCategories[i-1], expenseCategories[i]] = [expenseCategories[i], expenseCategories[i-1]];
+        await sSet('expense:categories', expenseCategories);
+        renderList(); renderExpenseCategorySelects();
+      }));
+      box.querySelectorAll('[data-down]').forEach(b=>b.addEventListener('click', async ()=>{
+        const i = parseInt(b.dataset.down);
+        [expenseCategories[i+1], expenseCategories[i]] = [expenseCategories[i], expenseCategories[i+1]];
+        await sSet('expense:categories', expenseCategories);
+        renderList(); renderExpenseCategorySelects();
+      }));
+      box.querySelectorAll('[data-remove]').forEach(b=>b.addEventListener('click', async ()=>{
+        if(expenseCategories.length<=1){ toast('En az bir kalem kalmalı.'); return; }
+        if(!confirm('Bu kalemi listeden silmek istediğine emin misin? (Geçmiş kayıtlar etkilenmez)')) return;
+        const i = parseInt(b.dataset.remove);
+        expenseCategories.splice(i,1);
+        await sSet('expense:categories', expenseCategories);
+        renderList(); renderExpenseCategorySelects();
+      }));
+    }
+    renderList();
+
+    overlay.querySelector('#addCatBtn').addEventListener('click', async ()=>{
+      const input = overlay.querySelector('#newCatInput');
+      const val = input.value.trim();
+      if(!val){ toast('Kalem adı gerekli.'); return; }
+      if(expenseCategories.includes(val)){ toast('Bu kalem zaten var.'); return; }
+      expenseCategories.push(val);
+      await sSet('expense:categories', expenseCategories);
+      input.value = '';
+      renderList(); renderExpenseCategorySelects();
+      toast('Kalem eklendi.');
+    });
+    overlay.querySelector('#catCloseBtn').addEventListener('click', ()=>overlay.remove());
+  }
+
+  async function onExpenseSubmit(e){
+    e.preventDefault();
+    const date = document.getElementById('expDate').value;
+    const category = document.getElementById('expCategory').value;
+    const description = document.getElementById('expDesc').value.trim();
+    const amount = parseFloat(document.getElementById('expAmount').value);
+    if(!date || !amount || amount<=0){ toast('Tarih ve tutar gerekli.'); return; }
+
+    expenses.push({ id: uid('exp'), date, category, description, amount });
+    await sSet('expense:list', expenses);
+    document.getElementById('expenseForm').reset();
+    document.getElementById('expDate').value = todayISO();
+    toast('Gider kaydedildi.');
+    renderAll();
+  }
+
+  function renderExpenseTable(){
+    const q = (document.getElementById('expFilterSearch').value||'').toUpperCase();
+    const catFilter = document.getElementById('expFilterCategory').value;
+    let rows = [...expenses].sort((a,b)=>b.date.localeCompare(a.date));
+    if(catFilter) rows = rows.filter(r=>r.category===catFilter);
+    if(q) rows = rows.filter(r=> (r.description||'').toUpperCase().includes(q) || r.category.toUpperCase().includes(q));
+
+    const tbody = document.getElementById('expenseTableBody');
+    if(!rows.length){
+      tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state">Henüz gider kaydı yok.</div></td></tr>`;
+      return;
+    }
+    tbody.innerHTML = rows.map(r=>`
+      <tr>
+        <td>${r.date}</td>
+        <td><span class="tag ders">${r.category}</span></td>
+        <td>${r.description||'—'}</td>
+        <td class="num">${fmtTRY(r.amount)}</td>
+        <td><button class="btn danger-ghost" data-del="${r.id}">Sil</button></td>
+      </tr>`).join('');
+    tbody.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click', async ()=>{
+      if(!confirm('Bu gider kaydını silmek istediğine emin misin?')) return;
+      expenses = expenses.filter(x=>x.id!==b.dataset.del);
+      await sSet('expense:list', expenses);
+      toast('Kayıt silindi.');
+      renderAll();
+    }));
+  }
+
+  // ---------- STOK ----------
+  let selectedStockIds = new Set();
+
+  function setupStockView(){
+    document.getElementById('stockSearch').addEventListener('input', renderStockTable);
+    document.getElementById('stockCategoryFilter').addEventListener('change', renderStockTable);
+    document.getElementById('addStockBtn').addEventListener('click', openAddStockModal);
+    document.getElementById('selectAllStock').addEventListener('change', (e)=>{
+      const visibleRows = getFilteredStockRows();
+      if(e.target.checked){ visibleRows.forEach(it=>selectedStockIds.add(it.id)); }
+      else { visibleRows.forEach(it=>selectedStockIds.delete(it.id)); }
+      renderStockTable();
+    });
+    document.getElementById('bulkDeleteStockBtn').addEventListener('click', async ()=>{
+      if(!selectedStockIds.size) return;
+      if(!confirm(selectedStockIds.size + ' ürünü stok listesinden kalıcı olarak silmek istediğine emin misin?')) return;
+      stock = stock.filter(s=>!selectedStockIds.has(s.id));
+      selectedStockIds.clear();
+      await sSet('stock:list', stock);
+      toast('Seçilen ürünler silindi.');
+      renderAll();
+    });
+  }
+
+  function getFilteredStockRows(){
+    const q = (document.getElementById('stockSearch').value||'').toUpperCase();
+    const catFilter = document.getElementById('stockCategoryFilter').value;
+    let rows = [...stock];
+    if(catFilter) rows = rows.filter(r=>r.category===catFilter);
+    if(q) rows = rows.filter(r=>r.name.toUpperCase().includes(q));
+    rows.sort((a,b)=>a.name.localeCompare(b.name,'tr'));
+    return rows;
+  }
+
+  function openAddStockModal(){
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal">
+        <h2>Yeni Ürün Ekle</h2>
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin:10px 0 6px;text-transform:uppercase;">Ürün Adı</label>
+        <input type="text" id="newStockName" placeholder="Marka / model">
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin:14px 0 6px;text-transform:uppercase;">Kategori</label>
+        <select id="newStockCat">
+          <option value="Müzik Aleti">Müzik Aleti</option>
+          <option value="Aksesuar">Aksesuar</option>
+          <option value="Metod/Kitap">Metod/Kitap</option>
+        </select>
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin:14px 0 6px;text-transform:uppercase;">Adet</label>
+        <input type="number" id="newStockQty" min="0" step="1" value="1">
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin:14px 0 6px;text-transform:uppercase;">Birim Fiyat (TL)</label>
+        <input type="number" id="newStockPrice" min="0" step="0.01" style="margin-bottom:18px;">
+        <div class="flex-between">
+          <button class="btn primary" id="saveNewStockBtn">Ekle</button>
+          <button class="btn ghost" id="closeNewStockBtn">Vazgeç</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    document.getElementById('closeNewStockBtn').addEventListener('click', ()=>overlay.remove());
+    document.getElementById('saveNewStockBtn').addEventListener('click', async ()=>{
+      const name = document.getElementById('newStockName').value.trim();
+      const category = document.getElementById('newStockCat').value;
+      const qty = parseFloat(document.getElementById('newStockQty').value) || 0;
+      const price = parseFloat(document.getElementById('newStockPrice').value) || 0;
+      if(!name || price<=0){ toast('Ürün adı ve fiyat gerekli.'); return; }
+      stock.push({ id: uid('stk'), name, qty, price, category });
+      await sSet('stock:list', stock);
+      overlay.remove();
+      toast('Ürün eklendi.');
+      renderAll();
+    });
+  }
+
+  function renderStockTable(){
+    const rows = getFilteredStockRows();
+
+    const rate0 = firstRate('USD');
+    const rateNow = latestRate('USD');
+    const eurRate0 = firstRate('EUR');
+
+    const tbody = document.getElementById('stockTableBody');
+    if(!rows.length){
+      tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state">Eşleşen ürün yok.</div></td></tr>`;
+    } else {
+      tbody.innerHTML = rows.map(it=>{
+        const usd = rate0 ? it.price/rate0 : null;
+        const eur = eurRate0 ? it.price/eurRate0 : null;
+        const tlNow = (usd!==null && rateNow) ? usd*rateNow : null;
+        const diff = (tlNow!==null) ? (tlNow-it.price)/it.price : null;
+        const checked = selectedStockIds.has(it.id) ? 'checked' : '';
+        return `<tr>
+          <td><input type="checkbox" data-selstock="${it.id}" ${checked}></td>
+          <td><input type="text" data-namechange="${it.id}" value="${it.name.replace(/"/g,'&quot;')}" style="width:100%;min-width:180px;padding:4px 6px;font-size:13px;border:1px solid transparent;background:none;" onfocus="this.style.border='1px solid #cfc6b4';this.style.background='#fffdf9';" onblur="this.style.border='1px solid transparent';this.style.background='none';"></td>
+          <td>
+            <select data-catchange="${it.id}" style="padding:4px 6px;font-size:12px;">
+              <option value="Müzik Aleti" ${it.category==='Müzik Aleti'?'selected':''}>Müzik Aleti</option>
+              <option value="Aksesuar" ${it.category==='Aksesuar'?'selected':''}>Aksesuar</option>
+              <option value="Metod/Kitap" ${it.category==='Metod/Kitap'?'selected':''}>Metod/Kitap</option>
+            </select>
+          </td>
+          <td class="num"><input type="number" step="1" min="0" data-qtychange="${it.id}" value="${it.qty}" style="width:64px;padding:4px 6px;font-size:13px;text-align:right;"></td>
+          <td class="num"><input type="number" step="0.01" min="0" data-pricechange="${it.id}" value="${it.price}" style="width:96px;padding:4px 6px;font-size:13px;text-align:right;"></td>
+          <td class="num">${usd!==null?fmtUSD(usd):'—'}</td>
+          <td class="num">${eur!==null?fmtEUR(eur):'—'}</td>
+          <td class="num">${tlNow!==null?fmtTRY(tlNow):'—'}</td>
+          <td class="num" style="color:${diff>0?'var(--red)':(diff<0?'var(--green)':'inherit')}">${diff!==null?fmtPct(diff):'—'}</td>
+          <td><button class="btn danger-ghost" data-delstock="${it.id}">Sil</button></td>
+        </tr>`;
+      }).join('');
+    }
+
+    tbody.querySelectorAll('[data-selstock]').forEach(cb=>cb.addEventListener('change', ()=>{
+      if(cb.checked) selectedStockIds.add(cb.dataset.selstock);
+      else selectedStockIds.delete(cb.dataset.selstock);
+      updateBulkDeleteUI();
+    }));
+    tbody.querySelectorAll('[data-namechange]').forEach(inp=>inp.addEventListener('change', async ()=>{
+      const item = stock.find(s=>s.id===inp.dataset.namechange);
+      if(!item) return;
+      const val = inp.value.trim();
+      if(!val){ toast('Ürün adı boş olamaz.'); inp.value = item.name; return; }
+      item.name = val;
+      await sSet('stock:list', stock);
+      toast('Ürün adı güncellendi.');
+    }));
+    tbody.querySelectorAll('[data-qtychange]').forEach(inp=>inp.addEventListener('change', async ()=>{
+      const item = stock.find(s=>s.id===inp.dataset.qtychange);
+      if(!item) return;
+      const val = parseFloat(inp.value);
+      if(isNaN(val) || val<0){ toast('Geçerli bir adet gir.'); inp.value = item.qty; return; }
+      item.qty = val;
+      await sSet('stock:list', stock);
+      toast('Adet güncellendi.');
+      renderOzet();
+    }));
+    tbody.querySelectorAll('[data-pricechange]').forEach(inp=>inp.addEventListener('change', async ()=>{
+      const item = stock.find(s=>s.id===inp.dataset.pricechange);
+      if(!item) return;
+      const val = parseFloat(inp.value);
+      if(isNaN(val) || val<0){ toast('Geçerli bir fiyat gir.'); inp.value = item.price; return; }
+      item.price = val;
+      await sSet('stock:list', stock);
+      renderStockTable();
+    }));
+    tbody.querySelectorAll('[data-catchange]').forEach(sel=>sel.addEventListener('change', async ()=>{
+      const item = stock.find(s=>s.id===sel.dataset.catchange);
+      if(item){ item.category = sel.value; await sSet('stock:list', stock); renderStockTable(); }
+    }));
+    tbody.querySelectorAll('[data-delstock]').forEach(b=>b.addEventListener('click', async ()=>{
+      if(!confirm('Bu ürünü stok listesinden silmek istediğine emin misin?')) return;
+      stock = stock.filter(s=>s.id!==b.dataset.delstock);
+      selectedStockIds.delete(b.dataset.delstock);
+      await sSet('stock:list', stock);
+      toast('Ürün silindi.');
+      renderAll();
+    }));
+
+    const selectAllBox = document.getElementById('selectAllStock');
+    if(selectAllBox) selectAllBox.checked = rows.length>0 && rows.every(it=>selectedStockIds.has(it.id));
+    updateBulkDeleteUI();
+  }
+
+  function updateBulkDeleteUI(){
+    const btn = document.getElementById('bulkDeleteStockBtn');
+    const countEl = document.getElementById('bulkDeleteCount');
+    if(!btn || !countEl) return;
+    countEl.textContent = selectedStockIds.size;
+    btn.style.display = selectedStockIds.size>0 ? 'inline-block' : 'none';
+  }
+
+  // ---------- RAPOR ----------
+  const MONTHS_TR = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+
+  let reportMode = 'monthly';
+
+  function setupReportView(){
+    const monthSel = document.getElementById('reportMonth');
+    const yearSel = document.getElementById('reportYear');
+    monthSel.innerHTML = MONTHS_TR.map((m,i)=>`<option value="${i+1}">${m}</option>`).join('');
+    const now = new Date();
+    const thisYear = now.getFullYear();
+    const years = [];
+    for(let y=thisYear-2; y<=thisYear+1; y++) years.push(y);
+    yearSel.innerHTML = years.map(y=>`<option value="${y}" ${y===thisYear?'selected':''}>${y}</option>`).join('');
+    monthSel.value = now.getMonth()+1;
+    monthSel.addEventListener('change', renderReport);
+    yearSel.addEventListener('change', renderReport);
+
+    const weekSel = document.getElementById('reportWeek');
+    const weekOpts = buildRecentWeekOptions(30);
+    weekSel.innerHTML = weekOpts.map(o=>`<option value="${o.key}">${o.label}</option>`).join('');
+    weekSel.addEventListener('change', renderReport);
+
+    document.getElementById('reportModeMonthly').addEventListener('click', ()=>{
+      reportMode = 'monthly';
+      document.getElementById('reportModeMonthly').style.background = 'var(--ink)';
+      document.getElementById('reportModeMonthly').style.color = '#fff';
+      document.getElementById('reportModeWeekly').style.background = 'none';
+      document.getElementById('reportModeWeekly').style.color = 'var(--ink)';
+      document.getElementById('reportMonthlyControls').style.display = 'flex';
+      document.getElementById('reportWeeklyControls').style.display = 'none';
+      renderReport();
+    });
+    document.getElementById('reportModeWeekly').addEventListener('click', ()=>{
+      reportMode = 'weekly';
+      document.getElementById('reportModeWeekly').style.background = 'var(--ink)';
+      document.getElementById('reportModeWeekly').style.color = '#fff';
+      document.getElementById('reportModeMonthly').style.background = 'none';
+      document.getElementById('reportModeMonthly').style.color = 'var(--ink)';
+      document.getElementById('reportWeeklyControls').style.display = 'flex';
+      document.getElementById('reportMonthlyControls').style.display = 'none';
+      renderReport();
+    });
+  }
+
+  function buildRecentWeekOptions(n){
+    const opts = [];
+    let cur = new Date(todayISO()+'T00:00:00');
+    for(let i=0;i<n;i++){
+      const w = getISOWeekInfo(cur);
+      const key = w.isoYear+'-W'+String(w.isoWeek).padStart(2,'0');
+      if(!opts.find(o=>o.key===key)){
+        const range = isoWeekRange(w.isoYear, w.isoWeek);
+        opts.push({key, label: range.start+' – '+range.end, start:range.start, end:range.end});
+      }
+      cur.setDate(cur.getDate()-7);
+    }
+    return opts;
+  }
+
+  function buildTrendChartSVG(points){
+    if(!points || !points.length) return '<div class="empty-state">Veri yok.</div>';
+    const w = 640, h = 220, padding = 34;
+    const maxAbs = Math.max(1, ...points.map(p=>Math.abs(p.value)));
+    const n = points.length;
+    const barW = (w - padding*2) / n;
+    const zeroY = h/2;
+    const scale = (h/2 - 22) / maxAbs;
+    let bars = '';
+    points.forEach((p,i)=>{
+      const barH = Math.abs(p.value) * scale;
+      const x = padding + i*barW + barW*0.18;
+      const bw = barW*0.64;
+      const y = p.value>=0 ? zeroY - barH : zeroY;
+      const color = p.value>=0 ? '#059669' : '#e11d48';
+      bars += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(barH,1).toFixed(1)}" fill="${color}" rx="2"></rect>`;
+      bars += `<text x="${(x+bw/2).toFixed(1)}" y="${h-10}" font-size="10" text-anchor="middle" fill="#6b6478" font-family="IBM Plex Mono, monospace">${p.label}</text>`;
+    });
+    return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:220px;">
+      <line x1="${padding}" y1="${zeroY}" x2="${w-padding}" y2="${zeroY}" stroke="#dfdbe8" stroke-width="1"/>
+      ${bars}
+    </svg>`;
+  }
+
+  function renderPeriodReport(startDate, endDate, trendPoints, chartTitle){
+    const incRows = income.filter(i=>i.date>=startDate && i.date<=endDate);
+    const expRows = expenses.filter(e=>e.date>=startDate && e.date<=endDate);
+
+    const netIncome = incRows.reduce((s,i)=>s+i.netAmount,0);
+    const totalExpense = expRows.reduce((s,e)=>s+e.amount,0);
+    const netResult = netIncome - totalExpense;
+
+    document.getElementById('reportKpis').innerHTML = `
+      <div class="kpi"><div class="l">Net Gelir (KDV Hariç)</div><div class="v">${fmtTRY(netIncome)}</div></div>
+      <div class="kpi"><div class="l">Toplam Gider</div><div class="v">${fmtTRY(totalExpense)}</div></div>
+      <div class="kpi"><div class="l">Net Kâr / Zarar</div><div class="v ${netResult>=0?'pos':'neg'}">${fmtTRY(netResult)}</div></div>
+    `;
+
+    const branches = ['Müzik Aleti','Aksesuar','Ders'];
+    const incHtml = branches.map(b=>{
+      const rows = incRows.filter(i=>i.branch===b);
+      const net = rows.reduce((s,i)=>s+i.netAmount,0);
+      return `<div class="breakdown-row"><span class="lbl">${b} (${rows.length} kayıt)</span><span class="val">${fmtTRY(net)}</span></div>`;
+    }).join('');
+    document.getElementById('reportIncomeBreakdown').innerHTML = incHtml || '<div class="empty-state">Bu dönemde gelir yok.</div>';
+
+    const catSet = [...new Set(expRows.map(e=>e.category))];
+    let expHtml = '';
+    if(!catSet.length){
+      expHtml = '<div class="empty-state">Bu dönemde gider yok.</div>';
+    } else {
+      expHtml = catSet.map(c=>{
+        const sum = expRows.filter(e=>e.category===c).reduce((s,e)=>s+e.amount,0);
+        return `<div class="breakdown-row"><span class="lbl">${c}</span><span class="val">${fmtTRY(sum)}</span></div>`;
+      }).join('');
+    }
+    document.getElementById('reportExpenseBreakdown').innerHTML = expHtml;
+
+    const stockSales = incRows.filter(i=>i.stockItemId && i.profitTRY!==null && i.profitTRY!==undefined);
+    if(!stockSales.length){
+      document.getElementById('reportStockProfit').innerHTML = '<div class="empty-state">Bu dönemde stoktan satış yok.</div>';
+    } else {
+      const totalProfit = stockSales.reduce((s,i)=>s+i.profitTRY,0);
+      const rowsHtml = stockSales.map(i=>`
+        <div class="breakdown-row">
+          <span class="lbl">${i.description} (${i.qtyUsed} ad.)</span>
+          <span class="val" style="color:${i.profitTRY>=0?'var(--green)':'var(--red)'}">${fmtTRY(i.profitTRY)}</span>
+        </div>`).join('');
+      document.getElementById('reportStockProfit').innerHTML = rowsHtml + `
+        <div class="breakdown-row" style="margin-top:6px;border-top:2px solid var(--ink);">
+          <span class="lbl"><b>Toplam</b></span>
+          <span class="val" style="font-size:15px;color:${totalProfit>=0?'var(--green)':'var(--red)'}"><b>${fmtTRY(totalProfit)}</b></span>
+        </div>`;
+    }
+
+    document.getElementById('reportChartTitle').textContent = chartTitle;
+    document.getElementById('reportChartContainer').innerHTML = buildTrendChartSVG(trendPoints);
+  }
+
+  function renderReport(){
+    if(reportMode==='weekly') renderWeeklyReport();
+    else renderMonthlyReport();
+  }
+
+  function renderMonthlyReport(){
+    const month = parseInt(document.getElementById('reportMonth').value);
+    const year = parseInt(document.getElementById('reportYear').value);
+    const mk = year + '-' + String(month).padStart(2,'0');
+    const dim = daysInMonth(year, month-1);
+    const start = mk+'-01', end = mk+'-'+String(dim).padStart(2,'0');
+
+    const trend = [];
+    for(let i=5; i>=0; i--){
+      const d = new Date(year, month-1-i, 1);
+      const mkey = monthKeyOf(d);
+      const dim2 = daysInMonth(d.getFullYear(), d.getMonth());
+      const s2 = mkey+'-01', e2 = mkey+'-'+String(dim2).padStart(2,'0');
+      const sum = buildPeriodSummary(s2, e2);
+      trend.push({label: MONTHS_TR[d.getMonth()].slice(0,3), value: sum.netResult});
+    }
+    renderPeriodReport(start, end, trend, 'Son 6 Ay — Net Kâr/Zarar Trendi');
+  }
+
+  function renderWeeklyReport(){
+    const key = document.getElementById('reportWeek').value;
+    if(!key) return;
+    const [yearStr, wStr] = key.split('-W');
+    const isoYear = parseInt(yearStr), isoWeek = parseInt(wStr);
+    const range = isoWeekRange(isoYear, isoWeek);
+
+    const trend = [];
+    for(let i=7; i>=0; i--){
+      const d = new Date(range.start+'T00:00:00');
+      d.setDate(d.getDate() - i*7);
+      const w = getISOWeekInfo(d);
+      const r = isoWeekRange(w.isoYear, w.isoWeek);
+      const sum = buildPeriodSummary(r.start, r.end);
+      trend.push({label: r.start.slice(5), value: sum.netResult});
+    }
+    renderPeriodReport(range.start, range.end, trend, 'Son 8 Hafta — Net Kâr/Zarar Trendi');
+  }
+
+  // ---------- ARŞİV (haftalık / aylık) ----------
+  let monthlyArchive = [];
+  let weeklyArchive = [];
+
+  function round2(n){ return Math.round((n||0)*100)/100; }
+  function daysInMonth(year, month0){ return new Date(year, month0+1, 0).getDate(); }
+  function monthKeyOf(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
+
+  // ISO hafta yardımcıları (Pazartesi–Pazar)
+  function getISOWeekInfo(d){
+    const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    const dayNum = (date.getUTCDay() + 6) % 7;
+    date.setUTCDate(date.getUTCDate() - dayNum + 3);
+    const firstThursday = new Date(Date.UTC(date.getUTCFullYear(),0,4));
+    const firstDayNum = (firstThursday.getUTCDay()+6)%7;
+    firstThursday.setUTCDate(firstThursday.getUTCDate()-firstDayNum+3);
+    const week = 1 + Math.round((date - firstThursday)/(7*24*3600*1000));
+    return { isoYear: date.getUTCFullYear(), isoWeek: week };
+  }
+  function isoWeekKeyOf(d){ const w = getISOWeekInfo(d); return w.isoYear+'-W'+String(w.isoWeek).padStart(2,'0'); }
+  function isoWeekRange(isoYear, isoWeek){
+    const jan4 = new Date(Date.UTC(isoYear,0,4));
+    const jan4Day = (jan4.getUTCDay()+6)%7;
+    const week1Monday = new Date(jan4); week1Monday.setUTCDate(jan4.getUTCDate()-jan4Day);
+    const monday = new Date(week1Monday); monday.setUTCDate(week1Monday.getUTCDate() + (isoWeek-1)*7);
+    const sunday = new Date(monday); sunday.setUTCDate(monday.getUTCDate()+6);
+    return { start: monday.toISOString().slice(0,10), end: sunday.toISOString().slice(0,10) };
+  }
+
+  async function getFirstUseDate(){
+    let d = await sGet('meta:firstUseDate');
+    if(!d){
+      const dates = [...income.map(i=>i.date), ...expenses.map(e=>e.date)].sort();
+      d = dates.length ? dates[0] : todayISO();
+      await sSet('meta:firstUseDate', d);
+    }
+    return d;
+  }
+
+  function buildPeriodSummary(startDateStr, endDateStr){
+    const incRows = income.filter(i=>i.date>=startDateStr && i.date<=endDateStr);
+    const expRows = expenses.filter(e=>e.date>=startDateStr && e.date<=endDateStr);
+    const incomeGross = incRows.reduce((s,i)=>s+i.grossAmount,0);
+    const incomeNet = incRows.reduce((s,i)=>s+i.netAmount,0);
+    const expenseTotal = expRows.reduce((s,e)=>s+e.amount,0);
+    const stockProfitTotal = incRows.filter(i=>i.stockItemId).reduce((s,i)=>s+(i.profitTRY||0),0);
+    const byBranch = {};
+    ['Müzik Aleti','Aksesuar','Ders'].forEach(b=>{
+      byBranch[b] = incRows.filter(i=>i.branch===b).reduce((s,i)=>s+i.netAmount,0);
+    });
+    const byExpenseCategory = {};
+    expRows.forEach(e=>{ byExpenseCategory[e.category] = (byExpenseCategory[e.category]||0) + e.amount; });
+    return {
+      incomeGross, incomeNet, expenseTotal, netResult: incomeNet-expenseTotal,
+      stockProfitTotal, byBranch, byExpenseCategory,
+      incomeCount: incRows.length, expenseCount: expRows.length
+    };
+  }
+
+  async function autoArchiveMonths(firstUseDateStr){
+    const monthly = (await sGet('archive:monthly')) || [];
+    const map = {}; monthly.forEach(m=>map[m.key]=m);
+    const today = new Date(todayISO()+'T00:00:00');
+    let cur = new Date(firstUseDateStr+'T00:00:00'); cur.setDate(1);
+    let changed = false;
+    while(cur <= today){
+      const key = monthKeyOf(cur);
+      const isCurrentMonth = (cur.getFullYear()===today.getFullYear() && cur.getMonth()===today.getMonth());
+      const dim = daysInMonth(cur.getFullYear(), cur.getMonth());
+      const start = key+'-01';
+      const end = key+'-'+String(dim).padStart(2,'0');
+      const label = MONTHS_TR[cur.getMonth()]+' '+cur.getFullYear();
+      if(isCurrentMonth){
+        if(today.getDate() === dim){
+          const summary = buildPeriodSummary(start, end);
+          map[key] = Object.assign({key, label, start, end, final:false, createdAt:new Date().toISOString()}, summary);
+          changed = true;
+        }
+      } else {
+        if(!map[key] || !map[key].final){
+          const summary = buildPeriodSummary(start, end);
+          map[key] = Object.assign({key, label, start, end, final:true, createdAt:new Date().toISOString()}, summary);
+          changed = true;
+        }
+      }
+      cur.setMonth(cur.getMonth()+1);
+    }
+    const arr = Object.values(map).sort((a,b)=>b.key.localeCompare(a.key));
+    if(changed) await sSet('archive:monthly', arr);
+    return arr;
+  }
+
+  async function autoArchiveWeeks(firstUseDateStr){
+    const weekly = (await sGet('archive:weekly')) || [];
+    const map = {}; weekly.forEach(w=>map[w.key]=w);
+    const today = new Date(todayISO()+'T00:00:00');
+    const todayKey = isoWeekKeyOf(today);
+    let cur = new Date(firstUseDateStr+'T00:00:00');
+    let changed = false;
+    const seen = new Set();
+    while(cur <= today){
+      const key = isoWeekKeyOf(cur);
+      if(!seen.has(key)){
+        seen.add(key);
+        const w = getISOWeekInfo(cur);
+        const range = isoWeekRange(w.isoYear, w.isoWeek);
+        const isCurrentWeek = key === todayKey;
+        if(isCurrentWeek){
+          if(today.getDay() === 0){ // Pazar
+            const summary = buildPeriodSummary(range.start, range.end);
+            map[key] = Object.assign({key, label: range.start+' – '+range.end, start:range.start, end:range.end, final:false, createdAt:new Date().toISOString()}, summary);
+            changed = true;
+          }
+        } else {
+          if(!map[key] || !map[key].final){
+            const summary = buildPeriodSummary(range.start, range.end);
+            map[key] = Object.assign({key, label: range.start+' – '+range.end, start:range.start, end:range.end, final:true, createdAt:new Date().toISOString()}, summary);
+            changed = true;
+          }
+        }
+      }
+      cur.setDate(cur.getDate()+7);
+    }
+    const arr = Object.values(map).sort((a,b)=>b.key.localeCompare(a.key));
+    if(changed) await sSet('archive:weekly', arr);
+    return arr;
+  }
+
+  async function runAutoArchiving(){
+    const first = await getFirstUseDate();
+    monthlyArchive = await autoArchiveMonths(first);
+    weeklyArchive = await autoArchiveWeeks(first);
+    renderArchiveView();
+  }
+
+  async function forceArchiveNow(){
+    const today = new Date(todayISO()+'T00:00:00');
+    const mKey = monthKeyOf(today);
+    const dim = daysInMonth(today.getFullYear(), today.getMonth());
+    const mStart = mKey+'-01', mEnd = mKey+'-'+String(dim).padStart(2,'0');
+    const mSummary = buildPeriodSummary(mStart, mEnd);
+    let monthly = (await sGet('archive:monthly')) || [];
+    const existingM = monthly.find(m=>m.key===mKey);
+    if(!existingM || !existingM.final){
+      monthly = monthly.filter(m=>m.key!==mKey);
+      monthly.push(Object.assign({key:mKey, label:MONTHS_TR[today.getMonth()]+' '+today.getFullYear(), start:mStart, end:mEnd, final:false, createdAt:new Date().toISOString()}, mSummary));
+    }
+    monthly.sort((a,b)=>b.key.localeCompare(a.key));
+    await sSet('archive:monthly', monthly);
+    monthlyArchive = monthly;
+
+    const w = getISOWeekInfo(today);
+    const wKey = w.isoYear+'-W'+String(w.isoWeek).padStart(2,'0');
+    const range = isoWeekRange(w.isoYear, w.isoWeek);
+    const wSummary = buildPeriodSummary(range.start, range.end);
+    let weekly = (await sGet('archive:weekly')) || [];
+    const existingW = weekly.find(x=>x.key===wKey);
+    if(!existingW || !existingW.final){
+      weekly = weekly.filter(x=>x.key!==wKey);
+      weekly.push(Object.assign({key:wKey, label:range.start+' – '+range.end, start:range.start, end:range.end, final:false, createdAt:new Date().toISOString()}, wSummary));
+    }
+    weekly.sort((a,b)=>b.key.localeCompare(a.key));
+    await sSet('archive:weekly', weekly);
+    weeklyArchive = weekly;
+
+    renderArchiveView();
+    toast('Bu ay ve bu hafta için anlık arşiv oluşturuldu.');
+  }
+
+  function setupArchiveView(){
+    document.getElementById('forceArchiveBtn').addEventListener('click', forceArchiveNow);
+    document.getElementById('exportAllBtn').addEventListener('click', exportFullBackupToExcel);
+  }
+
+  function renderArchiveView(){
+    const mBody = document.getElementById('monthlyArchiveBody');
+    if(!mBody) return; // henüz DOM hazır değilse atla
+    if(!monthlyArchive.length){
+      mBody.innerHTML = `<tr><td colspan="7"><div class="empty-state">Henüz aylık arşiv oluşmadı.</div></td></tr>`;
+    } else {
+      mBody.innerHTML = monthlyArchive.map(m=>`
+        <tr>
+          <td>${m.label}</td>
+          <td class="num">${fmtTRY(m.incomeNet)}</td>
+          <td class="num">${fmtTRY(m.expenseTotal)}</td>
+          <td class="num" style="color:${m.netResult>=0?'var(--green)':'var(--red)'}">${fmtTRY(m.netResult)}</td>
+          <td class="num">${fmtTRY(m.stockProfitTotal)}</td>
+          <td><span class="tag ${m.final?'aksesuar':'metod'}">${m.final?'Kesin':'Geçici'}</span></td>
+          <td><button class="btn ghost small" data-exportm="${m.key}">Excel</button></td>
+        </tr>`).join('');
+      mBody.querySelectorAll('[data-exportm]').forEach(b=>b.addEventListener('click', ()=>{
+        const period = monthlyArchive.find(x=>x.key===b.dataset.exportm);
+        if(period) exportPeriodToExcel(period, 'monthly');
+      }));
+    }
+
+    const wBody = document.getElementById('weeklyArchiveBody');
+    if(!weeklyArchive.length){
+      wBody.innerHTML = `<tr><td colspan="6"><div class="empty-state">Henüz haftalık arşiv oluşmadı.</div></td></tr>`;
+    } else {
+      wBody.innerHTML = weeklyArchive.map(w=>`
+        <tr>
+          <td>${w.label}</td>
+          <td class="num">${fmtTRY(w.incomeNet)}</td>
+          <td class="num">${fmtTRY(w.expenseTotal)}</td>
+          <td class="num" style="color:${w.netResult>=0?'var(--green)':'var(--red)'}">${fmtTRY(w.netResult)}</td>
+          <td><span class="tag ${w.final?'aksesuar':'metod'}">${w.final?'Kesin':'Geçici'}</span></td>
+          <td><button class="btn ghost small" data-exportw="${w.key}">Excel</button></td>
+        </tr>`).join('');
+      wBody.querySelectorAll('[data-exportw]').forEach(b=>b.addEventListener('click', ()=>{
+        const period = weeklyArchive.find(x=>x.key===b.dataset.exportw);
+        if(period) exportPeriodToExcel(period, 'weekly');
+      }));
+    }
+  }
+
+  function exportPeriodToExcel(period, kind){
+    if(typeof XLSX === 'undefined'){ toast('Excel kütüphanesi yüklenemedi — internet bağlantını kontrol et.'); return; }
+    const incRows = income.filter(i=>i.date>=period.start && i.date<=period.end).sort((a,b)=>a.date.localeCompare(b.date));
+    const expRows = expenses.filter(e=>e.date>=period.start && e.date<=period.end).sort((a,b)=>a.date.localeCompare(b.date));
+
+    const wb = XLSX.utils.book_new();
+    const summaryData = [
+      {Alan:'Dönem', Değer: period.label},
+      {Alan:'Başlangıç', Değer: period.start},
+      {Alan:'Bitiş', Değer: period.end},
+      {Alan:'Toplam Gelir (KDV Dahil)', Değer: round2(incRows.reduce((s,i)=>s+i.grossAmount,0))},
+      {Alan:'Toplam Net Gelir (KDV Hariç)', Değer: round2(period.incomeNet)},
+      {Alan:'Toplam Gider', Değer: round2(period.expenseTotal)},
+      {Alan:'Net Kâr/Zarar', Değer: round2(period.netResult)},
+      {Alan:'Stok Satışı Dolar Bazlı Kâr', Değer: round2(period.stockProfitTotal)},
+      {Alan:'Durum', Değer: period.final ? 'Kesinleşti' : 'Geçici (dönem devam ediyor)'}
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryData, {skipHeader:true}), 'Özet');
+
+    const incomeSheetData = incRows.map(i=>({
+      Tarih:i.date, Branş:i.branch, Açıklama:i.description, 'KDV %': (i.vatRate!==undefined&&i.vatRate!==null)?i.vatRate:20,
+      'KDV Dahil':round2(i.grossAmount), 'KDV Tutarı':round2(i.vat), 'Net Tutar':round2(i.netAmount),
+      'Satılan Adet': i.qtyUsed||'', 'Stok Kârı (₺)': (i.profitTRY!==null && i.profitTRY!==undefined)?round2(i.profitTRY):''
+    }));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(incomeSheetData.length?incomeSheetData:[{Not:'Bu dönemde gelir kaydı yok'}]), 'Gelir');
+
+    const expenseSheetData = expRows.map(e=>({
+      Tarih:e.date, Kalem:e.category, Açıklama:e.description||'', Tutar:round2(e.amount)
+    }));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(expenseSheetData.length?expenseSheetData:[{Not:'Bu dönemde gider kaydı yok'}]), 'Gider');
+
+    const prefix = kind==='monthly' ? 'Aylik_Arsiv_' : 'Haftalik_Arsiv_';
+    XLSX.writeFile(wb, prefix + period.key.replace(/\s/g,'_') + '.xlsx');
+  }
+
+  function exportFullBackupToExcel(){
+    if(typeof XLSX === 'undefined'){ toast('Excel kütüphanesi yüklenemedi — internet bağlantını kontrol et.'); return; }
+    const wb = XLSX.utils.book_new();
+
+    const incomeSheetData = [...income].sort((a,b)=>a.date.localeCompare(b.date)).map(i=>({
+      Tarih:i.date, Branş:i.branch, Açıklama:i.description, 'KDV %': (i.vatRate!==undefined&&i.vatRate!==null)?i.vatRate:20,
+      'KDV Dahil':round2(i.grossAmount), 'KDV Tutarı':round2(i.vat), 'Net Tutar':round2(i.netAmount), 'Satılan Adet': i.qtyUsed||'',
+      'Stok Kârı (₺)': (i.profitTRY!==null && i.profitTRY!==undefined)?round2(i.profitTRY):''
+    }));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(incomeSheetData.length?incomeSheetData:[{Not:'Kayıt yok'}]), 'Gelir (Tümü)');
+
+    const expenseSheetData = [...expenses].sort((a,b)=>a.date.localeCompare(b.date)).map(e=>({
+      Tarih:e.date, Kalem:e.category, Açıklama:e.description||'', Tutar:round2(e.amount)
+    }));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(expenseSheetData.length?expenseSheetData:[{Not:'Kayıt yok'}]), 'Gider (Tümü)');
+
+    const rate0 = firstRate('USD'), rateNow = latestRate('USD'), eurRate0 = firstRate('EUR');
+    const stockSheetData = [...stock].sort((a,b)=>a.name.localeCompare(b.name,'tr')).map(it=>{
+      const usd = rate0 ? it.price/rate0 : null;
+      const eur = eurRate0 ? it.price/eurRate0 : null;
+      const tlNow = (usd!==null && rateNow) ? usd*rateNow : null;
+      return {
+        Ürün:it.name, Kategori:it.category, Adet:it.qty, 'Birim Fiyat TL':round2(it.price),
+        'USD Karşılığı': usd!==null?round2(usd):'', 'EUR Karşılığı': eur!==null?round2(eur):'',
+        'Bugünkü TL Karşılığı': tlNow!==null?round2(tlNow):''
+      };
+    });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(stockSheetData.length?stockSheetData:[{Not:'Stok yok'}]), 'Stok (Anlık)');
+
+    const monthlySheetData = monthlyArchive.map(m=>({
+      Ay:m.label, Başlangıç:m.start, Bitiş:m.end, 'Net Gelir':round2(m.incomeNet),
+      Gider:round2(m.expenseTotal), 'Net Sonuç':round2(m.netResult), 'Stok Kârı':round2(m.stockProfitTotal),
+      Durum: m.final?'Kesin':'Geçici'
+    }));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(monthlySheetData.length?monthlySheetData:[{Not:'Henüz arşiv yok'}]), 'Aylık Arşiv');
+
+    const weeklySheetData = weeklyArchive.map(w=>({
+      Hafta:w.label, Başlangıç:w.start, Bitiş:w.end, 'Net Gelir':round2(w.incomeNet),
+      Gider:round2(w.expenseTotal), 'Net Sonuç':round2(w.netResult), Durum: w.final?'Kesin':'Geçici'
+    }));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(weeklySheetData.length?weeklySheetData:[{Not:'Henüz arşiv yok'}]), 'Haftalık Arşiv');
+
+    XLSX.writeFile(wb, 'RockJazz_Muhasebe_Tam_Yedek_'+todayISO()+'.xlsx');
+  }
+
+  window.addEventListener('error', (e)=>{
+    showFatalBanner('Beklenmeyen bir hata oluştu: ' + (e && e.message ? e.message : 'bilinmiyor') + '\n(Bu satırı ekran görüntüsü alıp gönderirsen sorunu bulmam kolaylaşır.)');
+  });
+
+  init().catch(err=>{
+    console.error('init() başarısız:', err);
+    showFatalBanner('Program başlatılamadı: ' + (err && err.message ? err.message : String(err)) + '\n(Bu satırı ekran görüntüsü alıp gönderirsen sorunu bulmam kolaylaşır.)');
+  });
+})();
+</script>
+</body>
+</html>
