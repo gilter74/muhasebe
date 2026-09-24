@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RockJazz Müzik &amp; Silifke Satranç Atölyesi — Muhasebe</title>
+<link rel="icon" type="image/png" href="https://placehold.co/64x64/2dd4bf/15131d.png?text=%25%2B">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -347,7 +348,7 @@
     </div>
     <div class="divider"></div>
     <p class="panel-desc">Kur mantığı: her stok kalemi, sisteme ilk girildiği günkü kur üzerinden sabit bir dolar değerine çevrilir. Ürün 1 yıl satılmadan beklerse, o dolar değeri güncel kur ile yeniden TL'ye çevrilince, TL'nin erimesi otomatik olarak görünür. Detaylar için <b>Stok</b> sekmesine bakabilirsin.</p>
-    <p class="panel-desc"><b>Gider düzenleme:</b> Giderler tablosundan daha önce girdiğiniz herhangi bir giderin tarihini, kalemini, açıklamasını veya tutarını doğrudan tablodan düzenleyebilir veya silebilirsiniz.</p>
+    <p class="panel-desc"><b>Gider düzenleme:</b> Giderler tablosundan daha önce girdiğiniz herhangi bir giderin tarihini, kalemini, açıklamasını veya tutarını doğrudan tablodan kolayca düzenleyebilir veya silebilirsiniz.</p>
   </section>
 
   <!-- GELİR -->
@@ -433,7 +434,7 @@
   <!-- GİDER -->
   <section class="view" id="view-gider">
     <p class="panel-title">Gider Ekle</p>
-    <p class="panel-desc">Kalemi seç, açıklamaya nereyi/neyi ödediğini yaz. Kaydettikten sonra tablodan doğrudan düzenleyebilir veya silebilirsin.</p>
+    <p class="panel-desc">Kalemi seç, nereye ödediğini yaz. Girdiğin gideri hemen aşağıdaki tablodan dilediğin zaman satır üzerinde doğrudan düzenleyebilir veya silebilirsin.</p>
     <div class="two-col">
       <div class="card">
         <form class="stack" id="expenseForm">
@@ -447,8 +448,8 @@
           <select id="expCategory" required></select>
 
           <label>Açıklama</label>
-          <input type="text" id="expDesc" placeholder="Örn: ev elektrik, RockJazz Müzik dükkan telefonu…">
-          <p class="helptext">Hangi hesabı / nereyi ödediğini buraya yaz — ileride ararken işine yarar.</p>
+          <input type="text" id="expDesc" placeholder="Örn: ev elektrik, dükkan telefonu…">
+          <p class="helptext">Hangi hesabı / nereyi ödediğini buraya yaz.</p>
 
           <label>Tutar (TL)</label>
           <input type="number" id="expAmount" min="0" step="0.01" placeholder="0,00" required>
@@ -1336,7 +1337,7 @@
       const box = overlay.querySelector('#catManageList');
       box.innerHTML = expenseCategories.map((c,i)=>`
         <div style="display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--line);">
-          <span style="flex:1;font-size:13.5px;" id="catText-${i}">${c}</span>
+          <span style="flex:1;font-size:13.5px;">${c}</span>
           <button type="button" class="btn edit-ghost" data-edit="${i}">Düzenle</button>
           <button type="button" class="btn ghost small" data-up="${i}" ${i===0?'disabled':''} style="padding:3px 6px;">↑</button>
           <button type="button" class="btn ghost small" data-down="${i}" ${i===expenseCategories.length-1?'disabled':''} style="padding:3px 6px;">↓</button>
@@ -1428,7 +1429,6 @@
       tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state">Gider kaydı yok.</div></td></tr>`;
       return;
     }
-    const catOptionsHtml = expenseCategories.map(c=>`@@CAT_OPTION_PLACEHOLDER@@`).join(''); // built dynamically inside map
     tbody.innerHTML = rows.map(r=>{
       const options = expenseCategories.map(c=>`<option value="${c}" ${c===r.category?'selected':''}>${c}</option>`).join('');
       return `<tr>
@@ -1845,7 +1845,7 @@
     const firstDayNum = (firstThursday.getUTCDay()+6)%7;
     firstThursday.setUTCDate(firstThursday.getUTCDate()-firstDayNum+3);
     const week = 1 + Math.round((date - firstThursday)/(7*24*3600*1000));
-    return { isoYear: date.getUTCFullYear(), isoWeek: week };
+    return { isoYear: date.getUTCDay(), isoWeek: week };
   }
   function isoWeekKeyOf(d){ const w = getISOWeekInfo(d); return w.isoYear+'-W'+String(w.isoWeek).padStart(2,'0'); }
   function isoWeekRange(isoYear, isoWeek){
