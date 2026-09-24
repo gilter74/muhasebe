@@ -184,6 +184,7 @@
   .btn.primary:hover{background:#733f16;}
   .btn.ghost{background:none;border:1px solid var(--line);color:var(--ink);}
   .btn.danger-ghost{background:none;border:1px solid #d9b3ac;color:var(--red);font-size:12px;padding:5px 10px;}
+  .btn.edit-ghost{background:none;border:1px solid #b3c2d9;color:#1d4ed8;font-size:12px;padding:5px 10px;}
   .btn.small{padding:6px 12px;font-size:12.5px;}
   .btn:disabled{opacity:.4;cursor:not-allowed;}
 
@@ -346,7 +347,7 @@
     </div>
     <div class="divider"></div>
     <p class="panel-desc">Kur mantığı: her stok kalemi, sisteme ilk girildiği günkü kur üzerinden sabit bir dolar değerine çevrilir. Ürün 1 yıl satılmadan beklerse, o dolar değeri güncel kur ile yeniden TL'ye çevrilince, TL'nin erimesi otomatik olarak görünür. Detaylar için <b>Stok</b> sekmesine bakabilirsin.</p>
-    <p class="panel-desc"><b>Otomatik kur güncelleme:</b> Program açıkken saat 18:00'i geçtiğinde günün USD ve EUR kurlarını kendiliğinden çekip o günün "kesinleşmiş" kuru olarak kaydeder. 18:00'den önce açarsan anlık kur gösterilir ama gün henüz kilitlenmez. Bu dosyanın bir sunucusu olmadığı için, sekmeyi hiç açmadığın bir günde otomatik çekim de olmaz — bir sonraki açılışta o günü tamamlar. İnternet yoksa veya tarayıcı dış bağlantıyı engellerse (örn. sohbet içi önizleme), <b>Kur Gir</b> düğmesinden elle girebilirsin; elle girilen kur her zaman esas alınır. Stok maliyet hesapları (erime/kâr) hâlâ dolar bazlı; euro şimdilik yalnızca stok tablosunda referans karşılık olarak gösteriliyor.</p>
+    <p class="panel-desc"><b>Gider düzenleme:</b> Giderler tablosundan daha önce girdiğiniz herhangi bir giderin tarihini, kalemini, açıklamasını veya tutarını doğrudan tablodan düzenleyebilir veya silebilirsiniz.</p>
   </section>
 
   <!-- GELİR -->
@@ -432,7 +433,7 @@
   <!-- GİDER -->
   <section class="view" id="view-gider">
     <p class="panel-title">Gider Ekle</p>
-    <p class="panel-desc">Kalemi seç, açıklamaya nereyi/neyi ödediğini yaz.</p>
+    <p class="panel-desc">Kalemi seç, açıklamaya nereyi/neyi ödediğini yaz. Kaydettikten sonra tablodan doğrudan düzenleyebilir veya silebilirsin.</p>
     <div class="two-col">
       <div class="card">
         <form class="stack" id="expenseForm">
@@ -482,7 +483,7 @@
     <div class="flex-between">
       <div>
         <p class="panel-title">Stok Listesi</p>
-        <p class="panel-desc">495 kalem yüklendi. Kategori sütununu dilediğin gibi düzeltebilirsin.</p>
+        <p class="panel-desc">Kategori ve ürün bilgilerini dilediğin gibi düzeltebilirsin.</p>
       </div>
       <button class="btn ghost small" id="openFxModalBtn">Kur Gir / Geçmiş</button>
     </div>
@@ -544,7 +545,7 @@
     <div class="divider"></div>
     <div class="card">
       <h3>Stok Satışı — Dolar Bazlı Gerçek Kâr</h3>
-      <p class="panel-desc" style="margin-bottom:14px;">Satılan müzik aleti/aksesuarın satış anındaki dolar-bazlı maliyeti, o günkü kur üzerinden güncel TL'ye çevrilip net satış tutarından düşülür. Bu, TL'nin erimesini hesaba katan gerçek kârdır.</p>
+      <p class="panel-desc" style="margin-bottom:14px;">Satılan müzik aleti/aksesuarın satış anındaki dolar-bazlı maliyeti, o günkü kur üzerinden güncel TL'ye çevrilip net satış tutarından düşülür.</p>
       <div id="reportStockProfit"></div>
     </div>
     <div class="divider"></div>
@@ -559,7 +560,7 @@
     <div class="flex-between">
       <div>
         <p class="panel-title">Haftalık &amp; Aylık Arşiv</p>
-        <p class="panel-desc">Her ay son gününde (30'u veya 31'i, ay kaç çekiyorsa) o ayın arşivi otomatik oluşur ve kilitlenir. Haftalar da her pazar günü aynı şekilde kapanır. İstediğin an, herhangi bir dönemin veya tüm verinin Excel çıktısını alabilirsin.</p>
+        <p class="panel-desc">Her ay ve hafta sonunda arşivler otomatik oluşur. İstediğin an Excel çıktısı alabilirsin.</p>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn ghost small" id="forceArchiveBtn">Şimdi Anlık Arşivle</button>
@@ -595,13 +596,12 @@
 
 <div class="toast" id="toast"></div>
 
-<script id="stockSeedData" type="application/json">[{"id": "stk1", "name": "MARTİN 11CMGPCX1AE2 AKUSTİK GİTAR", "qty": 1, "price": 2754.24, "category": "Müzik Aleti"}, {"id": "stk2", "name": "EJ45-3D KLASİK GİTAR TELİ", "qty": 1, "price": 1173.0, "category": "Aksesuar"}, {"id": "stk3", "name": "İ19 MİNİ AMFİ BLUETOOTH", "qty": 1, "price": 866.67, "category": "Müzik Aleti"}, {"id": "stk4", "name": "EJ46-3D KLASİK GİTAR TELİ", "qty": 1, "price": 1150.0, "category": "Aksesuar"}, {"id": "stk5", "name": "M5B DRUMSTICK", "qty": 1, "price": 1.32, "category": "Aksesuar"}, {"id": "stk6", "name": "egIItm vcd", "qty": 6, "price": 2.96, "category": "Aksesuar"}, {"id": "stk7", "name": "MELODİKA", "qty": 3, "price": 24.36, "category": "Müzik Aleti"}, {"id": "stk8", "name": "ALESIS DM6 BATERİ", "qty": 1, "price": 960.78, "category": "Müzik Aleti"}, {"id": "stk9", "name": "FLUT", "qty": 1, "price": 1.1, "category": "Müzik Aleti"}, {"id": "stk10", "name": "KEMAN STANTI", "qty": 1, "price": 5.75, "category": "Müzik Aleti"}, {"id": "stk11", "name": "SAZ TELI", "qty": 9, "price": 0.5, "category": "Aksesuar"}, {"id": "stk12", "name": "VALENCIA VC103BK SİYAH 3/4 GİTAR", "qty": 1, "price": 1578.0, "category": "Müzik Aleti"}, {"id": "stk13", "name": "ABANOZ KEMAN KLAVYESİ", "qty": 1, "price": 20.0, "category": "Müzik Aleti"}, {"id": "stk14", "name": "ALICE PENA", "qty": 290, "price": 0.15, "category": "Aksesuar"}, {"id": "stk15", "name": "FLAMENKO SANATI CD'U", "qty": 1, "price": 10.0, "category": "Aksesuar"}, {"id": "stk16", "name": "PW1DPA 250'LIK KARISIK PENA-KUTU", "qty": 1, "price": 42.64, "category": "Aksesuar"}, {"id": "stk17", "name": "MUHTELİF GİTAR", "qty": 1, "price": 1120.0, "category": "Aksesuar"}, {"id": "stk18", "name": "10 ADET PW1T351PENATHIN", "qty": 5, "price": 1.76, "category": "Aksesuar"}, {"id": "stk19", "name": "ROCK GiTAR METODU", "qty": 3, "price": 1.5, "category": "Metod/Kitap"}, {"id": "stk20", "name": "10 ADET PW1T351PENAMEIUM", "qty": 6, "price": 1.85, "category": "Aksesuar"}, {"id": "stk21", "name": "ROCK VE TEORi", "qty": 2, "price": 2.65, "category": "Aksesuar"}, {"id": "stk22", "name": "10ADETPWGP2P10TGARCIA", "qty": 3, "price": 4.0, "category": "Aksesuar"}, {"id": "stk23", "name": "NELER OLUYOR BiZE", "qty": 3, "price": 4.0, "category": "Aksesuar"}, {"id": "stk24", "name": "10ADETPWGP2P10TGARCIAMED", "qty": 2, "price": 4.0, "category": "Aksesuar"}, {"id": "stk25", "name": "STG101L GİTAR STAND", "qty": 5, "price": 166.66, "category": "Aksesuar"}, {"id": "stk26", "name": "BONA", "qty": 1, "price": 5.5, "category": "Aksesuar"}, {"id": "stk27", "name": "DADi PENALAR", "qty": 70, "price": 0.23, "category": "Aksesuar"}, {"id": "stk28", "name": "PA16XSRD", "qty": 1, "price": 39.0, "category": "Aksesuar"}, {"id": "stk29", "name": "AP-SERlSl 0.46-0,71 mm ALICE GiTAR PEN", "qty": 60, "price": 0.12, "category": "Müzik Aleti"}, {"id": "stk30", "name": "DARABUKA", "qty": 13, "price": 10.0, "category": "Müzik Aleti"}, {"id": "stk31", "name": "GH525 DUVAR ASKI SEHPASI", "qty": 10, "price": 4.15, "category": "Aksesuar"}, {"id": "stk32", "name": "METELAFON", "qty": 2, "price": 52.76, "category": "Aksesuar"}, {"id": "stk33", "name": "GH240 DUVAR ASKI SEHPASI", "qty": 5, "price": 4.05, "category": "Aksesuar"}, {"id": "stk34", "name": "STAGG 3LÜ GİTAR STAND", "qty": 1, "price": 19.0, "category": "Aksesuar"}, {"id": "stk35", "name": "DANDREA PR0351 PENA", "qty": 1, "price": 25.0, "category": "Aksesuar"}, {"id": "stk36", "name": "MARTİNE MP1 PRE CE ELEKTRO KLASİK GİTAR", "qty": 1, "price": 6483.0, "category": "Müzik Aleti"}, {"id": "stk37", "name": "NOTA SEHPASI MS110", "qty": 11, "price": 166.66, "category": "Aksesuar"}, {"id": "stk38", "name": "RİCO 1 NO KLARNET KAMIŞI", "qty": 1, "price": 730.0, "category": "Müzik Aleti"}, {"id": "stk39", "name": "ŞEF NOTA SEHPASI SANGWELL", "qty": 2, "price": 583.33, "category": "Aksesuar"}, {"id": "stk40", "name": "RENKLERLE ORG ÖĞRETİMİ", "qty": 2, "price": 41.3, "category": "Metod/Kitap"}, {"id": "stk41", "name": "KISA SAP B AĞLAMA İMECE1", "qty": 1, "price": 1666.0, "category": "Aksesuar"}, {"id": "stk42", "name": "AF-017C ALICE KLASIK GİTAR  ANAHTAR", "qty": 5, "price": 2.61, "category": "Aksesuar"}, {"id": "stk43", "name": "PGS1 TEKLİ GİTAR  STAND", "qty": 4, "price": 6.43, "category": "Aksesuar"}, {"id": "stk44", "name": "NEMESİS DK460WH PİYANO", "qty": 1, "price": 2966.0, "category": "Müzik Aleti"}, {"id": "stk45", "name": "PA16XSBK IBANEZ PENA", "qty": 1, "price": 52.77, "category": "Aksesuar"}, {"id": "stk46", "name": "TAKAMİNE GN10CE AKUSTİK GİTAR", "qty": 1, "price": 902.14, "category": "Müzik Aleti"}, {"id": "stk47", "name": "BAĞLAMA TELİ", "qty": 17, "price": 2.0, "category": "Aksesuar"}, {"id": "stk48", "name": "ASUS X59SR200V C2D T6400 LAPTOP", "qty": 1, "price": 1251.23, "category": "Aksesuar"}, {"id": "stk49", "name": "DARBUKA  VATAN", "qty": 6, "price": 1500.0, "category": "Müzik Aleti"}, {"id": "stk50", "name": "LUNAX PS60 ORG", "qty": 2, "price": 2868.0, "category": "Müzik Aleti"}, {"id": "stk51", "name": "WCP60V KEMAN MANYETİK", "qty": 1, "price": 7.19, "category": "Aksesuar"}, {"id": "stk52", "name": "PYRAMİD KISA VE UZUN TEL 018-020", "qty": 49, "price": 15.0, "category": "Aksesuar"}, {"id": "stk53", "name": "GİTAR KULAK SARICI", "qty": 4, "price": 1.57, "category": "Müzik Aleti"}, {"id": "stk54", "name": "H-308 GİTAR ASMA APARATI", "qty": 5, "price": 5.59, "category": "Aksesuar"}, {"id": "stk55", "name": "BEYER OP 101 PİYANO METODU", "qty": 1, "price": 35.0, "category": "Metod/Kitap"}, {"id": "stk56", "name": "K-5088 4LÜ GİTAR STAND", "qty": 2, "price": 58.77, "category": "Aksesuar"}, {"id": "stk57", "name": "CAD25 MİKROFON", "qty": 1, "price": 220.25, "category": "Müzik Aleti"}, {"id": "stk58", "name": "4/4 KEMAN KUYRUK", "qty": 2, "price": 4.77, "category": "Aksesuar"}, {"id": "stk59", "name": "FL10 FUGUE 3METRE GİTAR KABLOSU", "qty": 2, "price": 88.04, "category": "Aksesuar"}, {"id": "stk60", "name": "ALICE AKUSTİK GİTAR PİM SET", "qty": 8, "price": 0.5, "category": "Aksesuar"}, {"id": "stk61", "name": "ELEKTRO SAZ TELİ", "qty": 5, "price": 6.0, "category": "Aksesuar"}, {"id": "stk62", "name": "STAGG PBOX1-46 PENA", "qty": 1, "price": 83.9, "category": "Aksesuar"}, {"id": "stk63", "name": "ELEKTRO GİTAR KİTABI", "qty": 2, "price": 6.38, "category": "Metod/Kitap"}, {"id": "stk64", "name": "THOM", "qty": 1, "price": 55.08, "category": "Aksesuar"}, {"id": "stk65", "name": "1000PGBK IBANEZ PENA", "qty": 1, "price": 26.51, "category": "Aksesuar"}, {"id": "stk66", "name": "SANCHEZ KLASİK GİTAR", "qty": 2, "price": 1364.16, "category": "Müzik Aleti"}, {"id": "stk67", "name": "TC-45B PLASTIK MARAKAS", "qty": 1, "price": 5.66, "category": "Aksesuar"}, {"id": "stk68", "name": "GHS A57 PENA MEDIUM KIRMIZI", "qty": 1, "price": 30.71, "category": "Aksesuar"}, {"id": "stk69", "name": "GHS A59 PENA İNCE BEYAZ", "qty": 1, "price": 23.03, "category": "Aksesuar"}, {"id": "stk70", "name": "KEMAN TARAK SUSTURUCU", "qty": 1, "price": 4.53, "category": "Aksesuar"}, {"id": "stk71", "name": "SUNRISE SGC851 KLASİK GİTAR", "qty": 1, "price": 34.75, "category": "Müzik Aleti"}, {"id": "stk72", "name": "KÜÇÜK YAŞLAR İÇİN PİYANO METODU", "qty": 4, "price": 82.25, "category": "Metod/Kitap"}, {"id": "stk73", "name": "SAZ TELİ TAKIM", "qty": 6, "price": 1.5, "category": "Aksesuar"}, {"id": "stk74", "name": "STEPHAN SİYAH 4/4 KLASİK GİTAR", "qty": 2, "price": 30.72, "category": "Müzik Aleti"}, {"id": "stk75", "name": "3DBK4-10 10SM PENA SİYAH", "qty": 1, "price": 4.03, "category": "Aksesuar"}, {"id": "stk76", "name": "STEPHAN KIRMIZI 4/4 KLASİK GİTAR", "qty": 1, "price": 30.72, "category": "Müzik Aleti"}, {"id": "stk77", "name": "MS041 KLASİK ÜŞT EŞİK 10 ADET", "qty": 1, "price": 2.05, "category": "Aksesuar"}, {"id": "stk78", "name": "BARKOBEL 4/4 NATUREL KLASİK", "qty": 1, "price": 36.86, "category": "Aksesuar"}, {"id": "stk79", "name": "KARİN REÇİNE YUVARLAK", "qty": 7, "price": 2.58, "category": "Aksesuar"}, {"id": "stk80", "name": "ALVARO 3/4 ALVIO100", "qty": 1, "price": 587.73, "category": "Aksesuar"}, {"id": "stk81", "name": "ELEKTRO GİTAR KILIFI", "qty": 6, "price": 2.5, "category": "Aksesuar"}, {"id": "stk82", "name": "ALVARO AVL0210 NO29", "qty": 1, "price": 230.15, "category": "Aksesuar"}, {"id": "stk83", "name": "KENDİ KENDİNE KOLAY PİYANO METODU", "qty": 5, "price": 87.0, "category": "Metod/Kitap"}, {"id": "stk84", "name": "HG560 CLARİSS KLASİK GİTAR", "qty": 1, "price": 2178.0, "category": "Müzik Aleti"}, {"id": "stk85", "name": "S800WH Mooer GTRS Intelligent Elektro Gitar WHITE", "qty": 1, "price": 1.0, "category": "Aksesuar"}, {"id": "stk86", "name": "KLASİK GİTAR", "qty": 3, "price": 666.31, "category": "Müzik Aleti"}, {"id": "stk87", "name": "KEMAN ASMA APARATI VGH-27", "qty": 3, "price": 4.64, "category": "Aksesuar"}, {"id": "stk88", "name": "MELODİKA METODU", "qty": 1, "price": 8.5, "category": "Metod/Kitap"}, {"id": "stk89", "name": "BAĞLAMA TELİ KISA", "qty": 13, "price": 1.0, "category": "Aksesuar"}, {"id": "stk90", "name": "DADİ 0,58MM PENA", "qty": 3, "price": 1.0, "category": "Aksesuar"}, {"id": "stk91", "name": "MANUEL RODRİGUEZ MOD11", "qty": 1, "price": 380.81, "category": "Aksesuar"}, {"id": "stk92", "name": "ÖMERCAN", "qty": 7, "price": 3.02, "category": "Aksesuar"}, {"id": "stk93", "name": "PARA MAKBUZU 2 NÜSHA", "qty": 20, "price": 2.62, "category": "Aksesuar"}, {"id": "stk94", "name": "SPREAD KEMAN TELİ", "qty": 7, "price": 4.38, "category": "Aksesuar"}, {"id": "stk95", "name": "RENKLİ ASKI", "qty": 4, "price": 57.33, "category": "Aksesuar"}, {"id": "stk96", "name": "EJ25-B FLAMENKO GİTAR TELİ", "qty": 1, "price": 631.0, "category": "Aksesuar"}, {"id": "stk97", "name": "BOULT ORG 61 TUŞ BD638BK", "qty": 1, "price": 2291.0, "category": "Müzik Aleti"}, {"id": "stk98", "name": "EJ30 KLASİK GİTAR TELİ", "qty": 1, "price": 457.0, "category": "Aksesuar"}, {"id": "stk99", "name": "KISA SAP BAĞLAMA METODU 3CİLT", "qty": 2, "price": 12.0, "category": "Metod/Kitap"}, {"id": "stk100", "name": "DUYGULAR PİYANO EĞİTİMİ", "qty": 1, "price": 12.0, "category": "Metod/Kitap"}, {"id": "stk101", "name": "UZUN SAP BAĞLAMA METODU", "qty": 2, "price": 9.0, "category": "Metod/Kitap"}, {"id": "stk102", "name": "ELEKTRO ORG EĞİTİM VE POP MÜZİK", "qty": 1, "price": 19.0, "category": "Metod/Kitap"}, {"id": "stk103", "name": "ŞARKILARLA GİTAR ÖĞRENİYORUM", "qty": 1, "price": 20.0, "category": "Metod/Kitap"}, {"id": "stk104", "name": "DRCA ARA KABLO 3METRE", "qty": 2, "price": 200.0, "category": "Aksesuar"}, {"id": "stk105", "name": "EJ10-3D AKUSTİK GİTAR TELİ", "qty": 1, "price": 758.0, "category": "Aksesuar"}, {"id": "stk106", "name": "ALICE GİTAR ASKI", "qty": 1, "price": 38.62, "category": "Aksesuar"}, {"id": "stk107", "name": "ELEKTRO GİTAR KILIFI", "qty": 1, "price": 42.38, "category": "Aksesuar"}, {"id": "stk108", "name": "GİTAR", "qty": 3, "price": 1388.0, "category": "Müzik Aleti"}, {"id": "stk109", "name": "VR200 REÇİNE", "qty": 3, "price": 143.0, "category": "Aksesuar"}, {"id": "stk110", "name": "AD5 CASIO ADAPTÖR", "qty": 2, "price": 31.0, "category": "Aksesuar"}, {"id": "stk111", "name": "TURABİ DEĞERLİ ÇÖĞÜR 1", "qty": 1, "price": 5.0, "category": "Müzik Aleti"}, {"id": "stk112", "name": "B AĞLAMA ÇÖĞÜR KISA", "qty": 3, "price": 60.75, "category": "Müzik Aleti"}, {"id": "stk113", "name": "SAZ TELİ TAKIM", "qty": 2, "price": 88.57, "category": "Aksesuar"}, {"id": "stk114", "name": "BAĞLAMA KILIF", "qty": 24, "price": 1.5, "category": "Aksesuar"}, {"id": "stk115", "name": "BAĞLAMA KILIF KISA", "qty": 7, "price": 1.5, "category": "Aksesuar"}, {"id": "stk116", "name": "RENKELRLE ORG EĞİTİMİ", "qty": 3, "price": 45.9, "category": "Metod/Kitap"}, {"id": "stk117", "name": "SOFT KILIF KISA", "qty": 4, "price": 15.0, "category": "Aksesuar"}, {"id": "stk118", "name": "UNUTULMAYAN ŞARKILARLA ORG METODU", "qty": 2, "price": 24.9, "category": "Metod/Kitap"}, {"id": "stk119", "name": "CLARİSS MİKROFON KABLOSU", "qty": 1, "price": 14.0, "category": "Aksesuar"}, {"id": "stk120", "name": "ASHTON GS55 GİTAR SEHPA 5Lİ", "qty": 1, "price": 48.75, "category": "Aksesuar"}, {"id": "stk121", "name": "SW3006 REÇİNE SİYAH", "qty": 4, "price": 60.78, "category": "Aksesuar"}, {"id": "stk122", "name": "KÜÇÜK YAŞLAR İÇİN PİYANO METODU", "qty": 3, "price": 87.5, "category": "Metod/Kitap"}, {"id": "stk123", "name": "VALLER AG-250 NA 4/4 CUT-AWAY AKUSTIK GITAR", "qty": 1, "price": 4100.0, "category": "Müzik Aleti"}, {"id": "stk124", "name": "PYRAMID 018 BAĞLAMA TELİ", "qty": 10, "price": 4.71, "category": "Aksesuar"}, {"id": "stk125", "name": "PYRAMID 018 TEL KISA SAP TEL", "qty": 4, "price": 4.09, "category": "Aksesuar"}, {"id": "stk126", "name": "PYRAMID 020 BAĞLAMA TELİ", "qty": 10, "price": 4.71, "category": "Aksesuar"}, {"id": "stk127", "name": "PYRAMID 020 UZUN SAP TEL", "qty": 2, "price": 4.09, "category": "Aksesuar"}, {"id": "stk128", "name": "ELEKTRO GİTAR KILIFI", "qty": 9, "price": 2.5, "category": "Aksesuar"}, {"id": "stk129", "name": "PYRAMID 020 UZUN SAP TEL", "qty": 6, "price": 2.37, "category": "Aksesuar"}, {"id": "stk130", "name": "3/4 JUNIOR GİTAR KILIFI", "qty": 10, "price": 2.5, "category": "Aksesuar"}, {"id": "stk131", "name": "VANETTA VL1A 3/4 KEMAN", "qty": 1, "price": 104.55, "category": "Müzik Aleti"}, {"id": "stk132", "name": "BAS GİTAR KILIFI", "qty": 1, "price": 2.5, "category": "Aksesuar"}, {"id": "stk133", "name": "WASHBURN WA90CRDB KILIF GİGBAG", "qty": 1, "price": 185.19, "category": "Aksesuar"}, {"id": "stk134", "name": "ELEKTRO GİTAR KILIFI", "qty": 1, "price": 33.85, "category": "Aksesuar"}, {"id": "stk135", "name": "ELEKTRO GİTAR KILIFI", "qty": 4, "price": 2.0, "category": "Aksesuar"}, {"id": "stk136", "name": "IBANEZ heavy pena 50'lik paket", "qty": 1, "price": 52.77, "category": "Aksesuar"}, {"id": "stk137", "name": "ÇÖĞÜR METODU", "qty": 9, "price": 6.94, "category": "Metod/Kitap"}, {"id": "stk138", "name": "ALVARO NO27 3/4  GİTAR", "qty": 1, "price": 684.23, "category": "Müzik Aleti"}, {"id": "stk139", "name": "ŞARKI SOLOLARI", "qty": 1, "price": 13.38, "category": "Metod/Kitap"}, {"id": "stk140", "name": "ELIXIR ACOU 11027", "qty": 3, "price": 666.0, "category": "Aksesuar"}, {"id": "stk141", "name": "ÇOCUKLAR İÇİN GİTAR METODU", "qty": 3, "price": 14.17, "category": "Metod/Kitap"}, {"id": "stk142", "name": "ELIXIR AKUSTİK TEL 11002", "qty": 2, "price": 612.0, "category": "Aksesuar"}, {"id": "stk143", "name": "BAĞLAMA METODU KISA", "qty": 1, "price": 11.02, "category": "Metod/Kitap"}, {"id": "stk144", "name": "IBANEZ GSR180 BAS GİTAR", "qty": 1, "price": 333.57, "category": "Müzik Aleti"}, {"id": "stk145", "name": "ELİXİR AKUSTİK GİTAR TELİ 11002", "qty": 1, "price": 616.0, "category": "Aksesuar"}, {"id": "stk146", "name": "CASIO ADAPTÖR", "qty": 2, "price": 21.19, "category": "Aksesuar"}, {"id": "stk147", "name": "ERNIEBALL AKUSTİK 010 2150", "qty": 4, "price": 14.93, "category": "Aksesuar"}, {"id": "stk148", "name": "STAGG 2Lİ GİTAR STAND", "qty": 1, "price": 31.0, "category": "Aksesuar"}, {"id": "stk149", "name": "MANDOLİN TELİ SET 8020 BRONZ J62", "qty": 5, "price": 16.37, "category": "Aksesuar"}, {"id": "stk150", "name": "CASIO CTK245", "qty": 1, "price": 271.18, "category": "Aksesuar"}, {"id": "stk151", "name": "ALÜMİNYUM ÇERÇEVE", "qty": 10, "price": 6.78, "category": "Aksesuar"}, {"id": "stk152", "name": "ALICE KLASİK TEL A106", "qty": 8, "price": 9.48, "category": "Aksesuar"}, {"id": "stk153", "name": "LABELLA 4.TEL TEK", "qty": 22, "price": 1.37, "category": "Aksesuar"}, {"id": "stk154", "name": "KARIN KEMAN TELİ 4703", "qty": 6, "price": 10.15, "category": "Aksesuar"}, {"id": "stk155", "name": "LABELLA 010 ELEKTRO 1.TEL TEK", "qty": 22, "price": 0.92, "category": "Aksesuar"}, {"id": "stk156", "name": "J103D AKUSTİK GİTAR TEL SET", "qty": 1, "price": 660.0, "category": "Aksesuar"}, {"id": "stk157", "name": "UKULELE TELİ ALICE AU02", "qty": 5, "price": 5.73, "category": "Aksesuar"}, {"id": "stk158", "name": "3/4 KLASİK GİTAR KILIFI", "qty": 2, "price": 2.5, "category": "Aksesuar"}, {"id": "stk159", "name": "KLASİK KILIF", "qty": 28, "price": 0.25, "category": "Aksesuar"}, {"id": "stk160", "name": "AKUSTİK KILIF", "qty": 10, "price": 0.25, "category": "Aksesuar"}, {"id": "stk161", "name": "BAS GİTAR KILIFI", "qty": 2, "price": 2.5, "category": "Aksesuar"}, {"id": "stk162", "name": "BAĞLAMA KILI", "qty": 19, "price": 0.2, "category": "Müzik Aleti"}, {"id": "stk163", "name": "SP1CR GİTAR ASKI PİMİ", "qty": 2, "price": 21.26, "category": "Aksesuar"}, {"id": "stk164", "name": "A828 ORG", "qty": 2, "price": 1875.0, "category": "Müzik Aleti"}, {"id": "stk165", "name": "ELEKTRO GİTAR METODU", "qty": 2, "price": 16.0, "category": "Metod/Kitap"}, {"id": "stk166", "name": "CLARİSS KLASİK ALT EŞİK", "qty": 8, "price": 0.22, "category": "Aksesuar"}, {"id": "stk167", "name": "CLARİSS ÜST EŞİK", "qty": 2, "price": 0.22, "category": "Aksesuar"}, {"id": "stk168", "name": "SOLO GİTAR METODU", "qty": 1, "price": 35.0, "category": "Metod/Kitap"}, {"id": "stk169", "name": "ŞARKI SOLALARI", "qty": 1, "price": 16.67, "category": "Metod/Kitap"}, {"id": "stk170", "name": "ALICE BURGU ÇEVİRİCİ", "qty": 2, "price": 11.4, "category": "Aksesuar"}, {"id": "stk171", "name": "SOPRANO UKULELE TELİ AGUİRA", "qty": 1, "price": 13.81, "category": "Aksesuar"}, {"id": "stk172", "name": "TENOR UKULELE TELİ AGUİLA", "qty": 1, "price": 18.77, "category": "Aksesuar"}, {"id": "stk173", "name": "SUNRISE BURGU ÇEVİRME", "qty": 2, "price": 2.5, "category": "Aksesuar"}, {"id": "stk174", "name": "KEMAN CASE", "qty": 1, "price": 24.27, "category": "Müzik Aleti"}, {"id": "stk175", "name": "SATURN SOL KLARNET CL318N-L", "qty": 1, "price": 42.65, "category": "Müzik Aleti"}, {"id": "stk176", "name": "RENKELRLE ORG EĞİTİMİ", "qty": 5, "price": 39.0, "category": "Metod/Kitap"}, {"id": "stk177", "name": "SONOR ŞEFFA BEK", "qty": 1, "price": 52.62, "category": "Aksesuar"}, {"id": "stk178", "name": "AD5 ADAPTÖR", "qty": 2, "price": 15.25, "category": "Aksesuar"}, {"id": "stk179", "name": "ÇÖĞÜR METODU1", "qty": 9, "price": 7.0, "category": "Metod/Kitap"}, {"id": "stk180", "name": "ELEKTRO GİTAR METODU", "qty": 1, "price": 16.0, "category": "Metod/Kitap"}, {"id": "stk181", "name": "KLARNET PLASTİK PARMAK TUTACAĞI", "qty": 2, "price": 4.98, "category": "Aksesuar"}, {"id": "stk182", "name": "CLARİSS CCG100NT NATURELKLASİK GİTAR", "qty": 2, "price": 2288.0, "category": "Müzik Aleti"}, {"id": "stk183", "name": "PK10002EQ PUKA AKUSTİK GİTAR", "qty": 1, "price": 4189.0, "category": "Müzik Aleti"}, {"id": "stk184", "name": "SPREAD KEMAN TELİ", "qty": 5, "price": 3.67, "category": "Aksesuar"}, {"id": "stk185", "name": "BAĞLAMA KILIFI", "qty": 8, "price": 2.0, "category": "Aksesuar"}, {"id": "stk186", "name": "AD5 ADAPTÖR", "qty": 1, "price": 15.15, "category": "Aksesuar"}, {"id": "stk187", "name": "LUNAS PS555 KATLANABİLİR PİYANO", "qty": 2, "price": 4850.0, "category": "Müzik Aleti"}, {"id": "stk188", "name": "DONNER RISING-G1 ACOUSTIC gitar", "qty": 1, "price": 6750.0, "category": "Müzik Aleti"}, {"id": "stk189", "name": "VALLER UK-200MIX SOPRANO UKULELE", "qty": 1, "price": 483.0, "category": "Müzik Aleti"}, {"id": "stk190", "name": "SNOPY KULAKLIK", "qty": 2, "price": 11.9, "category": "Aksesuar"}, {"id": "stk191", "name": "ELIXIR AKUSTİK TEL 11027", "qty": 2, "price": 666.67, "category": "Aksesuar"}, {"id": "stk192", "name": "XP26 AKUSTİK GİTAR TELİ", "qty": 1, "price": 15.44, "category": "Aksesuar"}, {"id": "stk193", "name": "ELIXIR AKUSTİK TEL11002", "qty": 3, "price": 666.67, "category": "Aksesuar"}, {"id": "stk194", "name": "AG250NA VALLER AG-250 NA 4/4 CUT-AWAY AKUSTIK GITAR", "qty": 1, "price": 3875.0, "category": "Müzik Aleti"}, {"id": "stk195", "name": "FENDER 100 KLASİK TEL", "qty": 2, "price": 210.17, "category": "Aksesuar"}, {"id": "stk196", "name": "AG213SB VALLER AG-213 SB AKUSTIK GITAR", "qty": 1, "price": 3375.0, "category": "Müzik Aleti"}, {"id": "stk197", "name": "ÇÖĞÜR METODU 1", "qty": 5, "price": 7.5, "category": "Metod/Kitap"}, {"id": "stk198", "name": "FT18 NEMESİS AKORT ALETİ", "qty": 3, "price": 91.66, "category": "Aksesuar"}, {"id": "stk199", "name": "ÇOCUKLAR İÇİN BAĞLAMA METODU", "qty": 1, "price": 25.0, "category": "Metod/Kitap"}, {"id": "stk200", "name": "XTC45 KLASİK GİTAR TEL", "qty": 2, "price": 100.72, "category": "Aksesuar"}, {"id": "stk201", "name": "KO970 3 METRE KABLO", "qty": 2, "price": 112.5, "category": "Aksesuar"}, {"id": "stk202", "name": "XTC46 KLASİK GİTAR TEL", "qty": 2, "price": 100.72, "category": "Aksesuar"}, {"id": "stk203", "name": "KO992 3 METRE KABLO", "qty": 3, "price": 137.5, "category": "Aksesuar"}, {"id": "stk204", "name": "ABH83C ŞEFFAF DERİ", "qty": 5, "price": 108.33, "category": "Aksesuar"}, {"id": "stk205", "name": "RENKLERLE ORG EĞİİTMİ", "qty": 3, "price": 27.3, "category": "Müzik Aleti"}, {"id": "stk206", "name": "PENA TUTACAĞI", "qty": 1, "price": 94.99, "category": "Aksesuar"}, {"id": "stk207", "name": "SWG GİTAR BURGU ÇEVİRİCİ", "qty": 2, "price": 16.66, "category": "Aksesuar"}, {"id": "stk208", "name": "CM070 TABURE", "qty": 1, "price": 16.0, "category": "Aksesuar"}, {"id": "stk209", "name": "JİM DUNLOP 63CBK TRIGGER KAPO", "qty": 2, "price": 305.08, "category": "Aksesuar"}, {"id": "stk210", "name": "VMUTE521 KEMAN SUSTURUCU", "qty": 3, "price": 6.71, "category": "Aksesuar"}, {"id": "stk211", "name": "A206 ALICE AKUSTİK GİTAR TELİ", "qty": 8, "price": 58.33, "category": "Aksesuar"}, {"id": "stk212", "name": "VMUTE521PVC KEMAN SUSTURUCU", "qty": 1, "price": 23.25, "category": "Aksesuar"}, {"id": "stk213", "name": "004/CBT KISA SAP ÇÖĞÜR BAĞLAMA TELİ", "qty": 20, "price": 21.66, "category": "Aksesuar"}, {"id": "stk214", "name": "MT6121A TEF", "qty": 1, "price": 22.55, "category": "Aksesuar"}, {"id": "stk215", "name": "WM701 WEİSRE MİKROFON", "qty": 2, "price": 10.65, "category": "Müzik Aleti"}, {"id": "stk216", "name": "KIZ NEY", "qty": 1, "price": 25.0, "category": "Müzik Aleti"}, {"id": "stk217", "name": "RİCO 1 NO KAMIŞ", "qty": 2, "price": 41.0, "category": "Aksesuar"}, {"id": "stk218", "name": "KO 970  KARIN 6METRE KABLO", "qty": 2, "price": 166.66, "category": "Aksesuar"}, {"id": "stk219", "name": "SAZ UD BURGU ÇEVİRİCİ", "qty": 2, "price": 16.67, "category": "Aksesuar"}, {"id": "stk220", "name": "BELCAT EGT-101 MANYETİK", "qty": 2, "price": 15.38, "category": "Aksesuar"}, {"id": "stk221", "name": "GALLİ G24 KEMAN LA TELİ 2.TEL", "qty": 13, "price": 6.46, "category": "Aksesuar"}, {"id": "stk222", "name": "BELCAT EGT202 MANYETİK", "qty": 2, "price": 10.77, "category": "Aksesuar"}, {"id": "stk223", "name": "GALLİ G25 KEMAN RE TELİ 3.TEL", "qty": 9, "price": 7.76, "category": "Aksesuar"}, {"id": "stk224", "name": "EZ900 AKUSTİK GİTAR TELİ", "qty": 3, "price": 215.48, "category": "Aksesuar"}, {"id": "stk225", "name": "İDM100 METRONOM", "qty": 1, "price": 936.0, "category": "Müzik Aleti"}, {"id": "stk226", "name": "ZİL KEÇESİ", "qty": 2, "price": 13.0, "category": "Aksesuar"}, {"id": "stk227", "name": "LEA TUNER", "qty": 3, "price": 112.0, "category": "Aksesuar"}, {"id": "stk228", "name": "VSR20044 KEMAN YASTIĞI UCUZ", "qty": 2, "price": 15.42, "category": "Müzik Aleti"}, {"id": "stk229", "name": "BAGET NOVA 5A", "qty": 2, "price": 203.84, "category": "Aksesuar"}, {"id": "stk230", "name": "PK2001EQ LEA AKUSTİK GİTAR", "qty": 1, "price": 4306.0, "category": "Müzik Aleti"}, {"id": "stk231", "name": "CLARİSS AGB-B AKUSTİK ALT EŞİK", "qty": 9, "price": 0.22, "category": "Aksesuar"}, {"id": "stk232", "name": "A703A 2 NO TEL", "qty": 21, "price": 0.56, "category": "Aksesuar"}, {"id": "stk233", "name": "MIZRAP", "qty": 2, "price": 4.0, "category": "Aksesuar"}, {"id": "stk234", "name": "A703A 3 NO TEL", "qty": 27, "price": 0.85, "category": "Aksesuar"}, {"id": "stk235", "name": "VR200 DADDARIO REÇİNE", "qty": 1, "price": 132.86, "category": "Aksesuar"}, {"id": "stk236", "name": "1/4 KEMAN KÖPRÜ VBR10012", "qty": 1, "price": 9.97, "category": "Aksesuar"}, {"id": "stk237", "name": "ALICE KEMAN REÇİNESİ", "qty": 7, "price": 0.79, "category": "Aksesuar"}, {"id": "stk238", "name": "VCMH0150CR VALENCİA KLASİK KULAK", "qty": 1, "price": 124.65, "category": "Aksesuar"}, {"id": "stk239", "name": "CÜMBÜŞ TELİ ONER", "qty": 2, "price": 16.94, "category": "Aksesuar"}, {"id": "stk240", "name": "KARİN KLARNET STANDI", "qty": 1, "price": 18.5, "category": "Aksesuar"}, {"id": "stk241", "name": "PENA PAKET", "qty": 2, "price": 18.0, "category": "Aksesuar"}, {"id": "stk242", "name": "KISA SAP KILIF", "qty": 6, "price": 1.5, "category": "Aksesuar"}, {"id": "stk243", "name": "ELİXİR AKUSTİK 010 PHOS BRONZE", "qty": 1, "price": 508.33, "category": "Aksesuar"}, {"id": "stk244", "name": "MUSEDO M20 BEYAZ", "qty": 1, "price": 700.0, "category": "Aksesuar"}, {"id": "stk245", "name": "HM0310 MIZIKA 10 DELİKLİ", "qty": 1, "price": 122.94, "category": "Müzik Aleti"}, {"id": "stk246", "name": "MUHTELİF İGİTAR", "qty": 1, "price": 1666.0, "category": "Aksesuar"}, {"id": "stk247", "name": "CLARİSS CG100 NT  KLASİK GİTAR", "qty": 1, "price": 2252.0, "category": "Müzik Aleti"}, {"id": "stk248", "name": "MUHTELİF BENDİR", "qty": 1, "price": 833.0, "category": "Aksesuar"}, {"id": "stk249", "name": "CLARISS CG200 BK KLASİK GİTAR", "qty": 1, "price": 2329.0, "category": "Müzik Aleti"}, {"id": "stk250", "name": "MUHTELİF TEL", "qty": 10, "price": 41.67, "category": "Aksesuar"}, {"id": "stk251", "name": "SOLARES HG560", "qty": 1, "price": 3245.0, "category": "Aksesuar"}, {"id": "stk252", "name": "LC 28 LEA KLASİK TEL", "qty": 10, "price": 33.4, "category": "Aksesuar"}, {"id": "stk253", "name": "DORAZIO 018 BAĞLAMA TELİ", "qty": 5, "price": 8.58, "category": "Aksesuar"}, {"id": "stk254", "name": "KEMAN KUYRUĞU", "qty": 1, "price": 7.74, "category": "Müzik Aleti"}, {"id": "stk255", "name": "KEMAN KUYRUK BAĞI", "qty": 2, "price": 2.32, "category": "Aksesuar"}, {"id": "stk256", "name": "IBANEZ DÜZ PENA 50ADET", "qty": 1, "price": 24.67, "category": "Aksesuar"}, {"id": "stk257", "name": "SPREAD 100ADET PENA", "qty": 1, "price": 23.01, "category": "Aksesuar"}, {"id": "stk258", "name": "MAXTONE OKUL FLÜTÜ", "qty": 2, "price": 7.82, "category": "Müzik Aleti"}, {"id": "stk259", "name": "ERNIEBALL KARIŞIK PENA", "qty": 1, "price": 49.08, "category": "Aksesuar"}, {"id": "stk260", "name": "IBANEZ PENA TUTUCU", "qty": 1, "price": 6.75, "category": "Aksesuar"}, {"id": "stk261", "name": "BONSON GÜDERİ", "qty": 3, "price": 8.7, "category": "Aksesuar"}, {"id": "stk262", "name": "KARRMA CONCERT UKULELE AĞAÇ", "qty": 1, "price": 749.99, "category": "Müzik Aleti"}, {"id": "stk263", "name": "PRASTRO KEMAN TELİ TONICA", "qty": 1, "price": 39.86, "category": "Aksesuar"}, {"id": "stk264", "name": "PRASTRO KEMAN TELİ KROMATİK", "qty": 1, "price": 45.85, "category": "Aksesuar"}, {"id": "stk265", "name": "HG500C CLASRISS KLASİK GİTAR", "qty": 1, "price": 2727.36, "category": "Müzik Aleti"}, {"id": "stk266", "name": "CCG100 CLARSISS KLASİK GİTAR BAŞLANGIÇ", "qty": 1, "price": 2011.36, "category": "Müzik Aleti"}, {"id": "stk267", "name": "PRASTRO REÇİNE GOLD", "qty": 1, "price": 17.94, "category": "Aksesuar"}, {"id": "stk268", "name": "TX620 ORPHEE AKUSTİK TEL", "qty": 9, "price": 33.4, "category": "Aksesuar"}, {"id": "stk269", "name": "PRASTRO REÇİNE SCHWARZ", "qty": 1, "price": 11.96, "category": "Aksesuar"}, {"id": "stk270", "name": "BARREKIRMIZI 1 NO KAMIŞ", "qty": 1, "price": 184.82, "category": "Aksesuar"}, {"id": "stk271", "name": "PRASTRO REÇİNE CELLİSTO", "qty": 1, "price": 20.93, "category": "Aksesuar"}, {"id": "stk272", "name": "ÇALIŞMA PEDİ BATERİ", "qty": 1, "price": 45.14, "category": "Aksesuar"}, {"id": "stk273", "name": "3DBK2-10  10 ADET PENA PLANET WAVES", "qty": 1, "price": 177.0, "category": "Aksesuar"}, {"id": "stk274", "name": "MİKROFON AYI", "qty": 1, "price": 2.54, "category": "Müzik Aleti"}, {"id": "stk275", "name": "NX35 ORPHEE KLASİK TEL", "qty": 8, "price": 36.58, "category": "Aksesuar"}, {"id": "stk276", "name": "A705 ALIOCE KEMAN TELİ", "qty": 1, "price": 36.57, "category": "Aksesuar"}, {"id": "stk277", "name": "UK21 RENKLİ UKULELER PUKA", "qty": 1, "price": 286.4, "category": "Müzik Aleti"}, {"id": "stk278", "name": "TURABİ DEĞERLİ ÇÖĞÜR METODU1", "qty": 9, "price": 13.82, "category": "Metod/Kitap"}, {"id": "stk279", "name": "STAGG TUM 50 AKORT ALETİ", "qty": 1, "price": 37.71, "category": "Aksesuar"}, {"id": "stk280", "name": "J27N DADDARIO KLASİK GİTAR TELİ", "qty": 3, "price": 188.0, "category": "Aksesuar"}, {"id": "stk281", "name": "ADIM ADIM PİYANO METODU KİTAP", "qty": 7, "price": 136.4, "category": "Metod/Kitap"}, {"id": "stk282", "name": "J27 3D DADDARIO SET KLASİK GİTAR TELİ", "qty": 1, "price": 166.0, "category": "Aksesuar"}, {"id": "stk283", "name": "EXL125 ELEKTRO GİTAR TELİ", "qty": 1, "price": 280.0, "category": "Aksesuar"}, {"id": "stk284", "name": "İLK PİYANO KİTABIM", "qty": 1, "price": 25.0, "category": "Metod/Kitap"}, {"id": "stk285", "name": "PL010 Mİ TEK TEL", "qty": 10, "price": 72.0, "category": "Aksesuar"}, {"id": "stk286", "name": "ACE 30 TEL TEMİZLEYİCİ", "qty": 2, "price": 224.62, "category": "Aksesuar"}, {"id": "stk287", "name": "1CAP2-25   25 ADET PLANET WAVES PENA", "qty": 1, "price": 380.0, "category": "Aksesuar"}, {"id": "stk288", "name": "OYNAYARAK EĞLENEREK MÜZİK", "qty": 1, "price": 12.75, "category": "Aksesuar"}, {"id": "stk289", "name": "PW1CMPT25  25 ADET PENA", "qty": 1, "price": 335.0, "category": "Aksesuar"}, {"id": "stk290", "name": "NEMESİS UNIVERSAL KAPO FC100", "qty": 3, "price": 100.0, "category": "Aksesuar"}, {"id": "stk291", "name": "P10PR VICFRITH BAG HICORY", "qty": 1, "price": 29.14, "category": "Aksesuar"}, {"id": "stk292", "name": "UNUTULMAYAN 202 ŞARKI", "qty": 2, "price": 12.35, "category": "Metod/Kitap"}, {"id": "stk293", "name": "MARSHAL ACCS-00083 KAPO", "qty": 1, "price": 16.61, "category": "Aksesuar"}, {"id": "stk294", "name": "EJ10 3D AKUSTİK GİTAR TELİ", "qty": 1, "price": 700.9, "category": "Aksesuar"}, {"id": "stk295", "name": "DUNLOP PENA", "qty": 33, "price": 0.59, "category": "Aksesuar"}, {"id": "stk296", "name": "DUNLOP PENA", "qty": 82, "price": 0.76, "category": "Aksesuar"}, {"id": "stk297", "name": "YARIM AY TEF MİTELLO PM39", "qty": 1, "price": 20.38, "category": "Aksesuar"}, {"id": "stk298", "name": "PARMAK ZİLİ", "qty": 2, "price": 3.89, "category": "Aksesuar"}, {"id": "stk299", "name": "SİYAH TAHTA SAPLI MARAKAS", "qty": 1, "price": 28.93, "category": "Aksesuar"}, {"id": "stk300", "name": "6DGN4-10 MEDIUM PLANET WAVES PENA", "qty": 2, "price": 92.0, "category": "Aksesuar"}, {"id": "stk301", "name": "M-20WH  ETRONOM", "qty": 1, "price": 700.25, "category": "Aksesuar"}, {"id": "stk302", "name": "45CM AYARLI BENDİR", "qty": 1, "price": 65.25, "category": "Müzik Aleti"}, {"id": "stk303", "name": "EXL110-3D  ELEKTRO GİTAR TELİ", "qty": 1, "price": 628.28, "category": "Aksesuar"}, {"id": "stk304", "name": "OURA R300 88-KEY HOME DIGITAL PIANO LIGHT WOOD EC7132", "qty": 1, "price": 20833.0, "category": "Aksesuar"}, {"id": "stk305", "name": "BAĞLAMA KILIF", "qty": 5, "price": 12.05, "category": "Aksesuar"}, {"id": "stk306", "name": "BAĞLAMA KISA TEL TAKIM", "qty": 5, "price": 2.2, "category": "Aksesuar"}, {"id": "stk307", "name": "MARTİN KLASİK TEL", "qty": 2, "price": 429.17, "category": "Aksesuar"}, {"id": "stk308", "name": "PYRAMID 020 TAKIM TEL", "qty": 7, "price": 4.63, "category": "Aksesuar"}, {"id": "stk309", "name": "SWING MINI PERKUSYON ZSET", "qty": 1, "price": 40.84, "category": "Aksesuar"}, {"id": "stk310", "name": "PYRAMID 018 TAKIM TEL", "qty": 9, "price": 4.63, "category": "Aksesuar"}, {"id": "stk311", "name": "UMUTULMAYAN ŞARKILARLA ORG METODU", "qty": 2, "price": 24.2, "category": "Metod/Kitap"}, {"id": "stk312", "name": "MARTİN KLASİK TEL", "qty": 14, "price": 14.42, "category": "Aksesuar"}, {"id": "stk313", "name": "RENKELRLE ORG METODU", "qty": 3, "price": 45.9, "category": "Metod/Kitap"}, {"id": "stk314", "name": "MUHTELİF UZUN BAĞLAMA", "qty": 1, "price": 1625.0, "category": "Aksesuar"}, {"id": "stk315", "name": "RT011-44 YASTIK KEMAN", "qty": 2, "price": 83.62, "category": "Müzik Aleti"}, {"id": "stk316", "name": "SATURN CL3181NL SOL KLARNET", "qty": 1, "price": 496.07, "category": "Müzik Aleti"}, {"id": "stk317", "name": "ALICE 100LÜ PENA", "qty": 1, "price": 16.34, "category": "Aksesuar"}, {"id": "stk318", "name": "CL-M3181 KLARNET BEK KAPAK", "qty": 2, "price": 59.53, "category": "Müzik Aleti"}, {"id": "stk319", "name": "ABANOZ KEMAN BURGUSU", "qty": 4, "price": 1.84, "category": "Aksesuar"}, {"id": "stk320", "name": "DUNLOP PENA", "qty": 1, "price": 114.0, "category": "Aksesuar"}, {"id": "stk321", "name": "ICCG4 CEL-GLO MEDIUM PENA", "qty": 1, "price": 53.99, "category": "Aksesuar"}, {"id": "stk322", "name": "DUNLOP HETFİELD PENA", "qty": 2, "price": 33.5, "category": "Aksesuar"}, {"id": "stk323", "name": "MARTİN ELEKTRO 010", "qty": 2, "price": 7.91, "category": "Aksesuar"}, {"id": "stk324", "name": "DUNLOP HERCO PENA", "qty": 1, "price": 10.5, "category": "Aksesuar"}, {"id": "stk325", "name": "MARTİN ELEKTRO 09", "qty": 7, "price": 7.91, "category": "Aksesuar"}, {"id": "stk326", "name": "DUNLOP GEL MAVİ PENA", "qty": 1, "price": 21.0, "category": "Aksesuar"}, {"id": "stk327", "name": "AURO BAĞLAMA TELİ", "qty": 15, "price": 85.0, "category": "Aksesuar"}, {"id": "stk328", "name": "DUNLOP TEL TEMİZLEYİCİ", "qty": 1, "price": 14.0, "category": "Aksesuar"}, {"id": "stk329", "name": "AUSTER-1 10 DELİKLİ MIZIKA", "qty": 1, "price": 171.0, "category": "Müzik Aleti"}, {"id": "stk330", "name": "NEMESİS FT-18 KLİPSLİ AKORT ALETİ", "qty": 5, "price": 171.0, "category": "Aksesuar"}, {"id": "stk331", "name": "EASTTOP T10-4C 10 DELİKLİ MIZIKA BLUES", "qty": 2, "price": 213.0, "category": "Müzik Aleti"}, {"id": "stk332", "name": "MARLA KR01 KEMAN REÇİNESİ KÜÇÜK BOY", "qty": 4, "price": 24.0, "category": "Aksesuar"}, {"id": "stk333", "name": "ICWH2-10 CEL GLO MEDIUM PENA", "qty": 1, "price": 55.99, "category": "Aksesuar"}, {"id": "stk334", "name": "INFX2-10NYLFLEX0.50 PENA", "qty": 1, "price": 49.2, "category": "Aksesuar"}, {"id": "stk335", "name": "1UCT4-10 PICK CEL WHITE LIGHT PENA", "qty": 1, "price": 81.34, "category": "Aksesuar"}, {"id": "stk336", "name": "ICAP4-25 MEDIUM 25 ADET PENA", "qty": 1, "price": 124.94, "category": "Aksesuar"}, {"id": "stk337", "name": "ÇÖĞÜR METODU1", "qty": 5, "price": 9.26, "category": "Metod/Kitap"}, {"id": "stk338", "name": "PYRAMID PREMIUM018", "qty": 2, "price": 7.06, "category": "Aksesuar"}, {"id": "stk339", "name": "ICCF4+10 CEL CAMO MEDIUM PENA", "qty": 1, "price": 55.99, "category": "Aksesuar"}, {"id": "stk340", "name": "PYRAMID PREMIUM 020", "qty": 1, "price": 7.06, "category": "Aksesuar"}, {"id": "stk341", "name": "ŞARKI SOLOLARI", "qty": 1, "price": 8.11, "category": "Metod/Kitap"}, {"id": "stk342", "name": "ALICE KEMAN REÇİNE", "qty": 14, "price": 1.15, "category": "Aksesuar"}, {"id": "stk343", "name": "ŞARKI SOLOLARI", "qty": 1, "price": 8.11, "category": "Metod/Kitap"}, {"id": "stk344", "name": "POLULARIE 1 NO KAMIŞ", "qty": 2, "price": 33.3, "category": "Aksesuar"}, {"id": "stk345", "name": "VOLUME 110U PROFESYONEL UZUN SAP BAĞLAMA TELİ 0.20", "qty": 6, "price": 166.0, "category": "Aksesuar"}, {"id": "stk346", "name": "UKULELE SOPRANO ONER MÜZİK", "qty": 2, "price": 333.33, "category": "Müzik Aleti"}, {"id": "stk347", "name": "DARBUKA FİLM DERİ ÇİN", "qty": 2, "price": 83.33, "category": "Müzik Aleti"}, {"id": "stk348", "name": "MİTELLO DARBUKA FİLMİ", "qty": 1, "price": 183.33, "category": "Aksesuar"}, {"id": "stk349", "name": "STGL90L   GİTAR DUVAR STANDI", "qty": 4, "price": 190.0, "category": "Aksesuar"}, {"id": "stk350", "name": "VRS22 REÇİNE VALENCIA", "qty": 3, "price": 0.75, "category": "Aksesuar"}, {"id": "stk351", "name": "ERNIEBALL SİYAH TOPUZLU P02406", "qty": 2, "price": 17.15, "category": "Aksesuar"}, {"id": "stk352", "name": "EPS510 LEKTRO TEL", "qty": 1, "price": 197.25, "category": "Aksesuar"}, {"id": "stk353", "name": "ALİCE GİTAR PENASI", "qty": 100, "price": 7.07, "category": "Aksesuar"}, {"id": "stk354", "name": "ALİCE AC106 KLASİK GİTAR TELİ", "qty": 20, "price": 86.9, "category": "Aksesuar"}, {"id": "stk355", "name": "GİTAR BURGU ÇEVİRİCİ", "qty": 2, "price": 25.03, "category": "Aksesuar"}, {"id": "stk356", "name": "ALİCE A703 KEMAN TELİ", "qty": 7, "price": 106.34, "category": "Aksesuar"}, {"id": "stk357", "name": "ARBENA GÜNEŞ DESENLİ", "qty": 1, "price": 60.16, "category": "Aksesuar"}, {"id": "stk358", "name": "NEMESİS TABANCA KAPO", "qty": 8, "price": 0, "category": "Aksesuar"}, {"id": "stk359", "name": "45CM BENDİR", "qty": 2, "price": 49.15, "category": "Müzik Aleti"}, {"id": "stk360", "name": "CN62 İP KAPO", "qty": 12, "price": 0, "category": "Aksesuar"}, {"id": "stk361", "name": "KARİN REÇİNE", "qty": 12, "price": 2.63, "category": "Aksesuar"}, {"id": "stk362", "name": "J46 3D DADDARIO KLASİK TEL", "qty": 1, "price": 1041.0, "category": "Aksesuar"}, {"id": "stk363", "name": "AKUSTİK GİTAR SİYA PİM", "qty": 6, "price": 2.06, "category": "Aksesuar"}, {"id": "stk364", "name": "KARIN KEMAN SUSTURUCU", "qty": 2, "price": 19.14, "category": "Aksesuar"}, {"id": "stk365", "name": "KARİN KLASİK GİTAR TELİ", "qty": 13, "price": 4.82, "category": "Aksesuar"}, {"id": "stk366", "name": "J10 3D DADDARIO AKUSTİK TEL", "qty": 1, "price": 685.88, "category": "Aksesuar"}, {"id": "stk367", "name": "45CM ARBANE", "qty": 1, "price": 49.15, "category": "Aksesuar"}, {"id": "stk368", "name": "JIM DUNLOP GELS HVY 12Lİ PAKET", "qty": 1, "price": 12.25, "category": "Aksesuar"}, {"id": "stk369", "name": "JIM DUNLOP  TORTEX JAZZ3 1 PAKET", "qty": 1, "price": 17.71, "category": "Aksesuar"}, {"id": "stk370", "name": "JIM DUNLOP GELS MIDIUM 12Lİ PAKET", "qty": 1, "price": 12.25, "category": "Aksesuar"}, {"id": "stk371", "name": "TGA NOTA SEHPASI", "qty": 3, "price": 168.33, "category": "Aksesuar"}, {"id": "stk372", "name": "BEK KAPAKLI", "qty": 2, "price": 22.13, "category": "Aksesuar"}, {"id": "stk373", "name": "A703 ALICE 1NO KEMAN TELİ", "qty": 24, "price": 0.75, "category": "Aksesuar"}, {"id": "stk374", "name": "PQP 0068 V6 TUSQ PENA", "qty": 1, "price": 164.16, "category": "Aksesuar"}, {"id": "stk375", "name": "A703 ALICE 2NO KEMAN TELİ", "qty": 26, "price": 1.22, "category": "Aksesuar"}, {"id": "stk376", "name": "6DRD1 10 PLANET WAVES PENA", "qty": 1, "price": 120.76, "category": "Aksesuar"}, {"id": "stk377", "name": "3DBK4-10 MEDİUM PENA PLANET WAVES", "qty": 1, "price": 142.17, "category": "Aksesuar"}, {"id": "stk378", "name": "KILIF ORG", "qty": 1, "price": 0.1, "category": "Aksesuar"}, {"id": "stk379", "name": "ALICE YUVARLAK KEMAN REİNE", "qty": 18, "price": 1.89, "category": "Müzik Aleti"}, {"id": "stk380", "name": "ADAPTÖR ORG", "qty": 1, "price": 0.1, "category": "Aksesuar"}, {"id": "stk381", "name": "KARİN YUVARLAK REÇİNE", "qty": 4, "price": 3.82, "category": "Aksesuar"}, {"id": "stk382", "name": "BAĞLAMA VE SAZ TELİ", "qty": 18, "price": 2.2, "category": "Aksesuar"}, {"id": "stk383", "name": "NEMESİS AKORT ALETİ", "qty": 3, "price": 95.81, "category": "Aksesuar"}, {"id": "stk384", "name": "PP6 GİTAR AKORT DÜDÜĞÜ", "qty": 2, "price": 3.36, "category": "Müzik Aleti"}, {"id": "stk385", "name": "KLASİK GİTAR KULAĞI", "qty": 2, "price": 68.2, "category": "Müzik Aleti"}, {"id": "stk386", "name": "VARIGRIP", "qty": 1, "price": 22.11, "category": "Aksesuar"}, {"id": "stk387", "name": "PQP 088  TUSQ 6 LI PENA", "qty": 1, "price": 164.16, "category": "Aksesuar"}, {"id": "stk388", "name": "ALICE 200 ADET KUTULU PENA", "qty": 1, "price": 359.29, "category": "Aksesuar"}, {"id": "stk389", "name": "1CAPX-25 25 ADET PLANET WAVES", "qty": 1, "price": 302.34, "category": "Aksesuar"}, {"id": "stk390", "name": "ME044 FOM YASTIK", "qty": 1, "price": 124.59, "category": "Aksesuar"}, {"id": "stk391", "name": "ÇÖĞÜR KISA SAP BAĞLAMA TELİ", "qty": 20, "price": 18.93, "category": "Aksesuar"}, {"id": "stk392", "name": "SR SK66 KEMAN YASTIK KALİTYELİ", "qty": 1, "price": 158.57, "category": "Müzik Aleti"}, {"id": "stk393", "name": "ÇÖĞÜR UZUN SAP SAZ TELİ", "qty": 20, "price": 19.83, "category": "Aksesuar"}, {"id": "stk394", "name": "SR05 YASTIK UCUZ", "qty": 5, "price": 67.96, "category": "Aksesuar"}, {"id": "stk395", "name": "LİLYA KLASİK GİTAR TELİ UCUZ TEL", "qty": 10, "price": 52.0, "category": "Aksesuar"}, {"id": "stk396", "name": "PENA ÇİN", "qty": 150, "price": 0.5, "category": "Aksesuar"}, {"id": "stk397", "name": "VG250 VALLER BK 4/4 KLASİK GİTAR", "qty": 1, "price": 2583.0, "category": "Müzik Aleti"}, {"id": "stk398", "name": "CONCERT UKULELE 1783 AĞAÇ", "qty": 2, "price": 899.0, "category": "Müzik Aleti"}, {"id": "stk399", "name": "CGK500CEQ CLARISS ELEKTRO KLASIK GİTAR", "qty": 1, "price": 4352.0, "category": "Müzik Aleti"}, {"id": "stk400", "name": "IBANEZ ISW10 KULAK ÇEVİRME", "qty": 2, "price": 5.01, "category": "Aksesuar"}, {"id": "stk401", "name": "PL010 AKUSTİK TEK TEL Mİ 010", "qty": 10, "price": 16.75, "category": "Aksesuar"}, {"id": "stk402", "name": "PQP 001 TUSQ PENA 6LI", "qty": 1, "price": 164.16, "category": "Aksesuar"}, {"id": "stk403", "name": "VBR01 KEMAN KÖPRÜ", "qty": 2, "price": 20.39, "category": "Aksesuar"}, {"id": "stk404", "name": "1NFX4 10 PLANET WAVES PENA  0.75", "qty": 1, "price": 119.34, "category": "Aksesuar"}, {"id": "stk405", "name": "A703 ALİCE KEMAN TELİ", "qty": 2, "price": 45.57, "category": "Aksesuar"}, {"id": "stk406", "name": "KLASİK GİTAR KULAK KGM", "qty": 3, "price": 54.16, "category": "Müzik Aleti"}, {"id": "stk407", "name": "BARRE MAVİ KUŞAK 1 NO", "qty": 1, "price": 339.81, "category": "Aksesuar"}, {"id": "stk408", "name": "GST611LG-BK IBANEZ ASKI", "qty": 1, "price": 28.22, "category": "Aksesuar"}, {"id": "stk409", "name": "TX620 ORPHEO AKUSTİK TEL", "qty": 9, "price": 45.57, "category": "Aksesuar"}, {"id": "stk410", "name": "7DGN4 10 PLANET WAVES MEDIUM PENA", "qty": 1, "price": 243.81, "category": "Aksesuar"}, {"id": "stk411", "name": "TN1 TUNER AKOR ALETİ lea", "qty": 5, "price": 67.96, "category": "Aksesuar"}, {"id": "stk412", "name": "AD5 ADAPTÖR", "qty": 1, "price": 14.68, "category": "Aksesuar"}, {"id": "stk413", "name": "7DYL3 10 MEDIUM PLANET WAVES PENA", "qty": 1, "price": 243.81, "category": "Aksesuar"}, {"id": "stk414", "name": "UKULELE SOPRANO TEL DADDARIO", "qty": 1, "price": 20.67, "category": "Aksesuar"}, {"id": "stk415", "name": "UKULELE TELİ 110U", "qty": 2, "price": 18.08, "category": "Aksesuar"}, {"id": "stk416", "name": "UKULELE TELİ 15U", "qty": 2, "price": 19.45, "category": "Aksesuar"}, {"id": "stk417", "name": "ORG KILIFI", "qty": 1, "price": 0.1, "category": "Aksesuar"}, {"id": "stk418", "name": "EBR4C VALENCIA ELEKTRO TREMELO", "qty": 1, "price": 78.64, "category": "Aksesuar"}, {"id": "stk419", "name": "ÇEVİRİCİ BÜYÜK KÜÇÜK", "qty": 10, "price": 0.8, "category": "Aksesuar"}, {"id": "stk420", "name": "VALLER VG250C KLASİK GİTAR", "qty": 1, "price": 2208.0, "category": "Müzik Aleti"}, {"id": "stk421", "name": "J47 KLASİK TEL", "qty": 1, "price": 20.33, "category": "Aksesuar"}, {"id": "stk422", "name": "LUNAX PS35 KATLANABİLİR PİYANO", "qty": 1, "price": 5125.0, "category": "Müzik Aleti"}, {"id": "stk423", "name": "CB10 BEK", "qty": 1, "price": 20.0, "category": "Aksesuar"}, {"id": "stk424", "name": "ŞEFFA BEK", "qty": 2, "price": 56.62, "category": "Aksesuar"}, {"id": "stk425", "name": "KLARNET İÇİN PLASTİK PARMAK TUTACAĞI", "qty": 2, "price": 4.98, "category": "Aksesuar"}, {"id": "stk426", "name": "SK100 YARIM AY TEF", "qty": 2, "price": 9.51, "category": "Aksesuar"}, {"id": "stk427", "name": "PM39 MARAKAS", "qty": 2, "price": 12.76, "category": "Aksesuar"}, {"id": "stk428", "name": "SRK002 SHAKER GUIRO", "qty": 2, "price": 4.99, "category": "Aksesuar"}, {"id": "stk429", "name": "EGG27/B YUMURTA", "qty": 2, "price": 3.87, "category": "Aksesuar"}, {"id": "stk430", "name": "EJ 27 3D KLASİK GİTAR TELİ", "qty": 1, "price": 831.0, "category": "Aksesuar"}, {"id": "stk431", "name": "EJ50 KALSİK GİTAR TELİ", "qty": 1, "price": 442.0, "category": "Aksesuar"}, {"id": "stk432", "name": "EXL110-3D ELEKTRO GİTAR TELİ DADDARIO", "qty": 1, "price": 625.18, "category": "Aksesuar"}, {"id": "stk433", "name": "CA525 ARA KABLO", "qty": 2, "price": 387.0, "category": "Aksesuar"}, {"id": "stk434", "name": "A010SR KAPO", "qty": 5, "price": 82.77, "category": "Aksesuar"}, {"id": "stk435", "name": "DADDARIO LİMON YAĞI", "qty": 2, "price": 163.92, "category": "Aksesuar"}, {"id": "stk436", "name": "VCMH0150GD VALENCIAI KLASİK GİTAR KULAĞI", "qty": 2, "price": 184.32, "category": "Müzik Aleti"}, {"id": "stk437", "name": "KEMAN KUYRUK ABANOZ", "qty": 1, "price": 14.0, "category": "Aksesuar"}, {"id": "stk438", "name": "PL010 Mİ TELİ TEK", "qty": 10, "price": 1.91, "category": "Aksesuar"}, {"id": "stk439", "name": "JİMİ GİGBAG TENOR", "qty": 1, "price": 30.65, "category": "Aksesuar"}, {"id": "stk440", "name": "JEL SİYAH LİGHT PENA 25Lİ PLANETWAVES", "qty": 1, "price": 28.58, "category": "Aksesuar"}, {"id": "stk441", "name": "JEL SİYAH HEAVY PENA 25Lİ PLANET WAVES", "qty": 1, "price": 28.58, "category": "Aksesuar"}, {"id": "stk442", "name": "MELODİKA HORTUMU", "qty": 2, "price": 5.9, "category": "Müzik Aleti"}, {"id": "stk443", "name": "PLASTİK NEY", "qty": 1, "price": 12.71, "category": "Müzik Aleti"}, {"id": "stk444", "name": "PLANET WAVES 10LU PENA LİGHT", "qty": 2, "price": 11.75, "category": "Aksesuar"}, {"id": "stk445", "name": "BONGO", "qty": 1, "price": 101.39, "category": "Aksesuar"}, {"id": "stk446", "name": "PLANET WAVES 10LU PENA MEDIUM", "qty": 2, "price": 11.75, "category": "Aksesuar"}, {"id": "stk447", "name": "ALICE 1 NO KEMAN TELİ", "qty": 23, "price": 0.71, "category": "Aksesuar"}, {"id": "stk448", "name": "PLANET WAVES 10LU PENA MEDIUM", "qty": 1, "price": 15.45, "category": "Aksesuar"}, {"id": "stk449", "name": "PLANET WAVES 10LU PENA BLACICE MEDIUM", "qty": 1, "price": 13.03, "category": "Aksesuar"}, {"id": "stk450", "name": "ALICE KEMAN TELİ NO3", "qty": 23, "price": 1.77, "category": "Aksesuar"}, {"id": "stk451", "name": "VR200 DADDARIO REÇİNE", "qty": 3, "price": 131.3, "category": "Aksesuar"}, {"id": "stk452", "name": "ALICE KEMAN TELİ NO4", "qty": 5, "price": 2.56, "category": "Aksesuar"}, {"id": "stk453", "name": "PQ-9280-C0 AKUSTİK GİTAR ALT EŞİK", "qty": 1, "price": 48.5, "category": "Aksesuar"}, {"id": "stk454", "name": "PQ-9650-00 AKUSTİK GİTAR ALT EŞİK", "qty": 1, "price": 50.56, "category": "Aksesuar"}, {"id": "stk455", "name": "PLANET WAVES 10LU PENA CORTEX MEDIUM", "qty": 1, "price": 19.64, "category": "Aksesuar"}, {"id": "stk456", "name": "KEMAN REÇİNE YUVARLAK", "qty": 5, "price": 1.65, "category": "Aksesuar"}, {"id": "stk457", "name": "JIM DUNLOP PENA", "qty": 10, "price": 8.33, "category": "Aksesuar"}, {"id": "stk458", "name": "JIM DUNLOP PENA", "qty": 10, "price": 10.0, "category": "Aksesuar"}, {"id": "stk459", "name": "XL110-3D DADDARIO ELEKTRO TEL", "qty": 1, "price": 67.08, "category": "Aksesuar"}, {"id": "stk460", "name": "JIM DUNLOP PENA", "qty": 10, "price": 6.25, "category": "Aksesuar"}, {"id": "stk461", "name": "JIM DUNLOP PENA", "qty": 10, "price": 7.5, "category": "Aksesuar"}, {"id": "stk462", "name": "PL010 Mİ TELİ TEK", "qty": 5, "price": 3.61, "category": "Aksesuar"}, {"id": "stk463", "name": "JIM DUNLOP PENA", "qty": 10, "price": 7.5, "category": "Aksesuar"}, {"id": "stk464", "name": "H-40B GİTAR ASMA APARATI GİTAR SEHPASI", "qty": 5, "price": 35.8, "category": "Aksesuar"}, {"id": "stk465", "name": "JIM DUNLOP PENA", "qty": 10, "price": 10.0, "category": "Aksesuar"}, {"id": "stk466", "name": "UD MIZRABI İSKENDER KUTMANİ", "qty": 1, "price": 1.61, "category": "Aksesuar"}, {"id": "stk467", "name": "JIM DUNLOP PENA", "qty": 10, "price": 10.0, "category": "Aksesuar"}, {"id": "stk468", "name": "JIM DUNLOP PENA", "qty": 10, "price": 129.17, "category": "Aksesuar"}, {"id": "stk469", "name": "JIM DUNLOP PENA", "qty": 1, "price": 176.67, "category": "Aksesuar"}, {"id": "stk470", "name": "EP-01BK  KULAKLIK", "qty": 6, "price": 24.27, "category": "Aksesuar"}, {"id": "stk471", "name": "CREMONIA AT KILI", "qty": 2, "price": 12.64, "category": "Aksesuar"}, {"id": "stk472", "name": "XP45 KLASİK GTAR TELİ", "qty": 2, "price": 34.05, "category": "Aksesuar"}, {"id": "stk473", "name": "J47 KLASİK TEL", "qty": 1, "price": 39.24, "category": "Aksesuar"}, {"id": "stk474", "name": "PLANET WAVES 10LU DURALIN PENA", "qty": 2, "price": 12.46, "category": "Aksesuar"}, {"id": "stk475", "name": "PLANET WAVES 10LU DURAGRIP PENA", "qty": 3, "price": 26.25, "category": "Aksesuar"}, {"id": "stk476", "name": "VRS22 DİKDÖRTGEN REÇİNE VALENCIA", "qty": 3, "price": 2.49, "category": "Aksesuar"}, {"id": "stk477", "name": "EZ900 AKUSTİK GİTAR TELİ", "qty": 2, "price": 214.7, "category": "Aksesuar"}, {"id": "stk478", "name": "VCR100HB44 ÇENELİK", "qty": 1, "price": 14.06, "category": "Aksesuar"}, {"id": "stk479", "name": "MARLA SVB-134 KEMAN YAYI ÖĞRENCİ 3/4", "qty": 1, "price": 400.0, "category": "Müzik Aleti"}, {"id": "stk480", "name": "EJ27 KLASİK GİTAR TELİ", "qty": 1, "price": 280.0, "category": "Aksesuar"}, {"id": "stk481", "name": "MARLA SVB-144 KEMAN YAYI ÖĞRENCİ 4/4", "qty": 2, "price": 400.0, "category": "Müzik Aleti"}, {"id": "stk482", "name": "EJ27 3D KLASİK GİTAR TELİ", "qty": 1, "price": 765.0, "category": "Aksesuar"}, {"id": "stk483", "name": "KISA SAP BAĞLAMA TELİ 0.18", "qty": 10, "price": 108.0, "category": "Aksesuar"}, {"id": "stk484", "name": "SWİFF K8 KLASİK GİTAR KAPO PROFESYONEL", "qty": 4, "price": 353.0, "category": "Aksesuar"}, {"id": "stk485", "name": "SUNDMANN PROFESYONEL AKUSTİK- ELEKTRO GİTAR KAPO", "qty": 5, "price": 211.0, "category": "Aksesuar"}, {"id": "stk486", "name": "RİTİM ÇUBUĞU", "qty": 4, "price": 5.64, "category": "Aksesuar"}, {"id": "stk487", "name": "MARLA ESM20 KRİSTAL VAKUMLU MANYETİK", "qty": 5, "price": 130.0, "category": "Aksesuar"}, {"id": "stk488", "name": "RİTİM SHAKER", "qty": 1, "price": 9.92, "category": "Aksesuar"}, {"id": "stk489", "name": "HONER H1005 PROFESYONEL AĞIZ MIZIKASI 10 DELİK", "qty": 2, "price": 211.0, "category": "Müzik Aleti"}, {"id": "stk490", "name": "ZİLLİ TEF", "qty": 2, "price": 21.18, "category": "Aksesuar"}, {"id": "stk491", "name": "EASTTOP T10-4C 10 DELİKLİ MIZIKA BLUES", "qty": 2, "price": 235.0, "category": "Müzik Aleti"}, {"id": "stk492", "name": "MİTELLO ÇELİK ÜÇGEN", "qty": 2, "price": 34.65, "category": "Aksesuar"}, {"id": "stk493", "name": "İMECE GÜL SAZ BURGUSU TAKIM", "qty": 3, "price": 138.0, "category": "Aksesuar"}, {"id": "stk494", "name": "ÇOCUK DAVULU", "qty": 2, "price": 25.42, "category": "Aksesuar"}, {"id": "stk495", "name": "EES10012 1/2 NO ERDAL ERZİNCAN", "qty": 1, "price": 156.0, "category": "Aksesuar"}]</script>
+<script id="stockSeedData" type="application/json">[{"id": "stk1", "name": "MARTİN 11CMGPCX1AE2 AKUSTİK GİTAR", "qty": 1, "price": 2754.24, "category": "Müzik Aleti"}, {"id": "stk2", "name": "EJ45-3D KLASİK GİTAR TELİ", "qty": 1, "price": 1173.0, "category": "Aksesuar"}, {"id": "stk3", "name": "İ19 MİNİ AMFİ BLUETOOTH", "qty": 1, "price": 866.67, "category": "Müzik Aleti"}, {"id": "stk4", "name": "EJ46-3D KLASİK GİTAR TELİ", "qty": 1, "price": 1150.0, "category": "Aksesuar"}, {"id": "stk5", "name": "M5B DRUMSTICK", "qty": 1, "price": 1.32, "category": "Aksesuar"}, {"id": "stk6", "name": "egIItm vcd", "qty": 6, "price": 2.96, "category": "Aksesuar"}, {"id": "stk7", "name": "MELODİKA", "qty": 3, "price": 24.36, "category": "Müzik Aleti"}, {"id": "stk8", "name": "ALESIS DM6 BATERİ", "qty": 1, "price": 960.78, "category": "Müzik Aleti"}, {"id": "stk9", "name": "FLUT", "qty": 1, "price": 1.1, "category": "Müzik Aleti"}, {"id": "stk10", "name": "KEMAN STANTI", "qty": 1, "price": 5.75, "category": "Müzik Aleti"}, {"id": "stk11", "name": "SAZ TELI", "qty": 9, "price": 0.5, "category": "Aksesuar"}, {"id": "stk12", "name": "VALENCIA VC103BK SİYAH 3/4 GİTAR", "qty": 1, "price": 1578.0, "category": "Müzik Aleti"}, {"id": "stk13", "name": "ABANOZ KEMAN KLAVYESİ", "qty": 1, "price": 20.0, "category": "Müzik Aleti"}, {"id": "stk14", "name": "ALICE PENA", "qty": 290, "price": 0.15, "category": "Aksesuar"}, {"id": "stk15", "name": "FLAMENKO SANATI CD'U", "qty": 1, "price": 10.0, "category": "Aksesuar"}, {"id": "stk16", "name": "PW1DPA 250'LIK KARISIK PENA-KUTU", "qty": 1, "price": 42.64, "category": "Aksesuar"}, {"id": "stk17", "name": "MUHTELİF GİTAR", "qty": 1, "price": 1120.0, "category": "Aksesuar"}, {"id": "stk18", "name": "10 ADET PW1T351PENATHIN", "qty": 5, "price": 1.76, "category": "Aksesuar"}, {"id": "stk19", "name": "ROCK GiTAR METODU", "qty": 3, "price": 1.5, "category": "Metod/Kitap"}, {"id": "stk20", "name": "10 ADET PW1T351PENAMEIUM", "qty": 6, "price": 1.85, "category": "Aksesuar"}, {"id": "stk21", "name": "ROCK VE TEORi", "qty": 2, "price": 2.65, "category": "Aksesuar"}, {"id": "stk22", "name": "10ADETPWGP2P10TGARCIA", "qty": 3, "price": 4.0, "category": "Aksesuar"}, {"id": "stk23", "name": "NELER OLUYOR BiZE", "qty": 3, "price": 4.0, "category": "Aksesuar"}, {"id": "stk24", "name": "10ADETPWGP2P10TGARCIAMED", "qty": 2, "price": 4.0, "category": "Aksesuar"}, {"id": "stk25", "name": "STG101L GİTAR STAND", "qty": 5, "price": 166.66, "category": "Aksesuar"}, {"id": "stk26", "name": "BONA", "qty": 1, "price": 5.5, "category": "Aksesuar"}, {"id": "stk27", "name": "DADi PENALAR", "qty": 70, "price": 0.23, "category": "Aksesuar"}, {"id": "stk28", "name": "PA16XSRD", "qty": 1, "price": 39.0, "category": "Aksesuar"}, {"id": "stk29", "name": "AP-SERlSl 0.46-0,71 mm ALICE GiTAR PEN", "qty": 60, "price": 0.12, "category": "Müzik Aleti"}, {"id": "stk30", "name": "DARABUKA", "qty": 13, "price": 10.0, "category": "Müzik Aleti"}, {"id": "stk31", "name": "GH525 DUVAR ASKI SEHPASI", "qty": 10, "price": 4.15, "category": "Aksesuar"}, {"id": "stk32", "name": "METELAFON", "qty": 2, "price": 52.76, "category": "Aksesuar"}, {"id": "stk33", "name": "GH240 DUVAR ASKI SEHPASI", "qty": 5, "price": 4.05, "category": "Aksesuar"}, {"id": "stk34", "name": "STAGG 3LÜ GİTAR STAND", "qty": 1, "price": 19.0, "category": "Aksesuar"}, {"id": "stk35", "name": "DANDREA PR0351 PENA", "qty": 1, "price": 25.0, "category": "Aksesuar"}, {"id": "stk36", "name": "MARTİNE MP1 PRE CE ELEKTRO KLASİK GİTAR", "qty": 1, "price": 6483.0, "category": "Müzik Aleti"}, {"id": "stk37", "name": "NOTA SEHPASI MS110", "qty": 11, "price": 166.66, "category": "Aksesuar"}, {"id": "stk38", "name": "RİCO 1 NO KLARNET KAMIŞI", "qty": 1, "price": 730.0, "category": "Müzik Aleti"}, {"id": "stk39", "name": "ŞEF NOTA SEHPASI SANGWELL", "qty": 2, "price": 583.33, "category": "Aksesuar"}, {"id": "stk40", "name": "RENKLERLE ORG ÖĞRETİMİ", "qty": 2, "price": 41.3, "category": "Metod/Kitap"}, {"id": "stk41", "name": "KISA SAP B AĞLAMA İMECE1", "qty": 1, "price": 1666.0, "category": "Aksesuar"}, {"id": "stk42", "name": "AF-017C ALICE KLASIK GİTAR  ANAHTAR", "qty": 5, "price": 2.61, "category": "Aksesuar"}, {"id": "stk43", "name": "PGS1 TEKLİ GİTAR  STAND", "qty": 4, "price": 6.43, "category": "Aksesuar"}, {"id": "stk44", "name": "NEMESİS DK460WH PİYANO", "qty": 1, "price": 2966.0, "category": "Müzik Aleti"}, {"id": "stk45", "name": "PA16XSBK IBANEZ PENA", "qty": 1, "price": 52.77, "category": "Aksesuar"}, {"id": "stk46", "name": "TAKAMİNE GN10CE AKUSTİK GİTAR", "qty": 1, "price": 902.14, "category": "Müzik Aleti"}, {"id": "stk47", "name": "BAĞLAMA TELİ", "qty": 17, "price": 2.0, "category": "Aksesuar"}, {"id": "stk48", "name": "ASUS X59SR200V C2D T6400 LAPTOP", "qty": 1, "price": 1251.23, "category": "Aksesuar"}, {"id": "stk49", "name": "DARBUKA  VATAN", "qty": 6, "price": 1500.0, "category": "Müzik Aleti"}, {"id": "stk50", "name": "LUNAX PS60 ORG", "qty": 2, "price": 2868.0, "category": "Müzik Aleti"}, {"id": "stk51", "name": "WCP60V KEMAN MANYETİK", "qty": 1, "price": 7.19, "category": "Aksesuar"}, {"id": "stk52", "name": "PYRAMİD KISA VE UZUN TEL 018-020", "qty": 49, "price": 15.0, "category": "Aksesuar"}, {"id": "stk53", "name": "GİTAR KULAK SARICI", "qty": 4, "price": 1.57, "category": "Müzik Aleti"}, {"id": "stk54", "name": "H-308 GİTAR ASMA APARATI", "qty": 5, "price": 5.59, "category": "Aksesuar"}, {"id": "stk55", "name": "BEYER OP 101 PİYANO METODU", "qty": 1, "price": 35.0, "category": "Metod/Kitap"}, {"id": "stk56", "name": "K-5088 4LÜ GİTAR STAND", "qty": 2, "price": 58.77, "category": "Aksesuar"}, {"id": "stk57", "name": "CAD25 MİKROFON", "qty": 1, "price": 220.25, "category": "Müzik Aleti"}, {"id": "stk58", "name": "4/4 KEMAN KUYRUK", "qty": 2, "price": 4.77, "category": "Aksesuar"}, {"id": "stk59", "name": "FL10 FUGUE 3METRE GİTAR KABLOSU", "qty": 2, "price": 88.04, "category": "Aksesuar"}, {"id": "stk60", "name": "ALICE AKUSTİK GİTAR PİM SET", "qty": 8, "price": 0.5, "category": "Aksesuar"}, {"id": "stk61", "name": "ELEKTRO SAZ TELİ", "qty": 5, "price": 6.0, "category": "Aksesuar"}, {"id": "stk62", "name": "STAGG PBOX1-46 PENA", "qty": 1, "price": 83.9, "category": "Aksesuar"}, {"id": "stk63", "name": "ELEKTRO GİTAR KİTABI", "qty": 2, "price": 6.38, "category": "Metod/Kitap"}, {"id": "stk64", "name": "THOM", "qty": 1, "price": 55.08, "category": "Aksesuar"}, {"id": "stk65", "name": "1000PGBK IBANEZ PENA", "qty": 1, "price": 26.51, "category": "Aksesuar"}, {"id": "stk66", "name": "SANCHEZ KLASİK GİTAR", "qty": 2, "price": 1364.16, "category": "Müzik Aleti"}, {"id": "stk67", "name": "TC-45B PLASTIK MARAKAS", "qty": 1, "price": 5.66, "category": "Aksesuar"}, {"id": "stk68", "name": "GHS A57 PENA MEDIUM KIRMIZI", "qty": 1, "price": 30.71, "category": "Aksesuar"}, {"id": "stk69", "name": "GHS A59 PENA İNCE BEYAZ", "qty": 1, "price": 23.03, "category": "Aksesuar"}, {"id": "stk70", "name": "KEMAN TARAK SUSTURUCU", "qty": 1, "price": 4.53, "category": "Aksesuar"}, {"id": "stk71", "name": "SUNRISE SGC851 KLASİK GİTAR", "qty": 1, "price": 34.75, "category": "Müzik Aleti"}, {"id": "stk72", "name": "KÜÇÜK YAŞLAR İÇİN PİYANO METODU", "qty": 4, "price": 82.25, "category": "Metod/Kitap"}, {"id": "stk73", "name": "SAZ TELİ TAKIM", "qty": 6, "price": 1.5, "category": "Aksesuar"}, {"id": "stk74", "name": "STEPHAN SİYAH 4/4 KLASİK GİTAR", "qty": 2, "price": 30.72, "category": "Müzik Aleti"}, {"id": "stk75", "name": "3DBK4-10 10SM PENA SİYAH", "qty": 1, "price": 4.03, "category": "Aksesuar"}, {"id": "stk76", "name": "STEPHAN KIRMIZI 4/4 KLASİK GİTAR", "qty": 1, "price": 30.72, "category": "Müzik Aleti"}, {"id": "stk77", "name": "MS041 KLASİK ÜŞT EŞİK 10 ADET", "qty": 1, "price": 2.05, "category": "Aksesuar"}, {"id": "stk78", "name": "BARKOBEL 4/4 NATUREL KLASİK", "qty": 1, "price": 36.86, "category": "Aksesuar"}, {"id": "stk79", "name": "KARİN REÇİNE YUVARLAK", "qty": 7, "price": 2.58, "category": "Aksesuar"}, {"id": "stk80", "name": "ALVARO 3/4 ALVIO100", "qty": 1, "price": 587.73, "category": "Aksesuar"}, {"id": "stk81", "name": "ELEKTRO GİTAR KILIFI", "qty": 6, "price": 2.5, "category": "Aksesuar"}, {"id": "stk82", "name": "ALVARO AVL0210 NO29", "qty": 1, "price": 230.15, "category": "Aksesuar"}, {"id": "stk83", "name": "KENDİ KENDİNE KOLAY PİYANO METODU", "qty": 5, "price": 87.0, "category": "Metod/Kitap"}, {"id": "stk84", "name": "HG560 CLARİSS KLASİK GİTAR", "qty": 1, "price": 2178.0, "category": "Müzik Aleti"}, {"id": "stk85", "name": "S800WH Mooer GTRS Intelligent Elektro Gitar WHITE", "qty": 1, "price": 1.0, "category": "Aksesuar"}, {"id": "stk86", "name": "KLASİK GİTAR", "qty": 3, "price": 666.31, "category": "Müzik Aleti"}, {"id": "stk87", "name": "KEMAN ASMA APARATI VGH-27", "qty": 3, "price": 4.64, "category": "Aksesuar"}, {"id": "stk88", "name": "MELODİKA METODU", "qty": 1, "price": 8.5, "category": "Metod/Kitap"}, {"id": "stk89", "name": "BAĞLAMA TELİ KISA", "qty": 13, "price": 1.0, "category": "Aksesuar"}, {"id": "stk90", "name": "DADİ 0,58MM PENA", "qty": 3, "price": 1.0, "category": "Aksesuar"}, {"id": "stk91", "name": "MANUEL RODRİGUEZ MOD11", "qty": 1, "price": 380.81, "category": "Aksesuar"}, {"id": "stk92", "name": "ÖMERCAN", "qty": 7, "price": 3.02, "category": "Aksesuar"}, {"id": "stk93", "name": "PARA MAKBUZU 2 NÜSHA", "qty": 20, "price": 2.62, "category": "Aksesuar"}, {"id": "stk94", "name": "SPREAD KEMAN TELİ", "qty": 7, "price": 4.38, "category": "Aksesuar"}, {"id": "stk95", "name": "RENKLİ ASKI", "qty": 4, "price": 57.33, "category": "Aksesuar"}, {"id": "stk96", "name": "EJ25-B FLAMENKO GİTAR TELİ", "qty": 1, "price": 631.0, "category": "Aksesuar"}, {"id": "stk97", "name": "BOULT ORG 61 TUŞ BD638BK", "qty": 1, "price": 2291.0, "category": "Müzik Aleti"}, {"id": "stk98", "name": "EJ30 KLASİK GİTAR TELİ", "qty": 1, "price": 457.0, "category": "Aksesuar"}, {"id": "stk99", "name": "KISA SAP BAĞLAMA METODU 3CİLT", "qty": 2, "price": 12.0, "category": "Metod/Kitap"}, {"id": "stk100", "name": "DUYGULAR PİYANO EĞİTİMİ", "qty": 1, "price": 12.0, "category": "Metod/Kitap"}, {"id": "stk101", "name": "UZUN SAP BAĞLAMA METODU", "qty": 2, "price": 9.0, "category": "Metod/Kitap"}, {"id": "stk102", "name": "ELEKTRO ORG EĞİTİM VE POP MÜZİK", "qty": 1, "price": 19.0, "category": "Metod/Kitap"}, {"id": "stk103", "name": "ŞARKILARLA GİTAR ÖĞRENİYORUM", "qty": 1, "price": 20.0, "category": "Metod/Kitap"}, {"id": "stk104", "name": "DRCA ARA KABLO 3METRE", "qty": 2, "price": 200.0, "category": "Aksesuar"}, {"id": "stk105", "name": "EJ10-3D AKUSTİK GİTAR TELİ", "qty": 1, "price": 758.0, "category": "Aksesuar"}, {"id": "stk106", "name": "ALICE GİTAR ASKI", "qty": 1, "price": 38.62, "category": "Aksesuar"}, {"id": "stk107", "name": "ELEKTRO GİTAR KILIFI", "qty": 1, "price": 42.38, "category": "Aksesuar"}, {"id": "stk108", "name": "GİTAR", "qty": 3, "price": 1388.0, "category": "Müzik Aleti"}, {"id": "stk109", "name": "VR200 REÇİNE", "qty": 3, "price": 143.0, "category": "Aksesuar"}, {"id": "stk110", "name": "AD5 CASIO ADAPTÖR", "qty": 2, "price": 31.0, "category": "Aksesuar"}, {"id": "stk111", "name": "TURABİ DEĞERLİ ÇÖĞÜR 1", "qty": 1, "price": 5.0, "category": "Müzik Aleti"}, {"id": "stk112", "name": "B AĞLAMA ÇÖĞÜR KISA", "qty": 3, "price": 60.75, "category": "Müzik Aleti"}, {"id": "stk113", "name": "SAZ TELİ TAKIM", "qty": 2, "price": 88.57, "category": "Aksesuar"}, {"id": "stk114", "name": "BAĞLAMA KILIF", "qty": 24, "price": 1.5, "category": "Aksesuar"}, {"id": "stk115", "name": "BAĞLAMA KILIF KISA", "qty": 7, "price": 1.5, "category": "Aksesuar"}, {"id": "stk116", "name": "RENKELRLE ORG EĞİTİMİ", "qty": 3, "price": 45.9, "category": "Metod/Kitap"}, {"id": "stk117", "name": "SOFT KILIF KISA", "qty": 4, "price": 15.0, "category": "Aksesuar"}, {"id": "stk118", "name": "UNUTULMAYAN ŞARKILARLA ORG METODU", "qty": 2, "price": 24.9, "category": "Metod/Kitap"}, {"id": "stk119", "name": "CLARİSS MİKROFON KABLOSU", "qty": 1, "price": 14.0, "category": "Aksesuar"}, {"id": "stk120", "name": "ASHTON GS55 GİTAR SEHPA 5Lİ", "qty": 1, "price": 48.75, "category": "Aksesuar"}, {"id": "stk121", "name": "SW3006 REÇİNE SİYAH", "qty": 4, "price": 60.78, "category": "Aksesuar"}, {"id": "stk122", "name": "KÜÇÜK YAŞLAR İÇİN PİYANO METODU", "qty": 3, "price": 87.5, "category": "Metod/Kitap"}, {"id": "stk123", "name": "VALLER AG-250 NA 4/4 CUT-AWAY AKUSTIK GITAR", "qty": 1, "price": 4100.0, "category": "Müzik Aleti"}, {"id": "stk124", "name": "PYRAMID 018 BAĞLAMA TELİ", "qty": 10, "price": 4.71, "category": "Aksesuar"}, {"id": "stk125", "name": "PYRAMID 018 TEL KISA SAP TEL", "qty": 4, "price": 4.09, "category": "Aksesuar"}, {"id": "stk126", "name": "PYRAMID 020 BAĞLAMA TELİ", "qty": 10, "price": 4.71, "category": "Aksesuar"}, {"id": "stk127", "name": "PYRAMID 020 UZUN SAP TEL", "qty": 2, "price": 4.09, "category": "Aksesuar"}, {"id": "stk128", "name": "ELEKTRO GİTAR KILIFI", "qty": 9, "price": 2.5, "category": "Aksesuar"}, {"id": "stk129", "name": "PYRAMID 020 UZUN SAP TEL", "qty": 6, "price": 2.37, "category": "Aksesuar"}, {"id": "stk130", "name": "3/4 JUNIOR GİTAR KILIFI", "qty": 10, "price": 2.5, "category": "Aksesuar"}, {"id": "stk131", "name": "VANETTA VL1A 3/4 KEMAN", "qty": 1, "price": 104.55, "category": "Müzik Aleti"}, {"id": "stk132", "name": "BAS GİTAR KILIFI", "qty": 1, "price": 2.5, "category": "Aksesuar"}, {"id": "stk133", "name": "WASHBURN WA90CRDB KILIF GİGBAG", "qty": 1, "price": 185.19, "category": "Aksesuar"}, {"id": "stk134", "name": "ELEKTRO GİTAR KILIFI", "qty": 1, "price": 33.85, "category": "Aksesuar"}, {"id": "stk135", "name": "ELEKTRO GİTAR KILIFI", "qty": 4, "price": 2.0, "category": "Aksesuar"}, {"id": "stk136", "name": "IBANEZ heavy pena 50'lik paket", "qty": 1, "price": 52.77, "category": "Aksesuar"}, {"id": "stk137", "name": "ÇÖĞÜR METODU", "qty": 9, "price": 6.94, "category": "Metod/Kitap"}, {"id": "stk138", "name": "ALVARO NO27 3/4  GİTAR", "qty": 1, "price": 684.23, "category": "Müzik Aleti"}, {"id": "stk139", "name": "ŞARKI SOLOLARI", "qty": 1, "price": 13.38, "category": "Metod/Kitap"}, {"id": "stk140", "name": "ELIXIR ACOU 11027", "qty": 3, "price": 666.0, "category": "Aksesuar"}, {"id": "stk141", "name": "ÇOCUKLAR İÇİN GİTAR METODU", "qty": 3, "price": 14.17, "category": "Metod/Kitap"}, {"id": "stk142", "name": "ELIXIR AKUSTİK TEL 11002", "qty": 2, "price": 612.0, "category": "Aksesuar"}, {"id": "stk143", "name": "BAĞLAMA METODU KISA", "qty": 1, "price": 11.02, "category": "Metod/Kitap"}, {"id": "stk144", "name": "IBANEZ GSR180 BAS GİTAR", "qty": 1, "price": 333.57, "category": "Müzik Aleti"}, {"id": "stk145", "name": "ELİXİR AKUSTİK GİTAR TELİ 11002", "qty": 1, "price": 616.0, "category": "Aksesuar"}, {"id": "stk146", "name": "CASIO ADAPTÖR", "qty": 2, "price": 21.19, "category": "Aksesuar"}, {"id": "stk147", "name": "ERNIEBALL AKUSTİK 010 2150", "qty": 4, "price": 14.93, "category": "Aksesuar"}, {"id": "stk148", "name": "STAGG 2Lİ GİTAR STAND", "qty": 1, "price": 31.0, "category": "Aksesuar"}, {"id": "stk149", "name": "MANDOLİN TELİ SET 8020 BRONZ J62", "qty": 5, "price": 16.37, "category": "Aksesuar"}, {"id": "stk150", "name": "CASIO CTK245", "qty": 1, "price": 271.18, "category": "Aksesuar"}, {"id": "stk151", "name": "ALÜMİNYUM ÇERÇEVE", "qty": 10, "price": 6.78, "category": "Aksesuar"}, {"id": "stk152", "name": "ALICE KLASİK TEL A106", "qty": 8, "price": 9.48, "category": "Aksesuar"}, {"id": "stk153", "name": "LABELLA 4.TEL TEK", "qty": 22, "price": 1.37, "category": "Aksesuar"}, {"id": "stk154", "name": "KARIN KEMAN TELİ 4703", "qty": 6, "price": 10.15, "category": "Aksesuar"}, {"id": "stk155", "name": "LABELLA 010 ELEKTRO 1.TEL TEK", "qty": 22, "price": 0.92, "category": "Aksesuar"}, {"id": "stk156", "name": "J103D AKUSTİK GİTAR TEL SET", "qty": 1, "price": 660.0, "category": "Aksesuar"}, {"id": "stk157", "name": "UKULELE TELİ ALICE AU02", "qty": 5, "price": 5.73, "category": "Aksesuar"}, {"id": "stk158", "name": "3/4 KLASİK GİTAR KILIFI", "qty": 2, "price": 2.5, "category": "Aksesuar"}, {"id": "stk159", "name": "KLASİK KILIF", "qty": 28, "price": 0.25, "category": "Aksesuar"}, {"id": "stk160", "name": "AKUSTİK KILIF", "qty": 10, "price": 0.25, "category": "Aksesuar"}, {"id": "stk161", "name": "BAS GİTAR KILIFI", "qty": 2, "price": 2.5, "category": "Aksesuar"}, {"id": "stk162", "name": "BAĞLAMA KILI", "qty": 19, "price": 0.2, "category": "Müzik Aleti"}, {"id": "stk163", "name": "SP1CR GİTAR ASKI PİMİ", "qty": 2, "price": 21.26, "category": "Aksesuar"}, {"id": "stk164", "name": "A828 ORG", "qty": 2, "price": 1875.0, "category": "Müzik Aleti"}, {"id": "stk165", "name": "ELEKTRO GİTAR METODU", "qty": 2, "price": 16.0, "category": "Metod/Kitap"}, {"id": "stk166", "name": "CLARİSS KLASİK ALT EŞİK", "qty": 8, "price": 0.22, "category": "Aksesuar"}, {"id": "stk167", "name": "CLARİSS ÜST EŞİK", "qty": 2, "price": 0.22, "category": "Aksesuar"}, {"id": "stk168", "name": "SOLO GİTAR METODU", "qty": 1, "price": 35.0, "category": "Metod/Kitap"}, {"id": "stk169", "name": "ŞARKI SOLALARI", "qty": 1, "price": 16.67, "category": "Metod/Kitap"}, {"id": "stk170", "name": "ALICE BURGU ÇEVİRİCİ", "qty": 2, "price": 11.4, "category": "Aksesuar"}, {"id": "stk171", "name": "SOPRANO UKULELE TELİ AGUİRA", "qty": 1, "price": 13.81, "category": "Aksesuar"}, {"id": "stk172", "name": "TENOR UKULELE TELİ AGUİLA", "qty": 1, "price": 18.77, "category": "Aksesuar"}, {"id": "stk173", "name": "SUNRISE BURGU ÇEVİRME", "qty": 2, "price": 2.5, "category": "Aksesuar"}, {"id": "stk174", "name": "KEMAN CASE", "qty": 1, "price": 24.27, "category": "Müzik Aleti"}, {"id": "stk175", "name": "SATURN SOL KLARNET CL318N-L", "qty": 1, "price": 42.65, "category": "Müzik Aleti"}, {"id": "stk176", "name": "RENKELRLE ORG EĞİTİMİ", "qty": 5, "price": 39.0, "category": "Metod/Kitap"}, {"id": "stk177", "name": "SONOR ŞEFFA BEK", "qty": 1, "price": 52.62, "category": "Aksesuar"}, {"id": "stk178", "name": "AD5 ADAPTÖR", "qty": 2, "price": 15.25, "category": "Aksesuar"}, {"id": "stk179", "name": "ÇÖĞÜR METODU1", "qty": 9, "price": 7.0, "category": "Metod/Kitap"}, {"id": "stk180", "name": "ELEKTRO GİTAR METODU", "qty": 1, "price": 16.0, "category": "Metod/Kitap"}, {"id": "stk181", "name": "KLARNET PLASTİK PARMAK TUTACAĞI", "qty": 2, "price": 4.98, "category": "Aksesuar"}, {"id": "stk182", "name": "CLARİSS CCG100NT NATURELKLASİK GİTAR", "qty": 2, "price": 2288.0, "category": "Müzik Aleti"}, {"id": "stk183", "name": "PK10002EQ PUKA AKUSTİK GİTAR", "qty": 1, "price": 4189.0, "category": "Müzik Aleti"}, {"id": "stk184", "name": "SPREAD KEMAN TELİ", "qty": 5, "price": 3.67, "category": "Aksesuar"}, {"id": "stk185", "name": "BAĞLAMA KILIFI", "qty": 8, "price": 2.0, "category": "Aksesuar"}, {"id": "stk186", "name": "AD5 ADAPTÖR", "qty": 1, "price": 15.15, "category": "Aksesuar"}, {"id": "stk187", "name": "LUNAS PS555 KATLANABİLİR PİYANO", "qty": 2, "price": 4850.0, "category": "Müzik Aleti"}, {"id": "stk188", "name": "DONNER RISING-G1 ACOUSTIC gitar", "qty": 1, "price": 6750.0, "category": "Müzik Aleti"}, {"id": "stk189", "name": "VALLER UK-200MIX SOPRANO UKULELE", "qty": 1, "price": 483.0, "category": "Müzik Aleti"}, {"id": "stk190", "name": "SNOPY KULAKLIK", "qty": 2, "price": 11.9, "category": "Aksesuar"}, {"id": "stk191", "name": "ELIXIR AKUSTİK TEL 11027", "qty": 2, "price": 666.67, "category": "Aksesuar"}, {"id": "stk192", "name": "XP26 AKUSTİK GİTAR TELİ", "qty": 1, "price": 15.44, "category": "Aksesuar"}, {"id": "stk193", "name": "ELIXIR AKUSTİK TEL11002", "qty": 3, "price": 666.67, "category": "Aksesuar"}, {"id": "stk194", "name": "AG250NA VALLER AG-250 NA 4/4 CUT-AWAY AKUSTIK GITAR", "qty": 1, "price": 3875.0, "category": "Müzik Aleti"}, {"id": "stk195", "name": "FENDER 100 KLASİK TEL", "qty": 2, "price": 210.17, "category": "Aksesuar"}, {"id": "stk196", "name": "AG213SB VALLER AG-213 SB AKUSTIK GITAR", "qty": 1, "price": 3375.0, "category": "Müzik Aleti"}, {"id": "stk197", "name": "ÇÖĞÜR METODU 1", "qty": 5, "price": 7.5, "category": "Metod/Kitap"}, {"id": "stk198", "name": "FT18 NEMESİS AKORT ALETİ", "qty": 3, "price": 91.66, "category": "Aksesuar"}, {"id": "stk199", "name": "ÇOCUKLAR İÇİN BAĞLAMA METODU", "qty": 1, "price": 25.0, "category": "Metod/Kitap"}, {"id": "stk200", "name": "XTC45 KLASİK GİTAR TEL", "qty": 2, "price": 100.72, "category": "Aksesuar"}, {"id": "stk201", "name": "KO970 3 METRE KABLO", "qty": 2, "price": 112.5, "category": "Aksesuar"}, {"id": "stk202", "name": "XTC46 KLASİK GİTAR TEL", "qty": 2, "price": 100.72, "category": "Aksesuar"}, {"id": "stk203", "name": "KO992 3 METRE KABLO", "qty": 3, "price": 137.5, "category": "Aksesuar"}, {"id": "stk204", "name": "ABH83C ŞEFFAF DERİ", "qty": 5, "price": 108.33, "category": "Aksesuar"}, {"id": "stk205", "name": "RENKLERLE ORG EĞİİTMİ", "qty": 3, "price": 27.3, "category": "Müzik Aleti"}, {"id": "stk206", "name": "PENA TUTACAĞI", "qty": 1, "price": 94.99, "category": "Aksesuar"}, {"id": "stk207", "name": "SWG GİTAR BURGU ÇEVİRİCİ", "qty": 2, "price": 16.66, "category": "Aksesuar"}, {"id": "stk208", "name": "CM070 TABURE", "qty": 1, "price": 16.0, "category": "Aksesuar"}, {"id": "stk209", "name": "JİM DUNLOP 63CBK TRIGGER KAPO", "qty": 2, "price": 305.08, "category": "Aksesuar"}, {"id": "stk210", "name": "VMUTE521 KEMAN SUSTURUCU", "qty": 3, "price": 6.71, "category": "Aksesuar"}, {"id": "stk211", "name": "A206 ALICE AKUSTİK GİTAR TELİ", "qty": 8, "price": 58.33, "category": "Aksesuar"}, {"id": "stk212", "name": "VMUTE521PVC KEMAN SUSTURUCU", "qty": 1, "price": 23.25, "category": "Aksesuar"}, {"id": "stk213", "name": "004/CBT KISA SAP ÇÖĞÜR BAĞLAMA TELİ", "qty": 20, "price": 21.66, "category": "Aksesuar"}, {"id": "stk214", "name": "MT6121A TEF", "qty": 1, "price": 22.55, "category": "Aksesuar"}, {"id": "stk215", "name": "WM701 WEİSRE MİKROFON", "qty": 2, "price": 10.65, "category": "Müzik Aleti"}, {"id": "stk216", "name": "KIZ NEY", "qty": 1, "price": 25.0, "category": "Müzik Aleti"}, {"id": "stk217", "name": "RİCO 1 NO KAMIŞ", "qty": 2, "price": 41.0, "category": "Aksesuar"}, {"id": "stk218", "name": "KO 970  KARIN 6METRE KABLO", "qty": 2, "price": 166.66, "category": "Aksesuar"}, {"id": "stk219", "name": "SAZ UD BURGU ÇEVİRİCİ", "qty": 2, "price": 16.67, "category": "Aksesuar"}, {"id": "stk220", "name": "BELCAT EGT-101 MANYETİK", "qty": 2, "price": 15.38, "category": "Aksesuar"}, {"id": "stk221", "name": "GALLİ G24 KEMAN LA TELİ 2.TEL", "qty": 13, "price": 6.46, "category": "Aksesuar"}, {"id": "stk222", "name": "BELCAT EGT202 MANYETİK", "qty": 2, "price": 10.77, "category": "Aksesuar"}, {"id": "stk223", "name": "GALLİ G25 KEMAN RE TELİ 3.TEL", "qty": 9, "price": 7.76, "category": "Aksesuar"}, {"id": "stk224", "name": "EZ900 AKUSTİK GİTAR TELİ", "qty": 3, "price": 215.48, "category": "Aksesuar"}, {"id": "stk225", "name": "İDM100 METRONOM", "qty": 1, "price": 936.0, "category": "Müzik Aleti"}, {"id": "stk226", "name": "ZİL KEÇESİ", "qty": 2, "price": 13.0, "category": "Aksesuar"}, {"id": "stk227", "name": "LEA TUNER", "qty": 3, "price": 112.0, "category": "Aksesuar"}, {"id": "stk228", "name": "VSR20044 KEMAN YASTIĞI UCUZ", "qty": 2, "price": 15.42, "category": "Müzik Aleti"}, {"id": "stk229", "name": "BAGET NOVA 5A", "qty": 2, "price": 203.84, "category": "Aksesuar"}, {"id": "stk230", "name": "PK2001EQ LEA AKUSTİK GİTAR", "qty": 1, "price": 4306.0, "category": "Müzik Aleti"}, {"id": "stk231", "name": "CLARİSS AGB-B AKUSTİK ALT EŞİK", "qty": 9, "price": 0.22, "category": "Aksesuar"}, {"id": "stk232", "name": "A703A 2 NO TEL", "qty": 21, "price": 0.56, "category": "Aksesuar"}, {"id": "stk233", "name": "MIZRAP", "qty": 2, "price": 4.0, "category": "Aksesuar"}, {"id": "stk234", "name": "A703A 3 NO TEL", "qty": 27, "price": 0.85, "category": "Aksesuar"}, {"id": "stk235", "name": "VR200 DADDARIO REÇİNE", "qty": 1, "price": 132.86, "category": "Aksesuar"}, {"id": "stk236", "name": "1/4 KEMAN KÖPRÜ VBR10012", "qty": 1, "price": 9.97, "category": "Aksesuar"}, {"id": "stk237", "name": "ALICE KEMAN REÇİNESİ", "qty": 7, "price": 0.79, "category": "Aksesuar"}, {"id": "stk238", "name": "VCMH0150CR VALENCİA KLASİK KULAK", "qty": 1, "price": 124.65, "category": "Aksesuar"}, {"id": "stk239", "name": "CÜMBÜŞ TELİ ONER", "qty": 2, "price": 16.94, "category": "Aksesuar"}, {"id": "stk240", "name": "KARİN KLARNET STANDI", "qty": 1, "price": 18.5, "category": "Aksesuar"}, {"id": "stk241", "name": "PENA PAKET", "qty": 2, "price": 18.0, "category": "Aksesuar"}, {"id": "stk242", "name": "KISA SAP KILIF", "qty": 6, "price": 1.5, "category": "Aksesuar"}, {"id": "stk243", "name": "ELİXİR AKUSTİK 010 PHOS BRONZE", "qty": 1, "price": 508.33, "category": "Aksesuar"}, {"id": "stk244", "name": "MUSEDO M20 BEYAZ", "qty": 1, "price": 700.0, "category": "Aksesuar"}, {"id": "stk245", "name": "HM0310 MIZIKA 10 DELİKLİ", "qty": 1, "price": 122.94, "category": "Müzik Aleti"}, {"id": "stk246", "name": "MUHTELİF İGİTAR", "qty": 1, "price": 1666.0, "category": "Aksesuar"}, {"id": "stk247", "name": "CLARİSS CG100 NT  KLASİK GİTAR", "qty": 1, "price": 2252.0, "category": "Müzik Aleti"}, {"id": "stk248", "name": "MUHTELİF BENDİR", "qty": 1, "price": 833.0, "category": "Aksesuar"}, {"id": "stk249", "name": "CLARISS CG200 BK KLASİK GİTAR", "qty": 1, "price": 2329.0, "category": "Müzik Aleti"}, {"id": "stk250", "name": "MUHTELİF TEL", "qty": 10, "price": 41.67, "category": "Aksesuar"}, {"id": "stk251", "name": "SOLARES HG560", "qty": 1, "price": 3245.0, "category": "Aksesuar"}, {"id": "stk252", "name": "LC 28 LEA KLASİK TEL", "qty": 10, "price": 33.4, "category": "Aksesuar"}, {"id": "stk253", "name": "DORAZIO 018 BAĞLAMA TELİ", "qty": 5, "price": 8.58, "category": "Aksesuar"}, {"id": "stk254", "name": "KEMAN KUYRUĞU", "qty": 1, "price": 7.74, "category": "Müzik Aleti"}, {"id": "stk255", "name": "KEMAN KUYRUK BAĞI", "qty": 2, "price": 2.32, "category": "Aksesuar"}, {"id": "stk256", "name": "IBANEZ DÜZ PENA 50ADET", "qty": 1, "price": 24.67, "category": "Aksesuar"}, {"id": "stk257", "name": "SPREAD 100ADET PENA", "qty": 1, "price": 23.01, "category": "Aksesuar"}, {"id": "stk258", "name": "MAXTONE OKUL FLÜTÜ", "qty": 2, "price": 7.82, "category": "Müzik Aleti"}, {"id": "stk259", "name": "ERNIEBALL KARIŞIK PENA", "qty": 1, "price": 49.08, "category": "Aksesuar"}, {"id": "stk260", "name": "IBANEZ PENA TUTUCU", "qty": 1, "price": 6.75, "category": "Aksesuar"}, {"id": "stk261", "name": "BONSON GÜDERİ", "qty": 3, "price": 8.7, "category": "Aksesuar"}, {"id": "stk262", "name": "KARRMA CONCERT UKULELE AĞAÇ", "qty": 1, "price": 749.99, "category": "Müzik Aleti"}, {"id": "stk263", "name": "PRASTRO KEMAN TELİ TONICA", "qty": 1, "price": 39.86, "category": "Aksesuar"}, {"id": "stk264", "name": "PRASTRO KEMAN TELİ KROMATİK", "qty": 1, "price": 45.85, "category": "Aksesuar"}, {"id": "stk265", "name": "HG500C CLASRISS KLASİK GİTAR", "qty": 1, "price": 2727.36, "category": "Müzik Aleti"}, {"id": "stk266", "name": "CCG100 CLARSISS KLASİK GİTAR BAŞLANGIÇ", "qty": 1, "price": 2011.36, "category": "Müzik Aleti"}, {"id": "stk267", "name": "PRASTRO REÇİNE GOLD", "qty": 1, "price": 17.94, "category": "Aksesuar"}, {"id": "stk268", "name": "TX620 ORPHEE AKUSTİK TEL", "qty": 9, "price": 33.4, "category": "Aksesuar"}, {"id": "stk269", "name": "PRASTRO REÇİNE SCHWARZ", "qty": 1, "price": 11.96, "category": "Aksesuar"}, {"id": "stk270", "name": "BARREKIRMIZI 1 NO KAMIŞ", "qty": 1, "price": 184.82, "category": "Aksesuar"}, {"id": "stk271", "name": "PRASTRO REÇİNE CELLİSTO", "qty": 1, "price": 20.93, "category": "Aksesuar"}, {"id": "stk272", "name": "ÇALIŞMA PEDİ BATERİ", "qty": 1, "price": 45.14, "category": "Aksesuar"}, {"id": "stk273", "name": "3DBK2-10  10 ADET PENA PLANET WAVES", "qty": 1, "price": 177.0, "category": "Aksesuar"}, {"id": "stk274", "name": "MİKROFON AYI", "qty": 1, "price": 2.54, "category": "Müzik Aleti"}, {"id": "stk275", "name": "NX35 ORPHEE KLASİK TEL", "qty": 8, "price": 36.58, "category": "Aksesuar"}, {"id": "stk276", "name": "A705 ALIOCE KEMAN TELİ", "qty": 1, "price": 36.57, "category": "Aksesuar"}, {"id": "stk277", "name": "UK21 RENKLİ UKULELER PUKA", "qty": 1, "price": 286.4, "category": "Müzik Aleti"}, {"id": "stk278", "name": "TURABİ DEĞERLİ ÇÖĞÜR METODU1", "qty": 9, "price": 13.82, "category": "Metod/Kitap"}, {"id": "stk279", "name": "STAGG TUM 50 AKORT ALETİ", "qty": 1, "price": 37.71, "category": "Aksesuar"}, {"id": "stk280", "name": "J27N DADDARIO KLASİK GİTAR TELİ", "qty": 3, "price": 188.0, "category": "Aksesuar"}, {"id": "stk281", "name": "ADIM ADIM PİYANO METODU KİTAP", "qty": 7, "price": 136.4, "category": "Metod/Kitap"}, {"id": "stk282", "name": "J27 3D DADDARIO SET KLASİK GİTAR TELİ", "qty": 1, "price": 166.0, "category": "Aksesuar"}, {"id": "stk283", "name": "EXL125 ELEKTRO GİTAR TELİ", "qty": 1, "price": 280.0, "category": "Aksesuar"}, {"id": "stk284", "name": "İLK PİYANO KİTABIM", "qty": 1, "price": 25.0, "category": "Metod/Kitap"}, {"id": "stk285", "name": "PL010 Mİ TEK TEL", "qty": 10, "price": 72.0, "category": "Aksesuar"}, {"id": "stk286", "name": "ACE 30 TEL TEMİZLEYİCİ", "qty": 2, "price": 224.62, "category": "Aksesuar"}, {"id": "stk287", "name": "1CAP2-25   25 ADET PLANET WAVES PENA", "qty": 1, "price": 380.0, "category": "Aksesuar"}, {"id": "stk288", "name": "OYNAYARAK EĞLENEREK MÜZİK", "qty": 1, "price": 12.75, "category": "Aksesuar"}, {"id": "stk289", "name": "PW1CMPT25  25 ADET PENA", "qty": 1, "price": 335.0, "category": "Aksesuar"}, {"id": "stk290", "name": "NEMESİS UNIVERSAL KAPO FC100", "qty": 3, "price": 100.0, "category": "Aksesuar"}, {"id": "stk291", "name": "P10PR VICFRITH BAG HICORY", "qty": 1, "price": 29.14, "category": "Aksesuar"}, {"id": "stk292", "name": "UNUTULMAYAN 202 ŞARKI", "qty": 2, "price": 12.35, "category": "Metod/Kitap"}, {"id": "stk293", "name": "MARSHAL ACCS-00083 KAPO", "qty": 1, "price": 16.61, "category": "Aksesuar"}, {"id": "stk294", "name": "EJ10 3D AKUSTİK GİTAR TELİ", "qty": 1, "price": 700.9, "category": "Aksesuar"}, {"id": "stk295", "name": "DUNLOP PENA", "qty": 33, "price": 0.59, "category": "Aksesuar"}, {"id": "stk296", "name": "DUNLOP PENA", "qty": 82, "price": 0.76, "category": "Aksesuar"}, {"id": "stk297", "name": "YARIM AY TEF MİTELLO PM39", "qty": 1, "price": 20.38, "category": "Aksesuar"}, {"id": "stk298", "name": "PARMAK ZİLİ", "qty": 2, "price": 3.89, "category": "Aksesuar"}, {"id": "stk299", "name": "SİYAH TAHTA SAPLI MARAKAS", "qty": 1, "price": 28.93, "category": "Aksesuar"}, {"id": "stk300", "name": "6DGN4-10 MEDIUM PLANET WAVES PENA", "qty": 2, "price": 92.0, "category": "Aksesuar"}, {"id": "stk301", "name": "M-20WH  ETRONOM", "qty": 1, "price": 700.25, "category": "Aksesuar"}, {"id": "stk302", "name": "45CM AYARLI BENDİR", "qty": 1, "price": 65.25, "category": "Müzik Aleti"}, {"id": "stk303", "name": "EXL110-3D  ELEKTRO GİTAR TELİ", "qty": 1, "price": 628.28, "category": "Aksesuar"}, {"id": "stk304", "name": "OURA R300 88-KEY HOME DIGITAL PIANO LIGHT WOOD EC7132", "qty": 1, "price": 20833.0, "category": "Aksesuar"}, {"id": "stk305", "name": "BAĞLAMA KILIF", "qty": 5, "price": 12.05, "category": "Aksesuar"}, {"id": "stk306", "name": "BAĞLAMA KISA TEL TAKIM", "qty": 5, "price": 2.2, "category": "Aksesuar"}, {"id": "stk307", "name": "MARTİN KLASİK TEL", "qty": 2, "price": 429.17, "category": "Aksesuar"}, {"id": "stk308", "name": "PYRAMID 020 TAKIM TEL", "qty": 7, "price": 4.63, "category": "Aksesuar"}, {"id": "stk309", "name": "SWING MINI PERKUSYON ZSET", "qty": 1, "price": 40.84, "category": "Aksesuar"}, {"id": "stk310", "name": "PYRAMID 018 TAKIM TEL", "qty": 9, "price": 4.63, "category": "Aksesuar"}, {"id": "stk311", "name": "UMUTULMAYAN ŞARKILARLA ORG METODU", "qty": 2, "price": 24.2, "category": "Metod/Kitap"}, {"id": "stk312", "name": "MARTİN KLASİK TEL", "qty": 14, "price": 14.42, "category": "Aksesuar"}, {"id": "stk313", "name": "RENKELRLE ORG METODU", "qty": 3, "price": 45.9, "category": "Metod/Kitap"}, {"id": "stk314", "name": "MUHTELİF UZUN BAĞLAMA", "qty": 1, "price": 1625.0, "category": "Aksesuar"}, {"id": "stk315", "name": "RT011-44 YASTIK KEMAN", "qty": 2, "price": 83.62, "category": "Müzik Aleti"}, {"id": "stk316", "name": "SATURN CL3181NL SOL KLARNET", "qty": 1, "price": 496.07, "category": "Müzik Aleti"}, {"id": "stk317", "name": "ALICE 100LÜ PENA", "qty": 1, "price": 16.34, "category": "Aksesuar"}, {"id": "stk318", "name": "CL-M3181 KLARNET BEK KAPAK", "qty": 2, "price": 59.53, "category": "Müzik Aleti"}, {"id": "stk319", "name": "ABANOZ KEMAN BURGUSU", "qty": 4, "price": 1.84, "category": "Aksesuar"}, {"id": "stk320", "name": "DUNLOP PENA", "qty": 1, "price": 114.0, "category": "Aksesuar"}, {"id": "stk321", "name": "ICCG4 CEL-GLO MEDIUM PENA", "qty": 1, "price": 53.99, "category": "Aksesuar"}, {"id": "stk322", "name": "DUNLOP HETFİELD PENA", "qty": 2, "price": 33.5, "category": "Aksesuar"}, {"id": "stk323", "name": "MARTİN ELEKTRO 010", "qty": 2, "price": 7.91, "category": "Aksesuar"}, {"id": "stk324", "name": "DUNLOP HERCO PENA", "qty": 1, "price": 10.5, "category": "Aksesuar"}, {"id": "stk325", "name": "MARTİN ELEKTRO 09", "qty": 7, "price": 7.91, "category": "Aksesuar"}, {"id": "stk326", "name": "DUNLOP GEL MAVİ PENA", "qty": 1, "price": 21.0, "category": "Aksesuar"}, {"id": "stk327", "name": "AURO BAĞLAMA TELİ", "qty": 15, "price": 85.0, "category": "Aksesuar"}, {"id": "stk328", "name": "DUNLOP TEL TEMİZLEYİCİ", "qty": 1, "price": 14.0, "category": "Aksesuar"}, {"id": "stk329", "name": "AUSTER-1 10 DELİKLİ MIZIKA", "qty": 1, "price": 171.0, "category": "Müzik Aleti"}, {"id": "stk330", "name": "NEMESİS FT-18 KLİPSLİ AKORT ALETİ", "qty": 5, "price": 171.0, "category": "Aksesuar"}, {"id": "stk331", "name": "EASTTOP T10-4C 10 DELİKLİ MIZIKA BLUES", "qty": 2, "price": 213.0, "category": "Müzik Aleti"}, {"id": "stk332", "name": "MARLA KR01 KEMAN REÇİNESİ KÜÇÜK BOY", "qty": 4, "price": 24.0, "category": "Aksesuar"}, {"id": "stk333", "name": "ICWH2-10 CEL GLO MEDIUM PENA", "qty": 1, "price": 55.99, "category": "Aksesuar"}, {"id": "stk334", "name": "INFX2-10NYLFLEX0.50 PENA", "qty": 1, "price": 49.2, "category": "Aksesuar"}, {"id": "stk335", "name": "1UCT4-10 PICK CEL WHITE LIGHT PENA", "qty": 1, "price": 81.34, "category": "Aksesuar"}, {"id": "stk336", "name": "ICAP4-25 MEDIUM 25 ADET PENA", "qty": 1, "price": 124.94, "category": "Aksesuar"}, {"id": "stk337", "name": "ÇÖĞÜR METODU1", "qty": 5, "price": 9.26, "category": "Metod/Kitap"}, {"id": "stk338", "name": "PYRAMID PREMIUM018", "qty": 2, "price": 7.06, "category": "Aksesuar"}, {"id": "stk339", "name": "ICCF4+10 CEL CAMO MEDIUM PENA", "qty": 1, "price": 55.99, "category": "Aksesuar"}, {"id": "stk340", "name": "PYRAMID PREMIUM 020", "qty": 1, "price": 7.06, "category": "Aksesuar"}, {"id": "stk341", "name": "ŞARKI SOLOLARI", "qty": 1, "price": 8.11, "category": "Metod/Kitap"}, {"id": "stk342", "name": "ALICE KEMAN REÇİNE", "qty": 14, "price": 1.15, "category": "Aksesuar"}, {"id": "stk343", "name": "ŞARKI SOLOLARI", "qty": 1, "price": 8.11, "category": "Metod/Kitap"}, {"id": "stk344", "name": "POLULARIE 1 NO KAMIŞ", "qty": 2, "price": 33.3, "category": "Aksesuar"}, {"id": "stk345", "name": "VOLUME 110U PROFESYONEL UZUN SAP BAĞLAMA TELİ 0.20", "qty": 6, "price": 166.0, "category": "Aksesuar"}, {"id": "stk346", "name": "UKULELE SOPRANO ONER MÜZİK", "qty": 2, "price": 333.33, "category": "Müzik Aleti"}, {"id": "stk347", "name": "DARBUKA FİLM DERİ ÇİN", "qty": 2, "price": 83.33, "category": "Müzik Aleti"}, {"id": "stk348", "name": "MİTELLO DARBUKA FİLMİ", "qty": 1, "price": 183.33, "category": "Aksesuar"}, {"id": "stk349", "name": "STGL90L   GİTAR DUVAR STANDI", "qty": 4, "price": 190.0, "category": "Aksesuar"}, {"id": "stk350", "name": "VRS22 REÇİNE VALENCIA", "qty": 3, "price": 0.75, "category": "Aksesuar"}, {"id": "stk351", "name": "ERNIEBALL SİYAH TOPUZLU P02406", "qty": 2, "price": 17.15, "category": "Aksesuar"}, {"id": "stk352", "name": "EPS510 LEKTRO TEL", "qty": 1, "price": 197.25, "category": "Aksesuar"}, {"id": "stk353", "name": "ALİCE GİTAR PENASI", "qty": 100, "price": 7.07, "category": "Aksesuar"}, {"id": "stk354", "name": "ALİCE AC106 KLASİK GİTAR TELİ", "qty": 20, "price": 86.9, "category": "Aksesuar"}, {"id": "stk355", "name": "GİTAR BURGU ÇEVİRİCİ", "qty": 2, "price": 25.03, "category": "Aksesuar"}, {"id": "stk356", "name": "ALİCE A703 KEMAN TELİ", "qty": 7, "price": 106.34, "category": "Aksesuar"}, {"id": "stk357", "name": "ARBENA GÜNEŞ DESENLİ", "qty": 1, "price": 60.16, "category": "Aksesuar"}, {"id": "stk358", "name": "NEMESİS TABANCA KAPO", "qty": 8, "price": 0, "category": "Aksesuar"}, {"id": "stk359", "name": "45CM BENDİR", "qty": 2, "price": 49.15, "category": "Müzik Aleti"}, {"id": "stk360", "name": "CN62 İP KAPO", "qty": 12, "price": 0, "category": "Aksesuar"}, {"id": "stk361", "name": "KARİN REÇİNE", "qty": 12, "price": 2.63, "category": "Aksesuar"}, {"id": "stk362", "name": "J46 3D DADDARIO KLASİK TEL", "qty": 1, "price": 1041.0, "category": "Aksesuar"}, {"id": "stk363", "name": "AKUSTİK GİTAR SİYA PİM", "qty": 6, "price": 2.06, "category": "Aksesuar"}, {"id": "stk364", "name": "KARIN KEMAN SUSTURUCU", "qty": 2, "price": 19.14, "category": "Aksesuar"}, {"id": "stk365", "name": "KARİN KLASİK GİTAR TELİ", "qty": 13, "price": 4.82, "category": "Aksesuar"}, {"id": "stk366", "name": "J10 3D DADDARIO AKUSTİK TEL", "qty": 1, "price": 685.88, "category": "Aksesuar"}, {"id": "stk367", "name": "45CM ARBANE", "qty": 1, "price": 49.15, "category": "Aksesuar"}, {"id": "stk368", "name": "JIM DUNLOP GELS HVY 12Lİ PAKET", "qty": 1, "price": 12.25, "category": "Aksesuar"}, {"id": "stk369", "name": "JIM DUNLOP  TORTEX JAZZ3 1 PAKET", "qty": 1, "price": 17.71, "category": "Aksesuar"}, {"id": "stk370", "name": "JIM DUNLOP GELS MIDIUM 12Lİ PAKET", "qty": 1, "price": 12.25, "category": "Aksesuar"}, {"id": "stk371", "name": "TGA NOTA SEHPASI", "qty": 3, "price": 168.33, "category": "Aksesuar"}, {"id": "stk372", "name": "BEK KAPAKLI", "qty": 2, "price": 22.13, "category": "Aksesuar"}, {"id": "stk373", "name": "A703 ALICE 1NO KEMAN TELİ", "qty": 24, "price": 0.75, "category": "Aksesuar"}, {"id": "stk374", "name": "PQP 0068 V6 TUSQ PENA", "qty": 1, "price": 164.16, "category": "Aksesuar"}, {"id": "stk375", "name": "A703 ALICE 2NO KEMAN TELİ", "qty": 26, "price": 1.22, "category": "Aksesuar"}, {"id": "stk376", "name": "6DRD1 10 PLANET WAVES PENA", "qty": 1, "price": 120.76, "category": "Aksesuar"}, {"id": "stk377", "name": "3DBK4-10 MEDİUM PENA PLANET WAVES", "qty": 1, "price": 142.17, "category": "Aksesuar"}, {"id": "stk378", "name": "KILIF ORG", "qty": 1, "price": 0.1, "category": "Aksesuar"}, {"id": "stk379", "name": "ALICE YUVARLAK KEMAN REİNE", "qty": 18, "price": 1.89, "category": "Müzik Aleti"}, {"id": "stk380", "name": "ADAPTÖR ORG", "qty": 1, "price": 0.1, "category": "Aksesuar"}, {"id": "stk381", "name": "KARİN YUVARLAK REÇİNE", "qty": 4, "price": 3.82, "category": "Aksesuar"}, {"id": "stk382", "name": "BAĞLAMA VE SAZ TELİ", "qty": 18, "price": 2.2, "category": "Aksesuar"}, {"id": "stk383", "name": "NEMESİS AKORT ALETİ", "qty": 3, "price": 95.81, "category": "Aksesuar"}, {"id": "stk384", "name": "PP6 GİTAR AKORT DÜDÜĞÜ", "qty": 2, "price": 3.36, "category": "Müzik Aleti"}, {"id": "stk385", "name": "KLASİK GİTAR KULAĞI", "qty": 2, "price": 68.2, "category": "Müzik Aleti"}, {"id": "stk386", "name": "VARIGRIP", "qty": 1, "price": 22.11, "category": "Aksesuar"}, {"id": "stk387", "name": "PQP 088  TUSQ 6 LI PENA", "qty": 1, "price": 164.16, "category": "Aksesuar"}, {"id": "stk388", "name": "ALICE 200 ADET KUTULU PENA", "qty": 1, "price": 359.29, "category": "Aksesuar"}, {"id": "stk389", "name": "1CAPX-25 25 ADET PLANET WAVES", "qty": 1, "price": 302.34, "category": "Aksesuar"}, {"id": "stk390", "name": "ME044 FOM YASTIK", "qty": 1, "price": 124.59, "category": "Aksesuar"}, {"id": "stk391", "name": "ÇÖĞÜR KISA SAP BAĞLAMA TELİ", "qty": 20, "price": 18.93, "category": "Aksesuar"}, {"id": "stk392", "name": "SR SK66 KEMAN YASTIK KALİTYELİ", "qty": 1, "price": 158.57, "category": "Müzik Aleti"}, {"id": "stk393", "name": "ÇÖĞÜR UZUN SAP SAZ TELİ", "qty": 20, "price": 19.83, "category": "Aksesuar"}, {"id": "stk394", "name": "SR05 YASTIK UCUZ", "qty": 5, "price": 67.96, "category": "Aksesuar"}, {"id": "stk395", "name": "LİLYA KLASİK GİTAR TELİ UCUZ TEL", "qty": 10, "price": 52.0, "category": "Aksesuar"}, {"id": "stk396", "name": "PENA ÇİN", "qty": 150, "price": 0.5, "category": "Aksesuar"}, {"id": "stk397", "name": "VG250 VALLER BK 4/4 KLASİK GİTAR", "qty": 1, "price": 2583.0, "category": "Müzik Aleti"}, {"id": "stk398", "name": "CONCERT UKULELE 1783 AĞAÇ", "qty": 2, "price": 899.0, "category": "Müzik Aleti"}, {"id": "stk399", "name": "CGK500CEQ CLARISS ELEKTRO KLASIK GİTAR", "qty": 1, "price": 4352.0, "category": "Müzik Aleti"}, {"id": "stk400", "name": "IBANEZ ISW10 KULAK ÇEVİRME", "qty": 2, "price": 5.01, "category": "Aksesuar"}, {"id": "stk401", "name": "PL010 AKUSTİK TEK TEL Mİ 010", "qty": 10, "price": 16.75, "category": "Aksesuar"}, {"id": "stk402", "name": "PQP 001 TUSQ PENA 6LI", "qty": 1, "price": 164.16, "category": "Aksesuar"}, {"id": "stk403", "name": "VBR01 KEMAN KÖPRÜ", "qty": 2, "price": 20.39, "category": "Aksesuar"}, {"id": "stk404", "name": "1NFX4 10 PLANET WAVES PENA  0.75", "qty": 1, "price": 119.34, "category": "Aksesuar"}, {"id": "stk405", "name": "A703 ALİCE KEMAN TELİ", "qty": 2, "price": 45.57, "category": "Aksesuar"}, {"id": "stk406", "name": "KLASİK GİTAR KULAĞI KGM", "qty": 3, "price": 54.16, "category": "Müzik Aleti"}, {"id": "stk407", "name": "BARRE MAVİ KUŞAK 1 NO", "qty": 1, "price": 339.81, "category": "Aksesuar"}, {"id": "stk408", "name": "GST611LG-BK IBANEZ ASKI", "qty": 1, "price": 28.22, "category": "Aksesuar"}, {"id": "stk409", "name": "TX620 ORPHEO AKUSTİK TEL", "qty": 9, "price": 45.57, "category": "Aksesuar"}, {"id": "stk410", "name": "7DGN4 10 PLANET WAVES MEDIUM PENA", "qty": 1, "price": 243.81, "category": "Aksesuar"}, {"id": "stk411", "name": "TN1 TUNER AKOR ALETİ lea", "qty": 5, "price": 67.96, "category": "Aksesuar"}, {"id": "stk412", "name": "AD5 ADAPTÖR", "qty": 1, "price": 14.68, "category": "Aksesuar"}, {"id": "stk413", "name": "7DYL3 10 MEDIUM PLANET WAVES PENA", "qty": 1, "price": 243.81, "category": "Aksesuar"}, {"id": "stk414", "name": "UKULELE SOPRANO TEL DADDARIO", "qty": 1, "price": 20.67, "category": "Aksesuar"}, {"id": "stk415", "name": "UKULELE TELİ 110U", "qty": 2, "price": 18.08, "category": "Aksesuar"}, {"id": "stk416", "name": "UKULELE TELİ 15U", "qty": 2, "price": 19.45, "category": "Aksesuar"}, {"id": "stk417", "name": "ORG KILIFI", "qty": 1, "price": 0.1, "category": "Aksesuar"}, {"id": "stk418", "name": "EBR4C VALENCIA ELEKTRO TREMELO", "qty": 1, "price": 78.64, "category": "Aksesuar"}, {"id": "stk419", "name": "ÇEVİRİCİ BÜYÜK KÜÇÜK", "qty": 10, "price": 0.8, "category": "Aksesuar"}, {"id": "stk420", "name": "VALLER VG250C KLASİK GİTAR", "qty": 1, "price": 2208.0, "category": "Müzik Aleti"}, {"id": "stk421", "name": "J47 KLASİK TEL", "qty": 1, "price": 20.33, "category": "Aksesuar"}, {"id": "stk422", "name": "LUNAX PS35 KATLANABİLİR PİYANO", "qty": 1, "price": 5125.0, "category": "Müzik Aleti"}, {"id": "stk423", "name": "CB10 BEK", "qty": 1, "price": 20.0, "category": "Aksesuar"}, {"id": "stk424", "name": "ŞEFFA BEK", "qty": 2, "price": 56.62, "category": "Aksesuar"}, {"id": "stk425", "name": "KLARNET İÇİN PLASTİK PARMAK TUTACAĞI", "qty": 2, "price": 4.98, "category": "Aksesuar"}, {"id": "stk426", "name": "SK100 YARIM AY TEF", "qty": 2, "price": 9.51, "category": "Aksesuar"}, {"id": "stk427", "name": "PM39 MARAKAS", "qty": 2, "price": 12.76, "category": "Aksesuar"}, {"id": "stk428", "name": "SRK002 SHAKER GUIRO", "qty": 2, "price": 4.99, "category": "Aksesuar"}, {"id": "stk429", "name": "EGG27/B YUMURTA", "qty": 2, "price": 3.87, "category": "Aksesuar"}, {"id": "stk430", "name": "EJ 27 3D KLASİK GİTAR TELİ", "qty": 1, "price": 831.0, "category": "Aksesuar"}, {"id": "stk431", "name": "EJ50 KALSİK GİTAR TELİ", "qty": 1, "price": 442.0, "category": "Aksesuar"}, {"id": "stk432", "name": "EXL110-3D ELEKTRO GİTAR TELİ DADDARIO", "qty": 1, "price": 625.18, "category": "Aksesuar"}, {"id": "stk433", "name": "CA525 ARA KABLO", "qty": 2, "price": 387.0, "category": "Aksesuar"}, {"id": "stk434", "name": "A010SR KAPO", "qty": 5, "price": 82.77, "category": "Aksesuar"}, {"id": "stk435", "name": "DADDARIO LİMON YAĞI", "qty": 2, "price": 163.92, "category": "Aksesuar"}, {"id": "stk436", "name": "VCMH0150GD VALENCIAI KLASİK GİTAR KULAĞI", "qty": 2, "price": 184.32, "category": "Müzik Aleti"}, {"id": "stk437", "name": "KEMAN KUYRUK ABANOZ", "qty": 1, "price": 14.0, "category": "Aksesuar"}, {"id": "stk438", "name": "PL010 Mİ TELİ TEK", "qty": 10, "price": 1.91, "category": "Aksesuar"}, {"id": "stk439", "name": "JİMİ GİGBAG TENOR", "qty": 1, "price": 30.65, "category": "Aksesuar"}, {"id": "stk440", "name": "JEL SİYAH LİGHT PENA 25Lİ PLANETWAVES", "qty": 1, "price": 28.58, "category": "Aksesuar"}, {"id": "stk441", "name": "JEL SİYAH HEAVY PENA 25Lİ PLANET WAVES", "qty": 1, "price": 28.58, "category": "Aksesuar"}, {"id": "stk442", "name": "MELODİKA HORTUMU", "qty": 2, "price": 5.9, "category": "Müzik Aleti"}, {"id": "stk443", "name": "PLASTİK NEY", "qty": 1, "price": 12.71, "category": "Müzik Aleti"}, {"id": "stk444", "name": "PLANET WAVES 10LU PENA LİGHT", "qty": 2, "price": 11.75, "category": "Aksesuar"}, {"id": "stk445", "name": "BONGO", "qty": 1, "price": 101.39, "category": "Aksesuar"}, {"id": "stk446", "name": "PLANET WAVES 10LU PENA MEDIUM", "qty": 2, "price": 11.75, "category": "Aksesuar"}, {"id": "stk447", "name": "ALICE 1 NO KEMAN TELİ", "qty": 23, "price": 0.71, "category": "Aksesuar"}, {"id": "stk448", "name": "PLANET WAVES 10LU PENA MEDIUM", "qty": 1, "price": 15.45, "category": "Aksesuar"}, {"id": "stk449", "name": "PLANET WAVES 10LU PENA BLACICE MEDIUM", "qty": 1, "price": 13.03, "category": "Aksesuar"}, {"id": "stk450", "name": "ALICE KEMAN TELİ NO3", "qty": 23, "price": 1.77, "category": "Aksesuar"}, {"id": "stk451", "name": "VR200 DADDARIO REÇİNE", "qty": 3, "price": 131.3, "category": "Aksesuar"}, {"id": "stk452", "name": "ALICE KEMAN TELİ NO4", "qty": 5, "price": 2.56, "category": "Aksesuar"}, {"id": "stk453", "name": "PQ-9280-C0 AKUSTİK GİTAR ALT EŞİK", "qty": 1, "price": 48.5, "category": "Aksesuar"}, {"id": "stk454", "name": "PQ-9650-00 AKUSTİK GİTAR ALT EŞİK", "qty": 1, "price": 50.56, "category": "Aksesuar"}, {"id": "stk455", "name": "PLANET WAVES 10LU PENA CORTEX MEDIUM", "qty": 1, "price": 19.64, "category": "Aksesuar"}, {"id": "stk456", "name": "KEMAN REÇİNE YUVARLAK", "qty": 5, "price": 1.65, "category": "Aksesuar"}, {"id": "stk457", "name": "JIM DUNLOP PENA", "qty": 10, "price": 8.33, "category": "Aksesuar"}, {"id": "stk458", "name": "JIM DUNLOP PENA", "qty": 10, "price": 10.0, "category": "Aksesuar"}, {"id": "stk459", "name": "XL110-3D DADDARIO ELEKTRO TEL", "qty": 1, "price": 67.08, "category": "Aksesuar"}, {"id": "stk460", "name": "JIM DUNLOP PENA", "qty": 10, "price": 6.25, "category": "Aksesuar"}, {"id": "stk461", "name": "JIM DUNLOP PENA", "qty": 10, "price": 7.5, "category": "Aksesuar"}, {"id": "stk462", "name": "PL010 Mİ TELİ TEK", "qty": 5, "price": 3.61, "category": "Aksesuar"}, {"id": "stk463", "name": "JIM DUNLOP PENA", "qty": 10, "price": 7.5, "category": "Aksesuar"}, {"id": "stk464", "name": "H-40B GİTAR ASMA APARATI GİTAR SEHPASI", "qty": 5, "price": 35.8, "category": "Aksesuar"}, {"id": "stk465", "name": "JIM DUNLOP PENA", "qty": 10, "price": 10.0, "category": "Aksesuar"}, {"id": "stk466", "name": "UD MIZRABI İSKENDER KUTMANİ", "qty": 1, "price": 1.61, "category": "Aksesuar"}, {"id": "stk467", "name": "JIM DUNLOP PENA", "qty": 10, "price": 10.0, "category": "Aksesuar"}, {"id": "stk468", "name": "JIM DUNLOP PENA", "qty": 10, "price": 129.17, "category": "Aksesuar"}, {"id": "stk469", "name": "JIM DUNLOP PENA", "qty": 1, "price": 176.67, "category": "Aksesuar"}, {"id": "stk470", "name": "EP-01BK  KULAKLIK", "qty": 6, "price": 24.27, "category": "Aksesuar"}, {"id": "stk471", "name": "CREMONIA AT KILI", "qty": 2, "price": 12.64, "category": "Aksesuar"}, {"id": "stk472", "name": "XP45 KLASİK GTAR TELİ", "qty": 2, "price": 34.05, "category": "Aksesuar"}, {"id": "stk473", "name": "J47 KLASİK TEL", "qty": 1, "price": 39.24, "category": "Aksesuar"}, {"id": "stk474", "name": "PLANET WAVES 10LU DURALIN PENA", "qty": 2, "price": 12.46, "category": "Aksesuar"}, {"id": "stk475", "name": "PLANET WAVES 10LU DURAGRIP PENA", "qty": 3, "price": 26.25, "category": "Aksesuar"}, {"id": "stk476", "name": "VRS22 DİKDÖRTGEN REÇİNE VALENCIA", "qty": 3, "price": 2.49, "category": "Aksesuar"}, {"id": "stk477", "name": "EZ900 AKUSTİK GİTAR TELİ", "qty": 2, "price": 214.7, "category": "Aksesuar"}, {"id": "stk478", "name": "VCR100HB44 ÇENELİK", "qty": 1, "price": 14.06, "category": "Aksesuar"}, {"id": "stk479", "name": "MARLA SVB-134 KEMAN YAYI ÖĞRENCİ 3/4", "qty": 1, "price": 400.0, "category": "Müzik Aleti"}, {"id": "stk480", "name": "EJ27 KLASİK GİTAR TELİ", "qty": 1, "price": 280.0, "category": "Aksesuar"}, {"id": "stk481", "name": "MARLA SVB-144 KEMAN YAYI ÖĞRENCİ 4/4", "qty": 2, "price": 400.0, "category": "Müzik Aleti"}, {"id": "stk482", "name": "EJ27 3D KLASİK GİTAR TELİ", "qty": 1, "price": 765.0, "category": "Aksesuar"}, {"id": "stk483", "name": "KISA SAP BAĞLAMA TELİ 0.18", "qty": 10, "price": 108.0, "category": "Aksesuar"}, {"id": "stk484", "name": "SWİFF K8 KLASİK GİTAR KAPO PROFESYONEL", "qty": 4, "price": 353.0, "category": "Aksesuar"}, {"id": "stk485", "name": "SUNDMANN PROFESYONEL AKUSTİK- ELEKTRO GİTAR KAPO", "qty": 5, "price": 211.0, "category": "Aksesuar"}, {"id": "stk486", "name": "RİTİM ÇUBUĞU", "qty": 4, "price": 5.64, "category": "Aksesuar"}, {"id": "stk487", "name": "MARLA ESM20 KRİSTAL VAKUMLU MANYETİK", "qty": 5, "price": 130.0, "category": "Aksesuar"}, {"id": "stk488", "name": "RİTİM SHAKER", "qty": 1, "price": 9.92, "category": "Aksesuar"}, {"id": "stk489", "name": "HONER H1005 PROFESYONEL AĞIZ MIZIKASI 10 DELİK", "qty": 2, "price": 211.0, "category": "Müzik Aleti"}, {"id": "stk490", "name": "ZİLLİ TEF", "qty": 2, "price": 21.18, "category": "Aksesuar"}, {"id": "stk491", "name": "EASTTOP T10-4C 10 DELİKLİ MIZIKA BLUES", "qty": 2, "price": 235.0, "category": "Müzik Aleti"}, {"id": "stk492", "name": "MİTELLO ÇELİK ÜÇGEN", "qty": 2, "price": 34.65, "category": "Aksesuar"}, {"id": "stk493", "name": "İMECE GÜL SAZ BURGUSU TAKIM", "qty": 3, "price": 138.0, "category": "Aksesuar"}, {"id": "stk494", "name": "ÇOCUK DAVULU", "qty": 2, "price": 25.42, "category": "Aksesuar"}, {"id": "stk495", "name": "EES10012 1/2 NO ERDAL ERZİNCAN", "qty": 1, "price": 156.0, "category": "Aksesuar"}]</script>
 
 <script>
 (function(){
   "use strict";
 
-  // ---------- Storage helpers (yerel + Firebase senkron) ----------
   let fbApp = null, fbDb = null, fbReady = false, fbWorkspaceCode = null;
   let lastSyncError = null;
 
@@ -628,7 +628,7 @@
           try{ await window.storage.set(key, JSON.stringify(val), false); }catch(e){}
           return val;
         }
-      }catch(e){ console.warn('Firebase okuma hatası, yerel depoya dönülüyor:', e); }
+      }catch(e){ console.warn('Firebase okuma hatası:', e); }
     }
     try{ const r = await window.storage.get(key, false); return r ? JSON.parse(r.value) : null; }
     catch(e){ return null; }
@@ -650,7 +650,7 @@
   function fmtUSD(n){ return '$' + (n||0).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}); }
   function fmtEUR(n){ return '€' + (n||0).toLocaleString('de-DE', {minimumFractionDigits:2, maximumFractionDigits:2}); }
   function fmtPct(n){ const s = (n>=0?'+':'') + (n*100).toFixed(1) + '%'; return s; }
-  function monthKey(dateStr){ return dateStr ? dateStr.slice(0,7) : ''; } // YYYY-MM
+  function monthKey(dateStr){ return dateStr ? dateStr.slice(0,7) : ''; }
 
   function toast(msg){
     const t = document.getElementById('toast');
@@ -659,15 +659,13 @@
     setTimeout(()=>t.classList.remove('show'), 2200);
   }
 
-  // ---------- App state ----------
-  let stock = [];      // {id,name,qty,price,category}
-  let income = [];     // {id,date,branch,description,grossAmount,vat,netAmount,stockItemId,qtyUsed,unitCostUsd,profitTRY}
-  let expenses = [];    // {id,date,category,description,amount}
-  // fxRates: { USD: [{date, rate, source, final}], EUR: [...] }  rate = TRY karşılığı 1 birim döviz
+  let stock = [];
+  let income = [];
+  let expenses = [];
   let fxRates = { USD: [], EUR: [] };
 
   const FX_API_URL = 'https://open.er-api.com/v6/latest/USD';
-  const FX_LOCK_HOUR = 18; // yerel saatle gün sonu kilitleme saati
+  const FX_LOCK_HOUR = 18;
   const CURRENCIES = ['USD','EUR'];
 
   function ratesList(cur){ return (fxRates[cur] || []); }
@@ -688,7 +686,6 @@
     return sorted[0].rate;
   }
 
-  // Tek istekle hem USD/TRY hem EUR/TRY çeker (baz USD; EUR/TRY = TRY oranı / EUR oranı).
   async function fetchLiveRates(){
     try{
       const resp = await fetch(FX_API_URL, {cache:'no-store'});
@@ -699,18 +696,14 @@
       if(typeof usdTry !== 'number' || !isFinite(usdTry) || usdTry<=0) throw new Error('TRY kuru bulunamadı');
       const out = { USD: usdTry, EUR: null };
       if(typeof usdEur === 'number' && isFinite(usdEur) && usdEur>0){
-        out.EUR = usdTry / usdEur; // TRY karşılığı 1 EUR
+        out.EUR = usdTry / usdEur;
       }
       return out;
     }catch(err){
-      console.warn('Otomatik kur çekilemedi:', err);
       return null;
     }
   }
 
-  // Açık kaldığı sürece / her açılışta günü tamamlamaya çalışır.
-  // Saat 18:00'i geçtiyse o günü "final" (kesin) olarak kilitler.
-  // Elle girilen kayıtlar (source:'manual') asla otomatik tarafından ezilmez.
   async function autoUpdateFx(opts){
     opts = opts || {};
     const today = todayISO();
@@ -724,10 +717,7 @@
     if(!needsUpdate) return false;
 
     const live = await fetchLiveRates();
-    if(live===null){
-      if(opts.notifyOnFail) toast('Kur otomatik çekilemedi — internet yok ya da bağlantı engellendi. "Kur Gir" ile elle girebilirsin.');
-      return false;
-    }
+    if(live===null) return false;
 
     let updatedAny = false;
     for(const cur of CURRENCIES){
@@ -747,7 +737,6 @@
     return updatedAny;
   }
 
-  // ---------- Init / seed ----------
   async function init(){
     await loadFirebaseConfigAndConnect();
 
@@ -758,7 +747,6 @@
     const savedFx = await sGet('fx:rates');
 
     if(Array.isArray(savedFx)){
-      // eski format (sadece USD dizisi) — göç ettir
       fxRates = { USD: savedFx, EUR: [] };
     } else if(savedFx && typeof savedFx === 'object'){
       fxRates = { USD: savedFx.USD || [], EUR: savedFx.EUR || [] };
@@ -808,7 +796,7 @@
     overlay.innerHTML = `
       <div class="modal">
         <h2>Önce bugünün kurunu gir</h2>
-        <p>Stoktaki 495 ürün TL cinsinden kayıtlı. Her ürünü sabit bir döviz değerine çevirebilmek için bugünkü kurları girmen gerekiyor. Bu kurlar, ürünlerin "dondurulmuş" döviz karşılığını hesaplamak için kullanılır; ileride kur güncellendikçe, ürünlerin bugünkü TL karşılığı otomatik güncellenecek. Euro'yu boş bırakabilirsin, istersen sonra eklersin.</p>
+        <p>Stoktaki 495 ürün TL cinsinden kayıtlı. Her ürünü sabit bir döviz değerine çevirebilmek için bugünkü kurları girmen gerekiyor.</p>
         <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;">USD/TRY Kuru</label>
         <input type="number" id="onboardRateUsd" step="0.01" min="0" placeholder="Örn: 33.20" style="margin-bottom:14px;">
         <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;">EUR/TRY Kuru (opsiyonel)</label>
@@ -829,7 +817,6 @@
     });
   }
 
-  // ---------- Boot UI ----------
   function boot(){
     document.getElementById('incDate').value = todayISO();
     document.getElementById('expDate').value = todayISO();
@@ -845,7 +832,6 @@
     renderAll();
     runAutoArchiving();
 
-    // Sekme açıkken periyodik olarak 18:00 kilidini ve ay/hafta sonu arşivini kontrol et
     setInterval(()=>{ autoUpdateFx({notifyOnFail:false}); runAutoArchiving(); }, 15*60*1000);
     document.addEventListener('visibilitychange', ()=>{
       if(document.visibilityState==='visible'){
@@ -865,7 +851,6 @@
     renderArchiveView();
   }
 
-  // ---------- Tabs ----------
   function setupTabs(){
     document.querySelectorAll('nav.tabs button').forEach(btn=>{
       btn.addEventListener('click', ()=>{
@@ -877,7 +862,6 @@
     });
   }
 
-  // ---------- FX badge + modal ----------
   function renderFxBadge(){
     const rUsd = latestRate('USD');
     const rEur = latestRate('EUR');
@@ -912,7 +896,7 @@
     overlay.innerHTML = `
       <div class="modal">
         <h2>Kur Girişi</h2>
-        <p>Program her gün 18:00'den sonra USD ve EUR kurlarını kendiliğinden çekip kilitler. Acil çekmek ya da elle düzeltmek istersen aşağıdan yapabilirsin.</p>
+        <p>Program her gün 18:00'den sonra USD ve EUR kurlarını kendiliğinden çeker.</p>
         <button class="btn ghost" id="fxAutoNowBtn" style="width:100%;margin-bottom:16px;">↻ Şimdi Otomatik Çek (USD + EUR)</button>
         <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;">Tarih (elle giriş)</label>
         <input type="date" id="fxDateInput" value="${todayISO()}" style="margin-bottom:14px;">
@@ -958,10 +942,6 @@
     });
   }
 
-  // ---------- FIREBASE SENKRONİZASYON ----------
-  // RockJazz Müzik / Silifke Satranç Atölyesi için önceden tanımlı proje.
-  // apiKey burada görünmesi normaldir — asıl güvenlik Realtime Database kurallarında
-  // ve anonim girişte sağlanır, gizli bir anahtar değildir.
   const DEFAULT_FIREBASE_CONFIG = {
     apiKey: "AIzaSyBWIspkxh-WpSbd48l5vxIRvErydzu2PD0",
     authDomain: "muhasebe-b3849.firebaseapp.com",
@@ -976,9 +956,7 @@
   async function loadFirebaseConfigAndConnect(){
     let cfgRaw = await safeLocalGet('meta:firebaseConfig');
     let code = await safeLocalGet('meta:workspaceCode');
-
     if(!cfgRaw || !code){
-      // Hiç ayarlanmamışsa, bu programa gömülü varsayılan projeye otomatik bağlan.
       await connectFirebase(DEFAULT_FIREBASE_CONFIG, DEFAULT_WORKSPACE_CODE, {silent:true});
       return;
     }
@@ -990,10 +968,7 @@
       if(typeof window.storage === 'undefined' || !window.storage) return false;
       await window.storage.set(key, JSON.stringify(value), false);
       return true;
-    }catch(e){
-      console.warn('Yerel depoya yazılamadı (bu cihazda kalıcı hafıza olmayabilir):', key, e);
-      return false;
-    }
+    }catch(e){ return false; }
   }
   async function safeLocalGet(key){
     try{
@@ -1007,36 +982,23 @@
     opts = opts || {};
     try{
       if(typeof firebase === 'undefined'){
-        throw new Error('Firebase kütüphanesi yüklenemedi (internet yok ya da dış bağlantı engellendi).');
+        throw new Error('Firebase kütüphanesi yüklenemedi.');
       }
       if(fbApp){ try{ await fbApp.delete(); }catch(e){} fbApp=null; fbDb=null; fbReady=false; }
       fbApp = firebase.initializeApp(config, 'rockjazzApp_'+Date.now());
-
-      // file:// üzerinden açılan sayfalarda IndexedDB/localStorage tabanlı oturum
-      // kalıcılığı bazı mobil tarayıcılarda tıkanabiliyor; bunu bellek-içi yaparak atlıyoruz.
-      try{ await fbApp.auth().setPersistence(firebase.auth.Auth.Persistence.NONE); }catch(e){ console.warn('setPersistence atlandı:', e); }
-
-      const signInPromise = fbApp.auth().signInAnonymously();
-      const timeoutPromise = new Promise((_,rej)=>setTimeout(()=>rej(new Error('Giriş zaman aşımına uğradı (10sn) — internet bağlantısını kontrol et.')), 10000));
-      await Promise.race([signInPromise, timeoutPromise]);
-
+      try{ await fbApp.auth().setPersistence(firebase.auth.Auth.Persistence.NONE); }catch(e){}
+      await fbApp.auth().signInAnonymously();
       fbDb = fbApp.database();
       fbWorkspaceCode = code;
-      fbReady = true; // Firebase bağlantısı burada kesinleşti — aşağıdaki yerel kayıt bunu etkilemesin.
+      fbReady = true;
       lastSyncError = null;
       clearFatalBanner();
       renderSyncBadge();
-      if(!opts.silent) toast('Firebase bağlantısı kuruldu — senkronizasyon aktif.');
-
-      // Yerel önbelleğe kaydetmeye çalış; bu adım başarısız olsa bile (örn. bu cihazda
-      // kalıcı hafıza yoksa) Firebase bağlantısını "başarısız" saymıyoruz.
-      const savedLocally = await safeLocalSet('meta:firebaseConfig', config) && await safeLocalSet('meta:workspaceCode', code);
-      if(!savedLocally && !opts.silent){
-        toast('Bağlandı, ama bu cihaz ayarı hatırlamayabilir (kalıcı hafıza yok). Varsayılan çalışma kodu zaten aynı olduğu için sorun olmaz.');
-      }
+      if(!opts.silent) toast('Firebase bağlantısı kuruldu.');
+      await safeLocalSet('meta:firebaseConfig', config);
+      await safeLocalSet('meta:workspaceCode', code);
       return true;
     }catch(err){
-      console.warn('Firebase bağlantı hatası:', err);
       fbReady = false;
       lastSyncError = (err && err.message) ? err.message : String(err);
       renderSyncBadge();
@@ -1051,14 +1013,14 @@
     await safeLocalSet('meta:firebaseConfig', null);
     await safeLocalSet('meta:workspaceCode', null);
     renderSyncBadge();
-    toast('Senkronizasyonu kapattın — bu oturumda veriler yalnızca bu cihazda tutulacak.');
+    toast('Senkronizasyonu kapattın.');
   }
 
   function renderSyncBadge(){
     const el = document.getElementById('syncBadgeText');
     if(!el) return;
     if(fbReady){ el.textContent = '☁ Senkron: ' + fbWorkspaceCode; }
-    else if(lastSyncError){ el.textContent = '☁ Bağlanamadı — dokun (detay)'; }
+    else if(lastSyncError){ el.textContent = '☁ Bağlanamadı — dokun'; }
     else { el.textContent = '☁ Yerel (senkron kapalı)'; }
   }
 
@@ -1074,30 +1036,26 @@
 
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
-    const errorBox = lastSyncError ? `<div style="background:#5a2620;color:#fce8e4;padding:10px 12px;border-radius:3px;font-size:12px;font-family:var(--font-mono);margin-bottom:14px;white-space:pre-wrap;">Son hata: ${lastSyncError}</div>` : '';
     overlay.innerHTML = `
       <div class="modal" style="max-width:480px;">
         <h2>Firebase Senkronizasyonu</h2>
-        ${errorBox}
-        <p>Firebase konsolunda oluşturduğun projenin "Web app" ayarlarındaki <b>firebaseConfig</b> değerlerini buraya yapıştır. Ardından bir <b>çalışma alanı kodu</b> belirle — bu kodu diğer cihazlarında da girersen veriler otomatik senkronize olur.</p>
         <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin:10px 0 6px;text-transform:uppercase;">API Key</label>
-        <input type="text" id="fbApiKey" placeholder="AIzaSy…" value="${existingCfg?existingCfg.apiKey||'':''}">
+        <input type="text" id="fbApiKey" value="${existingCfg.apiKey||''}">
         <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin:12px 0 6px;text-transform:uppercase;">Auth Domain</label>
-        <input type="text" id="fbAuthDomain" placeholder="proje-adi.firebaseapp.com" value="${existingCfg?existingCfg.authDomain||'':''}">
+        <input type="text" id="fbAuthDomain" value="${existingCfg.authDomain||''}">
         <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin:12px 0 6px;text-transform:uppercase;">Database URL</label>
-        <input type="text" id="fbDatabaseURL" placeholder="https://proje-adi-default-rtdb.europe-west1.firebasedatabase.app" value="${existingCfg?existingCfg.databaseURL||'':''}">
+        <input type="text" id="fbDatabaseURL" value="${existingCfg.databaseURL||''}">
         <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin:12px 0 6px;text-transform:uppercase;">Project ID</label>
-        <input type="text" id="fbProjectId" placeholder="proje-adi" value="${existingCfg?existingCfg.projectId||'':''}">
+        <input type="text" id="fbProjectId" value="${existingCfg.projectId||''}">
         <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin:12px 0 6px;text-transform:uppercase;">App ID</label>
-        <input type="text" id="fbAppId" placeholder="1:1234567890:web:abcdef" value="${existingCfg?existingCfg.appId||'':''}">
+        <input type="text" id="fbAppId" value="${existingCfg.appId||''}">
         <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin:12px 0 6px;text-transform:uppercase;">Çalışma Alanı Kodu</label>
-        <input type="text" id="fbWorkspaceCode" placeholder="Örn: rockjazz2026" value="${existingCode||''}" style="margin-bottom:16px;">
+        <input type="text" id="fbWorkspaceCode" value="${existingCode||''}" style="margin-bottom:16px;">
         <div class="flex-between">
           <button class="btn primary" id="fbSaveBtn">Bağlan ve Kaydet</button>
           <button class="btn ghost" id="fbCloseBtn">Kapat</button>
         </div>
         ${fbReady ? '<button class="btn danger-ghost" id="fbDisconnectBtn" style="margin-top:14px;width:100%;">Senkronizasyonu Kapat</button>' : ''}
-        <p class="helptext" style="margin-top:14px;">Bu bilgiler yalnızca senin bu cihazındaki uygulama kopyasında saklanır; Anthropic'e ya da başka bir yere gönderilmez.</p>
       </div>`;
     document.body.appendChild(overlay);
     document.getElementById('fbCloseBtn').addEventListener('click', ()=>overlay.remove());
@@ -1113,39 +1071,15 @@
       };
       const code = document.getElementById('fbWorkspaceCode').value.trim();
       if(!config.apiKey || !config.databaseURL || !config.projectId || !code){
-        toast('API Key, Database URL, Project ID ve çalışma alanı kodu zorunlu.');
+        toast('Tüm alanlar zorunlu.');
         return;
       }
-      const btn = document.getElementById('fbSaveBtn');
-      btn.disabled = true; btn.textContent = 'Bağlanıyor…';
-      const ok = await connectFirebase(config, code);
       overlay.remove();
-      if(ok){
-        toast('Bağlandı — veriler bu cihazla senkronize edilecek.');
-        await pushLocalDataToFirebaseIfEmpty();
-        renderAll();
-      }
+      await connectFirebase(config, code);
+      renderAll();
     });
   }
 
-  // İlk bağlantıda Firebase tarafı boşsa, bu cihazdaki mevcut verileri bir kerelik yukarı gönderir.
-  async function pushLocalDataToFirebaseIfEmpty(){
-    if(!fbReady) return;
-    try{
-      const snap = await fbDb.ref('workspaces/'+fbWorkspaceCode).once('value');
-      if(snap.exists()) return; // uzakta zaten veri var, üzerine yazma
-      const keys = ['stock:list','income:list','expense:list','fx:rates','meta:seeded',
-        'meta:firstUseDate','archive:monthly','archive:weekly'];
-      for(const k of keys){
-        try{
-          const r = await window.storage.get(k, false);
-          if(r){ await fbDb.ref(fbPath(k)).set(JSON.parse(r.value)); }
-        }catch(e){}
-      }
-    }catch(e){ console.warn('İlk senkron yüklemesi başarısız:', e); }
-  }
-
-  // ---------- ÖZET ----------
   function renderOzet(){
     const thisMonth = todayISO().slice(0,7);
     const incThisMonth = income.filter(i=>monthKey(i.date)===thisMonth);
@@ -1177,7 +1111,6 @@
     document.getElementById('ozetFxDate').textContent = sortedUsd.length ? ('Son güncelleme: '+sortedUsd[0].date) : 'Kur girilmedi';
   }
 
-  // ---------- GELİR ----------
   let pickedStockItem = null;
 
   function setupIncomeForm(){
@@ -1193,7 +1126,7 @@
       if(q.length < 1){ resultsBox.style.display='none'; return; }
       const matches = stock.filter(it => it.category===branch && it.name.toUpperCase().includes(q) && it.qty>0).slice(0,25);
       if(!matches.length){
-        resultsBox.innerHTML = '<div class="empty">Eşleşen ürün yok (stok tükenmiş olabilir)</div>';
+        resultsBox.innerHTML = '<div class="empty">Eşleşen ürün yok</div>';
       } else {
         resultsBox.innerHTML = matches.map(it=>`
           <div class="item" data-id="${it.id}">
@@ -1272,11 +1205,11 @@
 
     if(branch === 'Ders'){
       description = document.getElementById('incLessonDesc').value.trim();
-      if(!description){ toast('Ders açıklaması gerekli (kim, hangi ders).'); return; }
+      if(!description){ toast('Ders açıklaması gerekli.'); return; }
     } else {
-      if(!pickedStockItem){ toast('Lütfen stoktan bir ürün seç.'); return; }
+      if(!pickedStockItem){ toast('Stoktan ürün seç.'); return; }
       const qty = parseInt(document.getElementById('incQty').value) || 1;
-      if(qty > pickedStockItem.qty){ toast('Stokta bu kadar adet yok (mevcut: '+pickedStockItem.qty+').'); return; }
+      if(qty > pickedStockItem.qty){ toast('Stok yetersiz.'); return; }
       description = pickedStockItem.name;
       stockItemId = pickedStockItem.id;
       qtyUsed = qty;
@@ -1319,7 +1252,7 @@
 
     const tbody = document.getElementById('incomeTableBody');
     if(!rows.length){
-      tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state">Henüz gelir kaydı yok.</div></td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state">Gelir kaydı yok.</div></td></tr>`;
       return;
     }
     tbody.innerHTML = rows.map(r=>{
@@ -1336,7 +1269,7 @@
       </tr>`;
     }).join('');
     tbody.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click', async ()=>{
-      if(!confirm('Bu gelir kaydını silmek istediğine emin misin?')) return;
+      if(!confirm('Silmek istediğine emin misin?')) return;
       const rec = income.find(x=>x.id===b.dataset.del);
       if(rec && rec.stockItemId){
         const item = stock.find(s=>s.id===rec.stockItemId);
@@ -1349,7 +1282,6 @@
     }));
   }
 
-  // ---------- GİDER ----------
   let expenseCategories = [];
   const DEFAULT_EXPENSE_CATEGORIES = ['Cep Telefonu','İnternet','Elektrik','Aidat','Su Faturası','MTV',
     'Ticaret Odası','Sigortalar','Belediye Vergileri','Muhasebe','Stopaj','Defter Tasdik','Diğer'];
@@ -1358,12 +1290,6 @@
     let cats = await sGet('expense:categories');
     if(!cats || !cats.length){
       cats = [...DEFAULT_EXPENSE_CATEGORIES];
-      await sSet('expense:categories', cats);
-    } else if(!cats.includes('İnternet')){
-      // Önceden kaydedilmiş listelerde yoksa İnternet'i ekle
-      cats = [...cats];
-      const idx = cats.indexOf('Elektrik');
-      if(idx>=0) cats.splice(idx+1,0,'İnternet'); else cats.push('İnternet');
       await sSet('expense:categories', cats);
     }
     expenseCategories = cats;
@@ -1396,8 +1322,8 @@
     overlay.innerHTML = `
       <div class="modal" style="max-width:440px;">
         <h2>Gider Kalemlerini Yönet</h2>
-        <p>Sırayı ok tuşlarıyla değiştir, gerekirse kalem sil, en alttan yeni kalem ekle.</p>
-        <div id="catManageList" style="margin:14px 0;"></div>
+        <p>Kalemleri sıralayabilir, silebilir ya da <b>Düzenle</b> butonuna basarak ismini değiştirebilirsin.</p>
+        <div id="catManageList" style="margin:14px 0;max-height:280px;overflow-y:auto;"></div>
         <div style="display:flex;gap:8px;">
           <input type="text" id="newCatInput" placeholder="Yeni kalem adı…" style="flex:1;">
           <button class="btn primary small" id="addCatBtn">Ekle</button>
@@ -1409,12 +1335,34 @@
     function renderList(){
       const box = overlay.querySelector('#catManageList');
       box.innerHTML = expenseCategories.map((c,i)=>`
-        <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);">
-          <span style="flex:1;font-size:13.5px;">${c}</span>
-          <button type="button" class="btn ghost small" data-up="${i}" ${i===0?'disabled':''} style="padding:3px 8px;">↑</button>
-          <button type="button" class="btn ghost small" data-down="${i}" ${i===expenseCategories.length-1?'disabled':''} style="padding:3px 8px;">↓</button>
+        <div style="display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--line);">
+          <span style="flex:1;font-size:13.5px;" id="catText-${i}">${c}</span>
+          <button type="button" class="btn edit-ghost" data-edit="${i}">Düzenle</button>
+          <button type="button" class="btn ghost small" data-up="${i}" ${i===0?'disabled':''} style="padding:3px 6px;">↑</button>
+          <button type="button" class="btn ghost small" data-down="${i}" ${i===expenseCategories.length-1?'disabled':''} style="padding:3px 6px;">↓</button>
           <button type="button" class="btn danger-ghost" data-remove="${i}">Sil</button>
         </div>`).join('');
+
+      box.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click', async ()=>{
+        const i = parseInt(b.dataset.edit);
+        const oldName = expenseCategories[i];
+        const newName = prompt('Gider kalemi için yeni ismi girin:', oldName);
+        if(!newName || !newName.trim()) return;
+        const trimmed = newName.trim();
+        if(expenseCategories.includes(trimmed) && trimmed !== oldName){
+          toast('Bu isimde bir kalem zaten var.');
+          return;
+        }
+        expenseCategories[i] = trimmed;
+        expenses.forEach(e=>{ if(e.category === oldName) e.category = trimmed; });
+        await sSet('expense:categories', expenseCategories);
+        await sSet('expense:list', expenses);
+        renderList();
+        renderExpenseCategorySelects();
+        renderExpenseTable();
+        toast('Gider kalemi güncellendi.');
+      }));
+
       box.querySelectorAll('[data-up]').forEach(b=>b.addEventListener('click', async ()=>{
         const i = parseInt(b.dataset.up);
         [expenseCategories[i-1], expenseCategories[i]] = [expenseCategories[i], expenseCategories[i-1]];
@@ -1429,7 +1377,7 @@
       }));
       box.querySelectorAll('[data-remove]').forEach(b=>b.addEventListener('click', async ()=>{
         if(expenseCategories.length<=1){ toast('En az bir kalem kalmalı.'); return; }
-        if(!confirm('Bu kalemi listeden silmek istediğine emin misin? (Geçmiş kayıtlar etkilenmez)')) return;
+        if(!confirm('Bu kalemi silmek istediğine emin misin?')) return;
         const i = parseInt(b.dataset.remove);
         expenseCategories.splice(i,1);
         await sSet('expense:categories', expenseCategories);
@@ -1477,27 +1425,63 @@
 
     const tbody = document.getElementById('expenseTableBody');
     if(!rows.length){
-      tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state">Henüz gider kaydı yok.</div></td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state">Gider kaydı yok.</div></td></tr>`;
       return;
     }
-    tbody.innerHTML = rows.map(r=>`
-      <tr>
-        <td>${r.date}</td>
-        <td><span class="tag ders">${r.category}</span></td>
-        <td>${r.description||'—'}</td>
-        <td class="num">${fmtTRY(r.amount)}</td>
-        <td><button class="btn danger-ghost" data-del="${r.id}">Sil</button></td>
-      </tr>`).join('');
-    tbody.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click', async ()=>{
+    const catOptionsHtml = expenseCategories.map(c=>`@@CAT_OPTION_PLACEHOLDER@@`).join(''); // built dynamically inside map
+    tbody.innerHTML = rows.map(r=>{
+      const options = expenseCategories.map(c=>`<option value="${c}" ${c===r.category?'selected':''}>${c}</option>`).join('');
+      return `<tr>
+        <td><input type="date" data-expdate="${r.id}" value="${r.date}" style="padding:4px 6px;font-size:13px;border:1px solid transparent;background:none;width:130px;" onfocus="this.style.border='1px solid #cfc6b4';this.style.background='#fffdf9';" onblur="this.style.border='1px solid transparent';this.style.background='none';"></td>
+        <td><select data-expcat="${r.id}" style="padding:4px 6px;font-size:12px;border:1px solid transparent;background:none;" onfocus="this.style.border='1px solid #cfc6b4';this.style.background='#fffdf9';" onblur="this.style.border='1px solid transparent';this.style.background='none';">${options}</select></td>
+        <td><input type="text" data-expdesc="${r.id}" value="${(r.description||'').replace(/"/g,'&quot;')}" style="width:100%;min-width:140px;padding:4px 6px;font-size:13px;border:1px solid transparent;background:none;" onfocus="this.style.border='1px solid #cfc6b4';this.style.background='#fffdf9';" onblur="this.style.border='1px solid transparent';this.style.background='none';"></td>
+        <td class="num"><input type="number" step="0.01" min="0" data-expamt="${r.id}" value="${r.amount}" style="width:96px;padding:4px 6px;font-size:13px;text-align:right;border:1px solid transparent;background:none;" onfocus="this.style.border='1px solid #cfc6b4';this.style.background='#fffdf9';" onblur="this.style.border='1px solid transparent';this.style.background='none';"></td>
+        <td style="white-space:nowrap;"><button class="btn danger-ghost" data-delexp="${r.id}">Sil</button></td>
+      </tr>`;
+    }).join('');
+
+    tbody.querySelectorAll('[data-expdate]').forEach(inp=>inp.addEventListener('change', async ()=>{
+      const item = expenses.find(x=>x.id===inp.dataset.expdate);
+      if(!item) return;
+      item.date = inp.value;
+      await sSet('expense:list', expenses);
+      toast('Tarih güncellendi.');
+      renderAll();
+    }));
+    tbody.querySelectorAll('[data-expcat]').forEach(sel=>sel.addEventListener('change', async ()=>{
+      const item = expenses.find(x=>x.id===sel.dataset.expcat);
+      if(!item) return;
+      item.category = sel.value;
+      await sSet('expense:list', expenses);
+      toast('Kalem güncellendi.');
+      renderAll();
+    }));
+    tbody.querySelectorAll('[data-expdesc]').forEach(inp=>inp.addEventListener('change', async ()=>{
+      const item = expenses.find(x=>x.id===inp.dataset.expdesc);
+      if(!item) return;
+      item.description = inp.value.trim();
+      await sSet('expense:list', expenses);
+      toast('Açıklama güncellendi.');
+    }));
+    tbody.querySelectorAll('[data-expamt]').forEach(inp=>inp.addEventListener('change', async ()=>{
+      const item = expenses.find(x=>x.id===inp.dataset.expamt);
+      if(!item) return;
+      const val = parseFloat(inp.value);
+      if(isNaN(val) || val<0){ toast('Geçersiz tutar.'); inp.value = item.amount; return; }
+      item.amount = val;
+      await sSet('expense:list', expenses);
+      toast('Tutar güncellendi.');
+      renderAll();
+    }));
+    tbody.querySelectorAll('[data-delexp]').forEach(b=>b.addEventListener('click', async ()=>{
       if(!confirm('Bu gider kaydını silmek istediğine emin misin?')) return;
-      expenses = expenses.filter(x=>x.id!==b.dataset.del);
+      expenses = expenses.filter(x=>x.id!==b.dataset.delexp);
       await sSet('expense:list', expenses);
       toast('Kayıt silindi.');
       renderAll();
     }));
   }
 
-  // ---------- STOK ----------
   let selectedStockIds = new Set();
 
   function setupStockView(){
@@ -1512,11 +1496,11 @@
     });
     document.getElementById('bulkDeleteStockBtn').addEventListener('click', async ()=>{
       if(!selectedStockIds.size) return;
-      if(!confirm(selectedStockIds.size + ' ürünü stok listesinden kalıcı olarak silmek istediğine emin misin?')) return;
+      if(!confirm(selectedStockIds.size + ' ürünü silmek istediğine emin misin?')) return;
       stock = stock.filter(s=>!selectedStockIds.has(s.id));
       selectedStockIds.clear();
       await sSet('stock:list', stock);
-      toast('Seçilen ürünler silindi.');
+      toast('Ürünler silindi.');
       renderAll();
     });
   }
@@ -1579,7 +1563,7 @@
 
     const tbody = document.getElementById('stockTableBody');
     if(!rows.length){
-      tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state">Eşleşen ürün yok.</div></td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state">Ürün yok.</div></td></tr>`;
     } else {
       tbody.innerHTML = rows.map(it=>{
         const usd = rate0 ? it.price/rate0 : null;
@@ -1617,26 +1601,25 @@
       const item = stock.find(s=>s.id===inp.dataset.namechange);
       if(!item) return;
       const val = inp.value.trim();
-      if(!val){ toast('Ürün adı boş olamaz.'); inp.value = item.name; return; }
+      if(!val){ toast('Ad boş olamaz.'); inp.value = item.name; return; }
       item.name = val;
       await sSet('stock:list', stock);
-      toast('Ürün adı güncellendi.');
+      toast('Güncellendi.');
     }));
     tbody.querySelectorAll('[data-qtychange]').forEach(inp=>inp.addEventListener('change', async ()=>{
       const item = stock.find(s=>s.id===inp.dataset.qtychange);
       if(!item) return;
       const val = parseFloat(inp.value);
-      if(isNaN(val) || val<0){ toast('Geçerli bir adet gir.'); inp.value = item.qty; return; }
+      if(isNaN(val) || val<0){ toast('Geçersiz adet.'); inp.value = item.qty; return; }
       item.qty = val;
       await sSet('stock:list', stock);
-      toast('Adet güncellendi.');
       renderOzet();
     }));
     tbody.querySelectorAll('[data-pricechange]').forEach(inp=>inp.addEventListener('change', async ()=>{
       const item = stock.find(s=>s.id===inp.dataset.pricechange);
       if(!item) return;
       const val = parseFloat(inp.value);
-      if(isNaN(val) || val<0){ toast('Geçerli bir fiyat gir.'); inp.value = item.price; return; }
+      if(isNaN(val) || val<0){ toast('Geçersiz fiyat.'); inp.value = item.price; return; }
       item.price = val;
       await sSet('stock:list', stock);
       renderStockTable();
@@ -1646,11 +1629,11 @@
       if(item){ item.category = sel.value; await sSet('stock:list', stock); renderStockTable(); }
     }));
     tbody.querySelectorAll('[data-delstock]').forEach(b=>b.addEventListener('click', async ()=>{
-      if(!confirm('Bu ürünü stok listesinden silmek istediğine emin misin?')) return;
+      if(!confirm('Silmek istediğine emin misin?')) return;
       stock = stock.filter(s=>s.id!==b.dataset.delstock);
       selectedStockIds.delete(b.dataset.delstock);
       await sSet('stock:list', stock);
-      toast('Ürün silindi.');
+      toast('Silindi.');
       renderAll();
     }));
 
@@ -1667,9 +1650,7 @@
     btn.style.display = selectedStockIds.size>0 ? 'inline-block' : 'none';
   }
 
-  // ---------- RAPOR ----------
   const MONTHS_TR = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
-
   let reportMode = 'monthly';
 
   function setupReportView(){
@@ -1771,12 +1752,12 @@
       const net = rows.reduce((s,i)=>s+i.netAmount,0);
       return `<div class="breakdown-row"><span class="lbl">${b} (${rows.length} kayıt)</span><span class="val">${fmtTRY(net)}</span></div>`;
     }).join('');
-    document.getElementById('reportIncomeBreakdown').innerHTML = incHtml || '<div class="empty-state">Bu dönemde gelir yok.</div>';
+    document.getElementById('reportIncomeBreakdown').innerHTML = incHtml || '<div class="empty-state">Gelir yok.</div>';
 
     const catSet = [...new Set(expRows.map(e=>e.category))];
     let expHtml = '';
     if(!catSet.length){
-      expHtml = '<div class="empty-state">Bu dönemde gider yok.</div>';
+      expHtml = '<div class="empty-state">Gider yok.</div>';
     } else {
       expHtml = catSet.map(c=>{
         const sum = expRows.filter(e=>e.category===c).reduce((s,e)=>s+e.amount,0);
@@ -1787,7 +1768,7 @@
 
     const stockSales = incRows.filter(i=>i.stockItemId && i.profitTRY!==null && i.profitTRY!==undefined);
     if(!stockSales.length){
-      document.getElementById('reportStockProfit').innerHTML = '<div class="empty-state">Bu dönemde stoktan satış yok.</div>';
+      document.getElementById('reportStockProfit').innerHTML = '<div class="empty-state">Stok satışı yok.</div>';
     } else {
       const totalProfit = stockSales.reduce((s,i)=>s+i.profitTRY,0);
       const rowsHtml = stockSales.map(i=>`
@@ -1849,7 +1830,6 @@
     renderPeriodReport(range.start, range.end, trend, 'Son 8 Hafta — Net Kâr/Zarar Trendi');
   }
 
-  // ---------- ARŞİV (haftalık / aylık) ----------
   let monthlyArchive = [];
   let weeklyArchive = [];
 
@@ -1857,7 +1837,6 @@
   function daysInMonth(year, month0){ return new Date(year, month0+1, 0).getDate(); }
   function monthKeyOf(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
 
-  // ISO hafta yardımcıları (Pazartesi–Pazar)
   function getISOWeekInfo(d){
     const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
     const dayNum = (date.getUTCDay() + 6) % 7;
@@ -1874,7 +1853,7 @@
     const jan4Day = (jan4.getUTCDay()+6)%7;
     const week1Monday = new Date(jan4); week1Monday.setUTCDate(jan4.getUTCDate()-jan4Day);
     const monday = new Date(week1Monday); monday.setUTCDate(week1Monday.getUTCDate() + (isoWeek-1)*7);
-    const sunday = new Date(monday); sunday.setUTCDate(monday.getUTCDate()+6);
+    const sunday = new Date(monday); sunday.setUTCDate(sunday.getUTCDate()+6);
     return { start: monday.toISOString().slice(0,10), end: sunday.toISOString().slice(0,10) };
   }
 
@@ -1957,7 +1936,7 @@
         const range = isoWeekRange(w.isoYear, w.isoWeek);
         const isCurrentWeek = key === todayKey;
         if(isCurrentWeek){
-          if(today.getDay() === 0){ // Pazar
+          if(today.getDay() === 0){
             const summary = buildPeriodSummary(range.start, range.end);
             map[key] = Object.assign({key, label: range.start+' – '+range.end, start:range.start, end:range.end, final:false, createdAt:new Date().toISOString()}, summary);
             changed = true;
@@ -1991,11 +1970,8 @@
     const mStart = mKey+'-01', mEnd = mKey+'-'+String(dim).padStart(2,'0');
     const mSummary = buildPeriodSummary(mStart, mEnd);
     let monthly = (await sGet('archive:monthly')) || [];
-    const existingM = monthly.find(m=>m.key===mKey);
-    if(!existingM || !existingM.final){
-      monthly = monthly.filter(m=>m.key!==mKey);
-      monthly.push(Object.assign({key:mKey, label:MONTHS_TR[today.getMonth()]+' '+today.getFullYear(), start:mStart, end:mEnd, final:false, createdAt:new Date().toISOString()}, mSummary));
-    }
+    monthly = monthly.filter(m=>m.key!==mKey);
+    monthly.push(Object.assign({key:mKey, label:MONTHS_TR[today.getMonth()]+' '+today.getFullYear(), start:mStart, end:mEnd, final:false, createdAt:new Date().toISOString()}, mSummary));
     monthly.sort((a,b)=>b.key.localeCompare(a.key));
     await sSet('archive:monthly', monthly);
     monthlyArchive = monthly;
@@ -2005,17 +1981,14 @@
     const range = isoWeekRange(w.isoYear, w.isoWeek);
     const wSummary = buildPeriodSummary(range.start, range.end);
     let weekly = (await sGet('archive:weekly')) || [];
-    const existingW = weekly.find(x=>x.key===wKey);
-    if(!existingW || !existingW.final){
-      weekly = weekly.filter(x=>x.key!==wKey);
-      weekly.push(Object.assign({key:wKey, label:range.start+' – '+range.end, start:range.start, end:range.end, final:false, createdAt:new Date().toISOString()}, wSummary));
-    }
+    weekly = weekly.filter(x=>x.key!==wKey);
+    weekly.push(Object.assign({key:wKey, label:range.start+' – '+range.end, start:range.start, end:range.end, final:false, createdAt:new Date().toISOString()}, wSummary));
     weekly.sort((a,b)=>b.key.localeCompare(a.key));
     await sSet('archive:weekly', weekly);
     weeklyArchive = weekly;
 
     renderArchiveView();
-    toast('Bu ay ve bu hafta için anlık arşiv oluşturuldu.');
+    toast('Arşiv oluşturuldu.');
   }
 
   function setupArchiveView(){
@@ -2025,9 +1998,9 @@
 
   function renderArchiveView(){
     const mBody = document.getElementById('monthlyArchiveBody');
-    if(!mBody) return; // henüz DOM hazır değilse atla
+    if(!mBody) return;
     if(!monthlyArchive.length){
-      mBody.innerHTML = `<tr><td colspan="7"><div class="empty-state">Henüz aylık arşiv oluşmadı.</div></td></tr>`;
+      mBody.innerHTML = `<tr><td colspan="7"><div class="empty-state">Arşiv yok.</div></td></tr>`;
     } else {
       mBody.innerHTML = monthlyArchive.map(m=>`
         <tr>
@@ -2047,7 +2020,7 @@
 
     const wBody = document.getElementById('weeklyArchiveBody');
     if(!weeklyArchive.length){
-      wBody.innerHTML = `<tr><td colspan="6"><div class="empty-state">Henüz haftalık arşiv oluşmadı.</div></td></tr>`;
+      wBody.innerHTML = `<tr><td colspan="6"><div class="empty-state">Arşiv yok.</div></td></tr>`;
     } else {
       wBody.innerHTML = weeklyArchive.map(w=>`
         <tr>
@@ -2066,7 +2039,7 @@
   }
 
   function exportPeriodToExcel(period, kind){
-    if(typeof XLSX === 'undefined'){ toast('Excel kütüphanesi yüklenemedi — internet bağlantını kontrol et.'); return; }
+    if(typeof XLSX === 'undefined'){ toast('Excel kütüphanesi yüklenemedi.'); return; }
     const incRows = income.filter(i=>i.date>=period.start && i.date<=period.end).sort((a,b)=>a.date.localeCompare(b.date));
     const expRows = expenses.filter(e=>e.date>=period.start && e.date<=period.end).sort((a,b)=>a.date.localeCompare(b.date));
 
@@ -2080,78 +2053,37 @@
       {Alan:'Toplam Gider', Değer: round2(period.expenseTotal)},
       {Alan:'Net Kâr/Zarar', Değer: round2(period.netResult)},
       {Alan:'Stok Satışı Dolar Bazlı Kâr', Değer: round2(period.stockProfitTotal)},
-      {Alan:'Durum', Değer: period.final ? 'Kesinleşti' : 'Geçici (dönem devam ediyor)'}
+      {Alan:'Durum', Değer: period.final ? 'Kesinleşti' : 'Geçici'}
     ];
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryData, {skipHeader:true}), 'Özet');
-
-    const incomeSheetData = incRows.map(i=>({
-      Tarih:i.date, Branş:i.branch, Açıklama:i.description, 'KDV %': (i.vatRate!==undefined&&i.vatRate!==null)?i.vatRate:20,
-      'KDV Dahil':round2(i.grossAmount), 'KDV Tutarı':round2(i.vat), 'Net Tutar':round2(i.netAmount),
-      'Satılan Adet': i.qtyUsed||'', 'Stok Kârı (₺)': (i.profitTRY!==null && i.profitTRY!==undefined)?round2(i.profitTRY):''
-    }));
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(incomeSheetData.length?incomeSheetData:[{Not:'Bu dönemde gelir kaydı yok'}]), 'Gelir');
-
-    const expenseSheetData = expRows.map(e=>({
-      Tarih:e.date, Kalem:e.category, Açıklama:e.description||'', Tutar:round2(e.amount)
-    }));
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(expenseSheetData.length?expenseSheetData:[{Not:'Bu dönemde gider kaydı yok'}]), 'Gider');
-
-    const prefix = kind==='monthly' ? 'Aylik_Arsiv_' : 'Haftalik_Arsiv_';
-    XLSX.writeFile(wb, prefix + period.key.replace(/\s/g,'_') + '.xlsx');
+    XLSX.writeFile(wb, (kind==='monthly'?'Aylik_Arsiv_':'Haftalik_Arsiv_') + period.key.replace(/\s/g,'_') + '.xlsx');
   }
 
   function exportFullBackupToExcel(){
-    if(typeof XLSX === 'undefined'){ toast('Excel kütüphanesi yüklenemedi — internet bağlantını kontrol et.'); return; }
+    if(typeof XLSX === 'undefined'){ toast('Excel kütüphanesi yüklenemedi.'); return; }
     const wb = XLSX.utils.book_new();
 
     const incomeSheetData = [...income].sort((a,b)=>a.date.localeCompare(b.date)).map(i=>({
-      Tarih:i.date, Branş:i.branch, Açıklama:i.description, 'KDV %': (i.vatRate!==undefined&&i.vatRate!==null)?i.vatRate:20,
-      'KDV Dahil':round2(i.grossAmount), 'KDV Tutarı':round2(i.vat), 'Net Tutar':round2(i.netAmount), 'Satılan Adet': i.qtyUsed||'',
-      'Stok Kârı (₺)': (i.profitTRY!==null && i.profitTRY!==undefined)?round2(i.profitTRY):''
+      Tarih:i.date, Branş:i.branch, Açıklama:i.description, 'KDV %': i.vatRate||20,
+      'KDV Dahil':round2(i.grossAmount), 'Net Tutar':round2(i.netAmount)
     }));
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(incomeSheetData.length?incomeSheetData:[{Not:'Kayıt yok'}]), 'Gelir (Tümü)');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(incomeSheetData.length?incomeSheetData:[{Not:'Kayıt yok'}]), 'Gelir');
 
     const expenseSheetData = [...expenses].sort((a,b)=>a.date.localeCompare(b.date)).map(e=>({
       Tarih:e.date, Kalem:e.category, Açıklama:e.description||'', Tutar:round2(e.amount)
     }));
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(expenseSheetData.length?expenseSheetData:[{Not:'Kayıt yok'}]), 'Gider (Tümü)');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(expenseSheetData.length?expenseSheetData:[{Not:'Kayıt yok'}]), 'Gider');
 
-    const rate0 = firstRate('USD'), rateNow = latestRate('USD'), eurRate0 = firstRate('EUR');
-    const stockSheetData = [...stock].sort((a,b)=>a.name.localeCompare(b.name,'tr')).map(it=>{
-      const usd = rate0 ? it.price/rate0 : null;
-      const eur = eurRate0 ? it.price/eurRate0 : null;
-      const tlNow = (usd!==null && rateNow) ? usd*rateNow : null;
-      return {
-        Ürün:it.name, Kategori:it.category, Adet:it.qty, 'Birim Fiyat TL':round2(it.price),
-        'USD Karşılığı': usd!==null?round2(usd):'', 'EUR Karşılığı': eur!==null?round2(eur):'',
-        'Bugünkü TL Karşılığı': tlNow!==null?round2(tlNow):''
-      };
-    });
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(stockSheetData.length?stockSheetData:[{Not:'Stok yok'}]), 'Stok (Anlık)');
-
-    const monthlySheetData = monthlyArchive.map(m=>({
-      Ay:m.label, Başlangıç:m.start, Bitiş:m.end, 'Net Gelir':round2(m.incomeNet),
-      Gider:round2(m.expenseTotal), 'Net Sonuç':round2(m.netResult), 'Stok Kârı':round2(m.stockProfitTotal),
-      Durum: m.final?'Kesin':'Geçici'
-    }));
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(monthlySheetData.length?monthlySheetData:[{Not:'Henüz arşiv yok'}]), 'Aylık Arşiv');
-
-    const weeklySheetData = weeklyArchive.map(w=>({
-      Hafta:w.label, Başlangıç:w.start, Bitiş:w.end, 'Net Gelir':round2(w.incomeNet),
-      Gider:round2(w.expenseTotal), 'Net Sonuç':round2(w.netResult), Durum: w.final?'Kesin':'Geçici'
-    }));
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(weeklySheetData.length?weeklySheetData:[{Not:'Henüz arşiv yok'}]), 'Haftalık Arşiv');
-
-    XLSX.writeFile(wb, 'RockJazz_Muhasebe_Tam_Yedek_'+todayISO()+'.xlsx');
+    XLSX.writeFile(wb, 'RockJazz_Muhasebe_Yedek_'+todayISO()+'.xlsx');
   }
 
   window.addEventListener('error', (e)=>{
-    showFatalBanner('Beklenmeyen bir hata oluştu: ' + (e && e.message ? e.message : 'bilinmiyor') + '\n(Bu satırı ekran görüntüsü alıp gönderirsen sorunu bulmam kolaylaşır.)');
+    showFatalBanner('Beklenmeyen bir hata oluştu: ' + (e && e.message ? e.message : 'bilinmiyor'));
   });
 
   init().catch(err=>{
     console.error('init() başarısız:', err);
-    showFatalBanner('Program başlatılamadı: ' + (err && err.message ? err.message : String(err)) + '\n(Bu satırı ekran görüntüsü alıp gönderirsen sorunu bulmam kolaylaşır.)');
+    showFatalBanner('Program başlatılamadı: ' + (err && err.message ? err.message : String(err)));
   });
 })();
 </script>
