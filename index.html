@@ -1592,7 +1592,7 @@
   function parseByHeader(pages){
     const result = [];
     (pages||[]).forEach(items=>{
-      const hdrRe = /^(Mal|Hizmet|Kodu|Malın|Malin|Cinsi|Miktar|Döviz|Doviz|Fiyat|Birim|KDV|Oranı|Orani|Oran|Tutar|Tutarı|İskonto|Iskonto|Sıra|No)$/i;
+      const hdrRe = /^(Mal|Hizmet|Kodu|Malın|Malin|Cinsi|Miktar|Döviz|Doviz|Fiyat|Birim|KDV|Oranı|Orani|Oran|Tutar|Tutarı|İskonto|Iskonto|Sıra|S\.No|No)$/i;
       const miktar = items.find(i=>/^Miktar/i.test(i.s.trim()));
       if(!miktar) return;
       const band = items.filter(i=>Math.abs(i.y-miktar.y) < 30 && hdrRe.test(i.s.trim().split(/\s+/)[0]));
@@ -1602,67 +1602,92 @@
         return a.length ? a[0] : null;
       };
       const A = {};
-      A.kod = anc(/^Kodu/i);
       A.ad = anc(/^Cins/i) || anc(/^Mal[ıi]n/i);
       A.qty = miktar;
       A.doviz = anc(/^D[öo]viz/i);
       A.birim = anc(/^Birim/i, i=>!A.doviz || i.x > A.doviz.x - 5);
       A.kdv = anc(/Oran/i);
-      const numKeys = ['qty','doviz','birim','kdv'].filter(k=>A[k]);
-      const anchors = numKeys.map(k=>({k, l:A[k].x, r:A[k].x+A[k].w, c:A[k].x+A[k].w/2}));
-      band.filter(i=>/^(Tutar|İskonto|Iskonto)/i.test(i.s.trim())).forEach(i=>anchors.push({k:'other', l:i.x, r:i.x+i.w, c:i.x+i.w/2}));
       if(!A.birim || !A.ad) return;
+      const anchors = ['qty','doviz','birim','kdv'].filter(k=>A[k]).map(k=>({k, l:A[k].x, r:A[k].x+A[k].w, c:A[k].x+A[k].w/2}));
+      // "Mal Hizmet Tutarı", "KDV Tutarı", "İskonto" gibi diğer sayısal sütunlar: değerler yanlışlıkla fiyat sütununa yazılmasın
+      band.filter(i=>/Tutar|[İI]skonto|S[ıi]ra/i.test(i.s.trim()) && i.x > A.qty.x).forEach(i=>anchors.push({k:'other', l:i.x, r:i.x+i.w, c:i.x+i.w/2}));
       const dist = (it, a)=>Math.min(Math.abs(it.x-a.l), Math.abs(it.x+it.w-a.r), Math.abs(it.x+it.w/2-a.c));
 
-      // satırlara grupla (yukarıdan aşağıya)
+      // Kod/S.No sütunu ile ürün adı arasındaki sınır (başlıkların konumundan)
+      const kodHdr = band.filter(i=>/^(Mal Hizmet|Kodu)/i.test(i.s.trim()) && i.x < A.ad.x);
+      let nameLeft = -1e9;
+      if(kodHdr.length){
+        const kodRight = Math.max(...kodHdr.map(i=>i.x+i.w));
+        nameLeft = kodRight + 0.2*(A.ad.x - kodRight);
+      }
+
       const body = items.filter(i=>i.y < dataTop).sort((a,b)=>b.y-a.y);
       const lines = [];
       body.forEach(it=>{
-        let ln = lines.find(l=>Math.abs(l.y-it.y) < 3);
+        let ln = lines.find(l=>Math.abs(l.y-it.y) < 2);
         if(!ln){ ln = {y:it.y, cells:[]}; lines.push(ln); }
         ln.cells.push(it);
       });
       lines.sort((a,b)=>b.y-a.y);
+
       const unitWord = /^(Adet|ADET|AD|Ad|C62|Paket|PAKET|Takım|TAKIM|Koli|KOLİ|Set|SET|Kutu|KUTU|Metre|MT|Düzine|DZN|NIU|Pk)\.?$/;
-      const numRe = /^%?\s*(\d[\d.,]*)\s*(?:%|(Adet|ADET|AD|Ad|C62|Paket|Takım|Koli|Set|Kutu|Metre|MT))?$/;
-      let last = null;
+      // 1.250,00 TL | %20,00 | 1 Adet | 12,5 USD
+      const numRe = /^%?\s*(\d[\d.,]*)\s*(?:%|TL|TRY|₺|USD|EUR|\$|€|(?:Adet|ADET|AD|Ad|C62|Paket|Takım|Koli|Set|Kutu|Metre|MT))?\s*$/;
+      const endRe = /TOPLAM|GENEL|YALNIZ|ÖDENECEK|ODENECEK|BR[ÜU]T TUTAR|NET TUTAR|HESAPLANAN|[İI]SKONTO/i;
+
+      const recs = [];
       for(const ln of lines){
         const txt = ln.cells.map(c=>c.s).join(' ');
-        if(/TOPLAM|GENEL|YALNIZ|ÖDENECEK|ODENECEK/i.test(txt)) break;
+        if(endRe.test(txt)) break;
         ln.cells.sort((a,b)=>a.x-b.x);
-        const rec = {ad:[], qty:null, birim:null, doviz:null, kdv:null};
+        const rec = {y:ln.y, ad:[], qty:null, birim:null, doviz:null, kdv:null, dovizCur:null};
         ln.cells.forEach(c=>{
           const s = c.s.trim();
+          // sütun sınırının solu: sıra no / mal kodu → atla
+          if(c.x < nameLeft) return;
           const nm = numRe.exec(s);
-          if(nm && anchors.length){
+          if(nm && c.x + c.w > A.qty.x - 5){
             let best = null, bd = 1e9;
             anchors.forEach(a=>{ const d = dist(c,a); if(d<bd){ bd=d; best=a; } });
             if(best && best.k!=='other' && rec[best.k]===null){
               rec[best.k] = trNum(nm[1]);
-              if(best.k==='kdv') rec.kdvPct = true;
+              if(best.k==='doviz'){
+                const cur = /(TL|TRY|₺|USD|EUR|\$|€)\s*$/.exec(s);
+                rec.dovizCur = cur ? ({'TL':'TRY','₺':'TRY','$':'USD','€':'EUR'}[cur[1]] || cur[1]) : null;
+              }
             }
             return;
           }
-          if(unitWord.test(s)) return;
-          // metin: kod mu ad mı? kod sütunu varsa, adın sol sınırına göre ayır
-          if(A.kod && c.x < (A.kod.x + A.ad.x)/2) return;
+          if(unitWord.test(s) && c.x + c.w > A.qty.x - 5) return;
           rec.ad.push(s);
         });
-        const name = rec.ad.join(' ').replace(/\s+/g,' ').trim();
-        if(rec.qty!==null && (rec.birim!==null || rec.doviz!==null) && name){
-          let warn = '';
-          let rate = rec.kdv;
-          if(rate===null || !isFinite(rate)){ rate = 0; warn = 'KDV oranı okunamadı, KDV hariç fiyat yazıldı'; }
-          const tlNet = rec.birim>0 ? rec.birim : null;
-          const fx = rec.doviz>0 ? rec.doviz : null;
-          // fiyat (KDV dahil, TL) önizlemede recalcFx ile hesaplanır: TL birim fiyat varsa o, yoksa döviz × kur
-          last = {name, category: guessCategory(name), qty: rec.qty, price: 0, warn, tlNet, fx, vat: rate};
-          result.push(last);
-        } else if(last && name && rec.qty===null && rec.birim===null && rec.doviz===null){
-          last.name = (last.name + ' ' + name).trim();   // alt satıra taşan ürün adı
-          last.category = guessCategory(last.name);
-        }
+        recs.push(rec);
       }
+
+      // Satır = adet + fiyat bulunan çizgi. Ürün adı alt/üst satıra taşabilir: en yakın veri satırına ata.
+      const data = recs.filter(r=>r.qty!==null && (r.birim!==null || r.doviz!==null));
+      const out = data.map(r=>({rec:r, parts:[{y:r.y, t:r.ad.join(' ')}]}));
+      recs.filter(r=>!data.includes(r) && r.ad.length).forEach(r=>{
+        let best = null, bd = 1e9;
+        out.forEach(o=>{ const d = Math.abs(o.rec.y - r.y); if(d<bd){ bd=d; best=o; } });
+        if(best && bd < 14) best.parts.push({y:r.y, t:r.ad.join(' ')});
+      });
+      out.forEach(o=>{
+        const r = o.rec;
+        const name = o.parts.filter(p=>p.t).sort((a,b)=>b.y-a.y).map(p=>p.t).join(' ').replace(/\s+/g,' ').trim();
+        if(!name) return;
+        let warn = '';
+        let rate = r.kdv;
+        if(rate===null || !isFinite(rate)){ rate = 0; warn = 'KDV oranı okunamadı, KDV hariç fiyat yazıldı'; }
+        let tlNet = r.birim>0 ? r.birim : null;
+        let fx = r.doviz>0 ? r.doviz : null, fxCur = null;
+        if(fx!==null){
+          if(r.dovizCur==='USD' || r.dovizCur==='EUR') fxCur = r.dovizCur;
+          else if(tlNet===null){ tlNet = fx; fx = null; }     // "Döviz Fiyat" TL cinsinden yazılmış
+          else fx = null;
+        }
+        result.push({name, category: guessCategory(name), qty: r.qty, price: 0, warn, tlNet, fx, fxCur, vat: rate});
+      });
     });
     return result;
   }
@@ -1942,7 +1967,10 @@
           if(!parsed.length) parsed = parseInvoiceLines(lines);
           rawLines = lines; previewOn = true;
           if(!parsed.length){
-            status.textContent = 'Satırlar otomatik tanınamadı. Aşağıdaki "+ Satır ekle" ile ürün, adet ve KDV dahil birim fiyatı elle girebilirsin; ham metin altta görünür.';
+            const hasHdr = (lines.pages||[]).some(pg=>pg.some(i=>/^Miktar/i.test(i.s.trim())));
+            status.textContent = lines.length === 0
+              ? 'Bu PDF\'de okunabilir metin yok (taranmış veya fotoğraf olarak kaydedilmiş). Metin okuyucu çalışmaz; "+ Satır ekle" ile elle girebilirsin.'
+              : 'PDF\'den ' + lines.length + ' satır metin okundu, ' + (hasHdr ? '"Miktar" başlığı bulundu ama satırlar eşleşmedi.' : '"Miktar" başlığı bulunamadı.') + ' Ham metin tablonun altında; "+ Satır ekle" ile elle de girebilirsin.';
             items = [];
             renderPreview();
             return;
@@ -1950,7 +1978,8 @@
           // fatura metninde para birimini bul (en çok geçen)
           const allTxt = lines.join(' ');
           const nUsd = (allTxt.match(/USD|\$|DOLAR/gi)||[]).length, nEur = (allTxt.match(/EUR|€|EURO/gi)||[]).length;
-          const detected = nEur > nUsd ? 'EUR' : 'USD';
+          const rowCur = (parsed.find(r=>r.fxCur)||{}).fxCur;   // satırdaki döviz fiyatının yanında yazan para birimi
+          const detected = rowCur || (nEur > nUsd ? 'EUR' : 'USD');
           if(curSel.value !== detected){
             curSel.value = detected;
             if(kurInfo.textContent !== 'elle girildi') await refreshKur();   // para birimi değiştiyse kuru yenile
