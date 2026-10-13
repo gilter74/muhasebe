@@ -508,6 +508,7 @@
         <option value="Metod/Kitap">Metod/Kitap</option>
       </select>
       <button class="btn ghost small" id="addStockBtn">+ Yeni Ürün Ekle</button>
+      <button class="btn primary small" id="invoiceImportBtn">📄 Faturadan Stok Ekle</button>
       <button class="btn danger-ghost" id="bulkDeleteStockBtn" style="display:none;">Seçilenleri Sil (<span id="bulkDeleteCount">0</span>)</button>
     </div>
     <div class="table-scroll">
@@ -1514,6 +1515,7 @@
     document.getElementById('stockSearch').addEventListener('input', renderStockTable);
     document.getElementById('stockCategoryFilter').addEventListener('change', renderStockTable);
     document.getElementById('addStockBtn').addEventListener('click', openAddStockModal);
+    document.getElementById('invoiceImportBtn').addEventListener('click', openInvoiceImportModal);
     document.getElementById('selectAllStock').addEventListener('change', (e)=>{
       const visibleRows = getFilteredStockRows();
       if(e.target.checked){ visibleRows.forEach(it=>selectedStockIds.add(it.id)); }
@@ -1539,6 +1541,98 @@
     if(q) rows = rows.filter(r=>r.name.toUpperCase().includes(q));
     rows.sort((a,b)=>a.name.localeCompare(b.name,'tr'));
     return rows;
+  }
+
+  // Fatura satırlarını (JSON) önizleyip stoğa ekler. Fiyatlar KDV dahil birim fiyattır.
+  function openInvoiceImportModal(){
+    const CATS = ['Müzik Aleti','Aksesuar','Metod/Kitap'];
+    let items = [];
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal wide">
+        <div class="flex-between">
+          <h2 style="margin:0;">Faturadan Stok Ekle</h2>
+          <button class="btn ghost small" id="invClose">Kapat</button>
+        </div>
+        <p style="margin:6px 0 12px;">Claude'un faturadan hazırladığı satırları (JSON) dosya olarak seç ya da aşağıya yapıştır. Birim fiyatlar <b>KDV dahil</b> TL'dir.</p>
+        <input type="file" id="invFile" accept=".json,.txt,application/json" style="margin-bottom:10px;">
+        <textarea id="invText" rows="4" placeholder='[{"name":"ÜRÜN ADI","category":"Aksesuar","qty":2,"price":150.5}]' style="font-family:var(--font-mono);font-size:12px;"></textarea>
+        <div style="margin:10px 0;"><button class="btn ghost small" id="invParse">Satırları Oku</button></div>
+        <div id="invPreview"></div>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.querySelector('#invClose').addEventListener('click', ()=>overlay.remove());
+    const normName = s => String(s||'').trim().toLocaleUpperCase('tr').replace(/\s+/g,' ');
+
+    function parseInput(raw){
+      let data;
+      try{ data = JSON.parse(raw); }catch(e){ toast('JSON okunamadı.'); return; }
+      if(!Array.isArray(data)) data = data && data.items;
+      if(!Array.isArray(data) || !data.length){ toast('Satır bulunamadı.'); return; }
+      items = data.map(r=>({
+        name: String(r.name||r.ad||'').trim(),
+        category: CATS.includes(r.category||r.kategori) ? (r.category||r.kategori) : 'Aksesuar',
+        qty: parseFloat(r.qty!=null?r.qty:r.adet) || 1,
+        price: parseFloat(r.price!=null?r.price:r.fiyat) || 0
+      })).filter(r=>r.name);
+      renderPreview();
+    }
+
+    function renderPreview(){
+      const box = overlay.querySelector('#invPreview');
+      if(!items.length){ box.innerHTML=''; return; }
+      const total = items.reduce((s,r)=>s+r.qty*r.price,0);
+      box.innerHTML = `
+        <div class="table-scroll" style="max-height:360px;">
+          <table>
+            <thead><tr><th>Ürün</th><th>Kategori</th><th class="num">Adet</th><th class="num">Birim Fiyat (KDV dahil)</th><th class="num">Tutar</th><th>Durum</th><th></th></tr></thead>
+            <tbody>${items.map((r,i)=>{
+              const ex = stock.find(s=>normName(s.name)===normName(r.name) && Math.abs(s.price-r.price)<0.01);
+              return `<tr>
+                <td><input type="text" data-f="name" data-i="${i}" value="${esc(r.name)}" style="min-width:200px;"></td>
+                <td><select data-f="category" data-i="${i}">${CATS.map(c=>`<option ${c===r.category?'selected':''}>${c}</option>`).join('')}</select></td>
+                <td class="num"><input type="number" min="0" step="1" data-f="qty" data-i="${i}" value="${r.qty}" style="width:70px;text-align:right;"></td>
+                <td class="num"><input type="number" min="0" step="0.01" data-f="price" data-i="${i}" value="${r.price}" style="width:100px;text-align:right;"></td>
+                <td class="num">${fmtTRY(r.qty*r.price)}</td>
+                <td style="font-size:12px;color:var(--muted);">${ex?'Mevcut ürüne adet eklenir':'Yeni ürün'}</td>
+                <td><button class="btn danger-ghost" data-rm="${i}">Çıkar</button></td>
+              </tr>`;}).join('')}</tbody>
+          </table>
+        </div>
+        <div class="flex-between" style="margin-top:14px;">
+          <b>Fatura toplamı (KDV dahil): ${fmtTRY(total)} · ${items.length} kalem</b>
+          <button class="btn primary" id="invConfirm">Stoğa Ekle</button>
+        </div>`;
+      box.querySelectorAll('[data-f]').forEach(inp=>inp.addEventListener('change', ()=>{
+        const r = items[parseInt(inp.dataset.i)], f = inp.dataset.f;
+        r[f] = (f==='qty'||f==='price') ? (parseFloat(inp.value)||0) : inp.value.trim();
+        renderPreview();
+      }));
+      box.querySelectorAll('[data-rm]').forEach(b=>b.addEventListener('click', ()=>{ items.splice(parseInt(b.dataset.rm),1); renderPreview(); }));
+      box.querySelector('#invConfirm').addEventListener('click', async ()=>{
+        const valid = items.filter(r=>r.name && r.qty>0);
+        if(!valid.length){ toast('Eklenecek satır yok.'); return; }
+        let added = 0, merged = 0;
+        valid.forEach(r=>{
+          const ex = stock.find(s=>normName(s.name)===normName(r.name) && Math.abs(s.price-r.price)<0.01);
+          if(ex){ ex.qty += r.qty; merged++; }
+          else { stock.push({id: uid('stk'), name: r.name, qty: r.qty, price: r.price, category: r.category}); added++; }
+        });
+        await sSet('stock:list', stock);
+        overlay.remove();
+        toast(added+' yeni ürün, '+merged+' mevcut ürüne adet eklendi.');
+        renderAll();
+      });
+    }
+
+    overlay.querySelector('#invParse').addEventListener('click', ()=>parseInput(overlay.querySelector('#invText').value));
+    overlay.querySelector('#invFile').addEventListener('change', (e)=>{
+      const f = e.target.files[0]; if(!f) return;
+      const rd = new FileReader();
+      rd.onload = ()=>{ overlay.querySelector('#invText').value = rd.result; parseInput(rd.result); };
+      rd.readAsText(f, 'utf-8');
+    });
   }
 
   function openAddStockModal(){
