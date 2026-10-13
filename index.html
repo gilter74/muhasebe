@@ -1544,6 +1544,107 @@
     return rows;
   }
 
+  // ---- PDF fatura okuma (pdf.js, tarayıcıda) ----
+  async function extractPdfLines(file){
+    if(typeof pdfjsLib === 'undefined') throw new Error('PDF kütüphanesi yüklenemedi (internet bağlantısını kontrol et).');
+    const ver = '3.11.174';
+    try{
+      const wr = await fetch('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/'+ver+'/pdf.worker.min.js');
+      const wt = await wr.text();
+      pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(new Blob([wt], {type:'application/javascript'}));
+    }catch(e){
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/'+ver+'/pdf.worker.min.js';
+    }
+    const buf = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({data: buf}).promise;
+    const out = [];
+    for(let p=1; p<=pdf.numPages; p++){
+      const page = await pdf.getPage(p);
+      const tc = await page.getTextContent();
+      const rows = [];
+      tc.items.forEach(it=>{
+        if(!it.str || !it.str.trim()) return;
+        const y = it.transform[5], x = it.transform[4];
+        let row = rows.find(r=>Math.abs(r.y-y) < 3);
+        if(!row){ row = {y, cells:[]}; rows.push(row); }
+        row.cells.push({x, w: it.width||0, s: it.str});
+      });
+      rows.sort((a,b)=>b.y-a.y);
+      rows.forEach(r=>{
+        r.cells.sort((a,b)=>a.x-b.x);
+        let line = '', prevEnd = null;
+        r.cells.forEach(c=>{
+          if(prevEnd!==null && c.x - prevEnd > 1.5) line += ' ';
+          line += c.s; prevEnd = c.x + c.w;
+        });
+        out.push(line.replace(/\s+/g,' ').trim());
+      });
+    }
+    return out.filter(Boolean);
+  }
+
+  function guessCategory(name){
+    const n = name.toLocaleUpperCase('tr');
+    if(/METOD|KİTAP|KITAP|ŞARKI|SOLO|EĞİTİM|EĞİTİMİ|ÖĞRETİM/.test(n)) return 'Metod/Kitap';
+    const accessory = /TEL\b|TELİ|PENA|KILIF|STAND|SEHPA|ASKI|KAPO|AKORT|REÇİNE|KAMIŞ|BURGU|EŞİK|KABLO|ADAPTÖR|TUNER|BEK|YASTIK|SUSTURUCU|KÖPRÜ|KULAK|PİM|MIZRAP|GÜDERİ|KUYRUK|ÇERÇEVE|BAGET|DERİ/;
+    const instrument = /GİTAR|GITAR|PİYANO|PIYANO|ORG\b|KEMAN|UKULELE|BAĞLAMA|DARBUKA|DARABUKA|AMFİ|DAVUL|BATERİ|FLÜT|KLARNET|MİKROFON|BENDİR|MELODİKA|MIZIKA|NEY\b|SAZ\b|TEF\b/;
+    if(instrument.test(n) && !accessory.test(n)) return 'Müzik Aleti';
+    return 'Aksesuar';
+  }
+
+  function trNum(s){
+    s = String(s).trim();
+    if(/,/.test(s)) return parseFloat(s.replace(/\./g,'').replace(',','.'));
+    if(/^\d{1,3}(\.\d{3})+$/.test(s)) return parseFloat(s.replace(/\./g,''));
+    return parseFloat(s);
+  }
+
+  // Türk e-fatura satırı: "No  Ürün adı  Miktar Birim  Birim Fiyat  [İskonto]  KDV %  KDV Tutarı  Mal/Hizmet Tutarı"
+  function parseInvoiceLines(lines){
+    const unitRe = /(\d+(?:[.,]\d+)?)\s*(Adet|ADET|AD|Ad|C62|Paket|PAKET|Takım|TAKIM|Koli|KOLİ|Set|SET|Kutu|KUTU|Metre|MT|Düzine|DZN|NIU|Pk)\b/;
+    const numRe = /\d{1,3}(?:\.\d{3})+,\d+|\d+,\d+|\d+(?:\.\d+)?/g;
+    const rows = [];
+    lines.forEach(line=>{
+      const m = unitRe.exec(line);
+      if(!m) return;
+      let name = line.slice(0, m.index).replace(/^\s*\d{1,3}\s+/, '').trim();
+      if(name.length < 3 || !/[A-Za-zÇĞİÖŞÜçğıöşü]/.test(name)) return;
+      const qty = trNum(m[1]);
+      const rest = line.slice(m.index + m[0].length);
+      const rateM = /%\s*(\d{1,2})(?:[.,]0+)?/.exec(rest);
+      let rate = rateM ? parseInt(rateM[1]) : null;
+      const restNoPct = rest.replace(/%\s*\d{1,2}(?:[.,]\d+)?/g, ' ');
+      const nums = (restNoPct.match(numRe)||[]).map(trNum).filter(n=>isFinite(n));
+      if(!qty || nums.length < 2) return;
+      let warn = '';
+      const unitNet = nums[0];
+      let gross = null;
+      // KDV tutarı ile mal/hizmet tutarı çiftini bul: net * oran = kdv
+      const candRates = rate!==null ? [rate] : [20,10,8,1,0];
+      outer:
+      for(const r of candRates){
+        for(let i=1;i<nums.length;i++){
+          for(let j=1;j<nums.length;j++){
+            if(i===j) continue;
+            const net = nums[i], kdv = nums[j];
+            if(net>0 && Math.abs(net*r/100 - kdv) < 0.03 + net*0.002){ gross = net + kdv; rate = r; break outer; }
+          }
+        }
+      }
+      if(gross===null){
+        if(rate!==null){ gross = unitNet*qty*(1+rate/100); warn = 'KDV tutarı eşleşmedi, orandan hesaplandı'; }
+        else { gross = unitNet*qty; warn = 'KDV bulunamadı, fiyat KDV hariç olabilir'; }
+      }
+      const unitGross = gross / qty;
+      rows.push({
+        name, category: guessCategory(name), qty,
+        price: Math.round(unitGross*100)/100,
+        warn
+      });
+    });
+    return rows;
+  }
+
   // Fatura satırlarını (JSON) önizleyip stoğa ekler. Fiyatlar KDV dahil birim fiyattır.
   function openInvoiceImportModal(){
     const CATS = ['Müzik Aleti','Aksesuar','Metod/Kitap'];
@@ -1604,7 +1705,10 @@
         </div>
         <div class="flex-between" style="margin-top:14px;">
           <b>Fatura toplamı (KDV dahil): ${fmtTRY(total)} · ${items.length} kalem</b>
-          <button class="btn primary" id="invConfirm">Stoğa Ekle</button>
+          <div style="display:flex;gap:8px;">
+            <button class="btn ghost" id="invDownload">JSON olarak indir</button>
+            <button class="btn primary" id="invConfirm">Stoğa Ekle</button>
+          </div>
         </div>`;
       box.querySelectorAll('[data-f]').forEach(inp=>inp.addEventListener('change', ()=>{
         const r = items[parseInt(inp.dataset.i)], f = inp.dataset.f;
@@ -1612,6 +1716,15 @@
         renderPreview();
       }));
       box.querySelectorAll('[data-rm]').forEach(b=>b.addEventListener('click', ()=>{ items.splice(parseInt(b.dataset.rm),1); renderPreview(); }));
+      box.querySelector('#invDownload').addEventListener('click', ()=>{
+        const clean = items.map(r=>({name:r.name, category:r.category, qty:r.qty, price:r.price}));
+        const blob = new Blob([JSON.stringify(clean, null, 2)], {type:'application/json'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'fatura_stok_' + todayISO() + '.json';
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+      });
       box.querySelector('#invConfirm').addEventListener('click', async ()=>{
         const valid = items.filter(r=>r.name && r.qty>0);
         if(!valid.length){ toast('Eklenecek satır yok.'); return; }
