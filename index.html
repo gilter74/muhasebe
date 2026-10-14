@@ -1589,6 +1589,169 @@
 
   // Başlık sütunlarına göre okuma: Mal Hizmet Kodu | Malın Cinsi | Miktar | Döviz Fiyat | Birim Fiyat | KDV Oranı ...
   // Ürün adı = Malın Cinsi, adet = Miktar, fiyat = Birim Fiyat × (1 + KDV Oranı)
+  // Satır bandına göre okuma (farklı firmaların e-fatura/PDF düzenleri için):
+  //  - başlık sütunları eşanlamlılarla bulunur (Miktar/Adet, Birim Fiyat, KDV Oranı/KDV %, Mal Hizmet Tutarı/Tutar/Toplam ...)
+  //  - her satır "Sıra No" ile başlar; sıra no yoksa Miktar sütunundaki değerlerden satırlar bulunur
+  //  - ürün adı satırın üstüne/altına taşabilir (satır bandına göre birleştirilir)
+  //  - fiyat = KDV dahil birim fiyat (iskonto dahil), fatura para biriminde; faturanın toplamıyla doğrulanır
+  function parseByRows(pages, meta){
+    meta = meta || {};
+    const result = [];
+    let ctx = null;
+    const unitWord = /^(Adet|ADET|AD|Ad|C62|Paket|PAKET|Takım|TAKIM|Koli|KOLİ|Set|SET|Kutu|KUTU|Metre|MT|Düzine|DZN|NIU|Pk|Pcs|PCS|Pc|ea|EA)\.?$/;
+    const curRe = /^(TL|TRY|₺|USD|EUR|GBP|\$|€|£)$/;
+    const curMap = {'TL':'TRY','₺':'TRY','$':'USD','€':'EUR','£':'GBP'};
+    const numRe = /^%?(\d[\d.,]*)%?$/;
+    const endRe = /TOPLAM|GENEL|YALNIZ|ÖDENECEK|ODENECEK|BR[ÜU]T TUTAR|NET TUTAR|HESAPLANAN|D[ÖO]V[İI]Z KURU|ARA\s*TOPLAM|SUBTOTAL|TOTAL/i;
+    const split = it=>{
+      const s = it.s, len = Math.max(s.length,1), out = [], re = /\S+/g; let m;
+      while((m = re.exec(s))) out.push({s:m[0], x: it.x + it.w*(m.index/len), w: it.w*(m[0].length/len), y: it.y});
+      return out;
+    };
+    (pages||[]).forEach(items=>{
+      const qtyRe = /^(Miktar|Adet|Mik\.?|Qty|Quantity)$/i;
+      const qtyCands = items.filter(i=>qtyRe.test(i.s.trim().split(/\s+/)[0]) && i.s.trim().split(/\s+/).length <= 2 && !/\d/.test(i.s)).sort((a,b)=>b.y-a.y);
+      const miktar = qtyCands[0];
+      let dataTop = Infinity;
+      if(miktar){
+        // başlık bandı: Miktar başlığının çevresindeki, rakamla başlamayan hücreler
+        const band = items.filter(i=>Math.abs(i.y-miktar.y) < 13 && !/^[\d%]/.test(i.s.trim()));
+        dataTop = Math.min(...band.map(i=>i.y)) - 2;
+        const anc = (re, f)=>{ const a = band.filter(i=>re.test(i.s.trim()) && (!f || f(i))); return a.length ? a[0] : null; };
+        const A = {};
+        A.sno = anc(/^(S[ıi]ra|S\.?\s*No|No\.?|#)(\s*No)?$/i);
+        A.ad = anc(/^Cins/i) || anc(/^Mal[ıi]n/i) || anc(/A[çc][ıi]klama/i) || anc(/^[ÜU]r[üu]n\s*(Ad|Tan)/i) || anc(/^Stok\s*Ad/i) || anc(/^Tan[ıi]m/i) || anc(/^(Mal|Malzeme)\s*(Ad|Hizmet)?$/i) || anc(/^[ÜU]r[üu]n$/i) || anc(/^Description/i);
+        A.qty = miktar;
+        A.doviz = anc(/^D[öo]viz\s*Fiyat/i);
+        A.birim = anc(/^(Birim\s*Fiyat|B\.?\s*Fiyat|Unit\s*Price)/i, i=>!A.doviz || i.x > A.doviz.x - 5)
+               || anc(/^Fiyat$/i, i=>i.x > A.qty.x)
+               || (()=>{ const b = band.filter(i=>/^Birim$/i.test(i.s.trim()) && i.x > A.qty.x - 5); return b.find(i=>band.some(f=>/^Fiyat/i.test(f.s.trim()) && Math.abs(f.x-i.x) < 30)) || null; })();
+        A.tlb = anc(/^TL\s*Birim/i);
+        A.kdv = anc(/^KDV\s*(Oran|%|\(%\))/i) || anc(/^%\s*KDV/i) || anc(/^KDV$/i, i=>!band.some(o=>/^KDV\s*Tutar/i.test(o.s.trim()) && Math.abs(o.x-i.x)<2));
+        A.isk = anc(/^[İIi]skonto(\s*(Oran[ıi]?|%|\(%\)))?$/i) || anc(/^[İIi]sk\.?\s*(%|Oran)/i);
+        const tut = band.filter(i=>/Hizmet\s*Tutar|^Sat[ıi]r\s*(Tutar|Toplam)|^Tutar|^Toplam$|^Bedel|Line\s*Total|^Mal\s*Bedel|Amount/i.test(i.s.trim()) && !/KDV\s*Tutar|[İIi]skonto/i.test(i.s) && i.x > A.qty.x).sort((a,b)=>b.x-a.x);
+        A.tutar = tut[0] || null;
+        const gross = h => !!h && /KDV\s*Dahil|KDV\s*li|Vergiler\s*Dahil|incl/i.test(h.s);
+        A.birimGross = gross(A.birim) || (A.birim && band.some(o=>/KDV\s*Dahil/i.test(o.s) && Math.abs(o.x+o.w/2 - (A.birim.x+A.birim.w/2)) < 35 && !(A.tutar && Math.abs(o.x - A.tutar.x) < 2)));
+        A.tutarGross = gross(A.tutar) || (A.tutar && band.some(o=>/KDV\s*Dahil/i.test(o.s) && Math.abs(o.x - A.tutar.x) < 40));
+        const hasKod = band.some(i=>/Kod/i.test(i.s) && i.x < (A.ad ? A.ad.x + 40 : A.qty.x));
+        if(!A.birim){ ctx = null; }
+        else {
+          const anchors = [];
+          [['qty',A.qty],['doviz',A.doviz],['birim',A.birim],['tlb',A.tlb],['kdv',A.kdv],['isk',A.isk],['tutar',A.tutar]].forEach(([k,i])=>{ if(i) anchors.push({k, l:i.x, r:i.x+i.w, c:i.x+i.w/2}); });
+          // değer almaması gereken diğer sayısal sütunlar (KDV tutarı, diğer vergiler...) — yanlış sütuna kaymayı önler
+          band.filter(i=>i!==A.tutar && i!==A.isk && i.x > A.qty.x && /Tutar|Toplam|Diğer|Vergiler|Tax|KDV/i.test(i.s.trim()) && i!==A.kdv && i!==A.birim && !/Hizmet\s*Tutar/i.test(i.s))
+              .forEach(i=>anchors.push({k:'other', l:i.x, r:i.x+i.w, c:i.x+i.w/2}));
+          ctx = {A, anchors, hasKod};
+        }
+      }
+      if(!ctx) return;
+      const {A, anchors, hasKod} = ctx;
+      const dist = (t,a)=>Math.min(Math.abs(t.x-a.l), Math.abs(t.x+t.w-a.r), Math.abs(t.x+t.w/2-a.c));
+      const body = items.filter(i=>i.y < dataTop);
+      let starts = [];
+      let snoC = null, snoHalf = 0;
+      if(A.sno){
+        snoC = A.sno.x + A.sno.w/2; snoHalf = Math.max(A.sno.w/2, 6) + 8;
+        starts = body.filter(i=>/^\d{1,3}$/.test(i.s.trim()) && Math.abs(i.x + i.w/2 - snoC) < snoHalf).sort((a,b)=>b.y-a.y);
+      }
+      if(!starts.length){
+        // sıra no yok: Miktar sütunundaki sayısal değerler satır başlangıcı
+        snoC = null;
+        const qC = A.qty.x + A.qty.w/2, qHalf = Math.max(A.qty.w/2, 10) + 14;
+        const cand = body.filter(i=>/^\d[\d.,]*(\s*[A-Za-zÇĞİÖŞÜçğıöşü.]{1,6})?$/.test(i.s.trim()) && Math.abs(i.x + i.w/2 - qC) < qHalf
+                                    || (/^\d[\d.,]*(\s+\S+)?$/.test(i.s.trim()) && Math.abs(i.x - A.qty.x) < 25)).sort((a,b)=>b.y-a.y);
+        cand.forEach(i=>{ if(!starts.length || Math.abs(starts[starts.length-1].y - i.y) > 3) starts.push(i); });
+      }
+      if(!starts.length) return;
+      const endLine = body.filter(i=>endRe.test(i.s) && i.y < starts[starts.length-1].y + 1).sort((a,b)=>b.y-a.y)[0];
+      const lastBottom = endLine ? endLine.y + 3 : starts[starts.length-1].y - 30;
+      const tokens = [];
+      body.forEach(it=>split(it).forEach(t=>tokens.push(t)));
+      starts.forEach((st, idx)=>{
+        const top = idx===0 ? dataTop : (starts[idx-1].y + st.y)/2;
+        const bottom = idx===starts.length-1 ? lastBottom : (st.y + starts[idx+1].y)/2;
+        const rowTok = tokens.filter(t=>t.y < top && t.y >= bottom).sort((a,b)=>(Math.abs(a.y-b.y)<2 ? a.x-b.x : b.y-a.y));
+        const rec = {qty:null, doviz:null, birim:null, tlb:null, kdv:null, isk:null, tutar:null, cur:null};
+        const nameParts = [];
+        let kodTaken = !hasKod;
+        rowTok.forEach(t=>{
+          const s = t.s.trim();
+          if(snoC!==null && Math.abs(t.x + t.w/2 - snoC) < snoHalf && /^\d{1,3}$/.test(s)) return;      // sıra no
+          const onStart = Math.abs(t.y - st.y) < 2;
+          const right = t.x + t.w > A.qty.x - 5;
+          if(right){
+            if(curRe.test(s)){ if(!rec.cur) rec.cur = curMap[s] || s; return; }
+            if(s === '%') return;
+            const nm = numRe.exec(s);
+            if(nm){
+              let best = null, bd = 1e9;
+              anchors.forEach(a=>{ const d = dist(t,a); if(d < bd){ bd = d; best = a; } });
+              if(best && best.k !== 'other' && rec[best.k] === null) rec[best.k] = trNum(nm[1]);
+              return;
+            }
+            return;   // birim kelimesi (Adet) vb.
+          }
+          if(!kodTaken && onStart){ kodTaken = true; return; }                           // mal/hizmet kodu
+          nameParts.push(s);
+        });
+        const name = nameParts.join(' ').replace(/\s+/g,' ').trim();
+        const qty = rec.qty;
+        if(!name || !(qty > 0)) return;
+        let rate = rec.kdv, warn = '';
+        if(rate === null || !isFinite(rate)){ rate = 0; warn = 'KDV oranı okunamadı, KDV hariç fiyat yazıldı'; }
+        const cur = rec.cur || meta.docCur || 'TRY';
+        const unitNet = rec.birim>0 ? rec.birim : (rec.doviz>0 ? rec.doviz : 0);
+        const vatF = 1 + rate/100;
+        // yöntem 1: satır tutarı sütunu (iskonto sonrası); yöntem 2: miktar × birim fiyat × (1 - iskonto)
+        const g1 = rec.tutar>0 ? (A.tutarGross ? rec.tutar : rec.tutar*vatF)/qty : null;
+        const g2 = unitNet>0 ? unitNet*(1-(rec.isk||0)/100)*(A.birimGross ? 1 : vatF) : null;
+        if(g1===null && g2===null) return;
+        const unitGross = g1!==null ? g1 : g2;
+        result.push({name, category: guessCategory(name), qty, price: 0, warn, vat: rate, cur, unitGross, g1, g2,
+                     tlNet: (cur!=='TRY' && rec.tlb>0) ? rec.tlb : null});
+      });
+    });
+
+    // Fatura toplamıyla doğrulama: hangi hesap yöntemi faturanın toplamına daha yakın?
+    const total = meta.totals && result.length ? meta.totals[result[0].cur] : null;
+    if(total > 0 && result.length){
+      const sum = k => result.reduce((s,r)=>s + (r[k]!==null && r[k]!==undefined ? r[k] : r.unitGross)*r.qty, 0);
+      const s1 = sum('g1'), s2 = sum('g2');
+      const err = v => Math.abs(v - total)/total;
+      let mode = null, best = err(s1);
+      if(result.some(r=>r.g2!==null) && err(s2) < best - 0.0005){ mode = 'g2'; best = err(s2); }
+      if(mode){ result.forEach(r=>{ if(r[mode]!==null) r.unitGross = r[mode]; }); }
+      const cur = sum('unitGross') ;
+      // belge düzeyinde iskonto: satır tutarları brüt, toplam daha düşükse orantılı dağıt
+      const f = total / cur;
+      if(Math.abs(f-1) > 0.004 && f > 0.5 && f < 0.998 && meta.hasDiscount){
+        result.forEach(r=>{ r.unitGross = r.unitGross * f; r.warn = r.warn || 'Belge iskontosu satırlara orantılı dağıtıldı'; });
+      }
+    }
+    return result;
+  }
+
+  // Faturanın genel bilgileri: ödenecek toplam (para birimine göre), belge para birimi, belge iskontosu
+  function extractInvoiceMeta(lines){
+    const txt = lines.join('\n');
+    const curMap = {'TL':'TRY','TRY':'TRY','₺':'TRY','USD':'USD','$':'USD','EUR':'EUR','€':'EUR','GBP':'GBP','£':'GBP'};
+    const dm = /(?:Para\s*Birimi|D[öo]viz\s*Cinsi|Currency|PB)\s*[:\-]?\s*(USD|EUR|GBP|TRY|TL)\b/i.exec(txt);
+    const docCur = dm ? curMap[dm[1].toUpperCase()] : null;
+    const totals = {};
+    const re = /(?:[ÖO]denecek\s*Tutar|Vergiler\s*Dahil\s*Toplam(?:\s*Tutar)?|Genel\s*Toplam|Grand\s*Total|Payable\s*Amount)[^\d\n]*(\d[\d.,]*)\s*(TL|TRY|₺|USD|EUR|GBP|\$|€|£)?/gi;
+    let m;
+    while((m = re.exec(txt))){
+      const cur = m[2] ? curMap[m[2].toUpperCase()] : (docCur || 'TRY');
+      const v = trNum(m[1]);
+      if(v > 0) totals[cur] = v;
+    }
+    const kM = /d[öo]viz\s*kuru[^\d]*(\d[\d.,]*)/i.exec(txt);
+    const kur = kM ? trNum(kM[1]) : null;
+    const dd = /Toplam\s*[İI]skonto[^\d\n]*(\d[\d.,]*)/i.exec(txt);
+    return {docCur, totals, kur: kur > 0 ? kur : null, hasDiscount: !!(dd && trNum(dd[1]) > 0)};
+  }
+
   function parseByHeader(pages){
     const result = [];
     (pages||[]).forEach(items=>{
@@ -1795,7 +1958,7 @@
   function openInvoiceImportModal(){
     const CATS = ['Müzik Aleti','Aksesuar','Metod/Kitap'];
     let items = [];
-    let previewOn = false, rawLines = [];
+    let previewOn = false, rawLines = [], invTotal = null;
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.innerHTML = `
@@ -1866,7 +2029,7 @@
           </table>
         </div>
         <div class="flex-between" style="margin-top:14px;">
-          <b>Fatura toplamı (KDV dahil): ${fmtTRY(total)} · ${items.length} kalem</b>
+          <b>Okunan toplam (KDV dahil): ${fmtTRY(total)} · ${items.length} kalem${invTotal ? '<br><span style="font-weight:400;font-size:12.5px;color:var(--muted);">Faturadaki ödenecek tutar: '+fmtTRY(invTotal)+' · fark: '+fmtTRY(total-invTotal)+'</span>' : ''}</b>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
             <button class="btn ghost" id="invAddRow">+ Satır ekle</button>
             <button class="btn ghost" id="invDownload">JSON olarak indir</button>
@@ -1917,6 +2080,18 @@
       const kur = parseFloat(kurInp.value) || 0;
       items.forEach(r=>{
         if(r.vat===undefined || r.manual) return;          // sadece başlıktan okunan satırlar
+        if(r.unitGross !== undefined){
+          // yeni okuyucu: unitGross = KDV dahil birim fiyat (fatura para biriminde, iskonto dahil)
+          r.note = '';
+          if(r.cur === 'TRY'){ r.price = Math.round(r.unitGross*100)/100; return; }
+          if(r.tlNet>0 && !forceFx.checked){ r.price = Math.round(r.tlNet*(1+r.vat/100)*100)/100; return; }
+          const k = (r.cur === curSel.value) ? kur : (latestRate(r.cur) || 0);
+          if(!k){ r.price = 0; r.warn = 'Döviz faturası: kur gir'; return; }
+          r.price = Math.round(r.unitGross * k * 100)/100;
+          r.note = r.cur + ' ' + r.unitGross.toFixed(4) + ' (KDV dahil) × ' + k + ' ₺';
+          if(r.warn === 'Döviz faturası: kur gir') r.warn = '';
+          return;
+        }
         const useFx = r.fx>0 && (forceFx.checked || !(r.tlNet>0));
         r.note = '';
         if(useFx){
@@ -1963,7 +2138,9 @@
         status.textContent = 'PDF okunuyor…';
         try{
           const lines = await extractPdfLines(f);
-          let parsed = parseByHeader(lines.pages);
+          const meta = extractInvoiceMeta(lines);
+          let parsed = parseByRows(lines.pages, meta);
+          if(!parsed.length) parsed = parseByHeader(lines.pages);
           if(!parsed.length) parsed = parseInvoiceLines(lines);
           rawLines = lines; previewOn = true;
           if(!parsed.length){
@@ -1978,15 +2155,35 @@
           // fatura metninde para birimini bul (en çok geçen)
           const allTxt = lines.join(' ');
           const nUsd = (allTxt.match(/USD|\$|DOLAR/gi)||[]).length, nEur = (allTxt.match(/EUR|€|EURO/gi)||[]).length;
-          const rowCur = (parsed.find(r=>r.fxCur)||{}).fxCur;   // satırdaki döviz fiyatının yanında yazan para birimi
+          const fRow = parsed.find(r=>r.cur==='USD' || r.cur==='EUR' || r.fxCur);
+          const rowCur = fRow ? (fRow.cur || fRow.fxCur) : null;   // satırdaki tutarın yanında yazan para birimi
           const detected = rowCur || (nEur > nUsd ? 'EUR' : 'USD');
+          // faturanın kendi "Döviz Kuru" değeri ve "Ödenecek Tutar (TL)" toplamı
+          const fullTxt = lines.join('\n');
+          const kurM = /d[öo]viz\s*kuru[^\d]*(\d[\d.,]*)/i.exec(fullTxt);
+          const invKur = kurM ? trNum(kurM[1]) : null;
+          invTotal = null;
+          const totRe = /(?:[ÖO]denecek\s*Tutar|Genel\s*Toplam)[^\d]*(\d[\d.,]*)\s*(TL|TRY)/gi; let tm;
+          while((tm = totRe.exec(fullTxt))) invTotal = trNum(tm[1]);
           if(curSel.value !== detected){
             curSel.value = detected;
-            if(kurInfo.textContent !== 'elle girildi') await refreshKur();   // para birimi değiştiyse kuru yenile
+            if(!(invKur>0) && kurInfo.textContent !== 'elle girildi') await refreshKur();   // para birimi değiştiyse kuru yenile
+          }
+          if(rowCur && invKur>0){
+            kurInp.value = invKur.toFixed(4);
+            kurInfo.textContent = 'faturadaki döviz kuru (güncel kur için ↻ düğmesi)';
           }
           items = parsed;
           recalcFx();
-          status.textContent = parsed.length + ' kalem okundu. Lütfen adet, fiyat ve toplamı faturayla karşılaştır.';
+          // okunan toplam ile faturadaki toplamı karşılaştır (otomatik doğrulama)
+          const sumTL = items.reduce((t,r)=>t + (r.price||0)*(r.qty||0), 0);
+          const refTL = meta.totals.TRY || ((rowCur && meta.totals[rowCur]) ? meta.totals[rowCur]*(parseFloat(kurInp.value)||0) : 0);
+          let chk = ' Lütfen adet ve fiyatları faturayla karşılaştır.';
+          if(refTL > 0 && sumTL > 0){
+            const dv = Math.abs(sumTL - refTL)/refTL;
+            chk = dv < 0.01 ? ' ✔ Okunan toplam fatura toplamıyla uyuşuyor.' : ' ⚠ Okunan toplam fatura toplamından %' + (dv*100).toFixed(1) + ' farklı; satırları kontrol et.';
+          }
+          status.textContent = parsed.length + ' kalem okundu.' + chk;
           renderPreview();
         }catch(err){
           console.error(err);
