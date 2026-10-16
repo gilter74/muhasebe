@@ -581,8 +581,8 @@
   <section class="view" id="view-arsiv">
     <div class="flex-between">
       <div>
-        <p class="panel-title">Haftalık &amp; Aylık Arşiv</p>
-        <p class="panel-desc">Her ay ve hafta sonunda arşivler otomatik oluşur. İstediğin an Excel çıktısı alabilirsin.</p>
+        <p class="panel-title">Arşiv</p>
+        <p class="panel-desc">İstediğin ayı seçip Özet, Gelir, Gider ve Stok bölümlerini ayrı ayrı arşivleyebilirsin. Otomatik aylık ve haftalık özetler de aşağıda tutulur.</p>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn ghost small" id="forceArchiveBtn">Şimdi Anlık Arşivle</button>
@@ -591,7 +591,41 @@
     </div>
 
     <div class="divider"></div>
-    <h3 style="font-family:var(--font-mono);text-transform:uppercase;font-size:12px;color:var(--muted);margin-bottom:10px;">Aylık Arşiv</h3>
+    <div class="card" style="margin-bottom:26px;">
+      <h3>Ay Seç ve Arşivle</h3>
+      <p class="helptext" style="margin:-4px 0 14px;">Arşivlenecek ayı ve hangi bölümlerin kaydedileceğini seç. Aynı ayı sonradan tekrar arşivlersen seçtiğin bölümler güncellenir, diğerleri korunur.</p>
+      <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-end;">
+        <div>
+          <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;text-transform:uppercase;">Ay</label>
+          <select id="snapMonth" style="min-width:170px;"></select>
+        </div>
+        <div>
+          <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;text-transform:uppercase;">Arşivlenecek bölümler</label>
+          <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:14px;">
+            <label style="display:flex;align-items:center;gap:6px;margin:0;text-transform:none;font-weight:500;"><input type="checkbox" id="snapSec_ozet" checked style="width:auto;"> Özet</label>
+            <label style="display:flex;align-items:center;gap:6px;margin:0;text-transform:none;font-weight:500;"><input type="checkbox" id="snapSec_gelir" checked style="width:auto;"> Gelir</label>
+            <label style="display:flex;align-items:center;gap:6px;margin:0;text-transform:none;font-weight:500;"><input type="checkbox" id="snapSec_gider" checked style="width:auto;"> Gider</label>
+            <label style="display:flex;align-items:center;gap:6px;margin:0;text-transform:none;font-weight:500;"><input type="checkbox" id="snapSec_stok" checked style="width:auto;"> Stok</label>
+          </div>
+        </div>
+        <button class="btn primary" id="snapCreateBtn">Seçili Ayı Arşivle</button>
+      </div>
+      <p class="helptext" style="margin-top:12px;"><b>Özet:</b> aylık gelir/gider/KDV/kâr özeti, branş ve gider kalemi dağılımı. <b>Gelir / Gider:</b> o aya ait tüm kayıtlar. <b>Stok:</b> arşivleme anındaki stok listesi ve o ay satılan stok ürünleri (stok anlık bir durum olduğu için ay sonunda arşivlemen en doğrusu).</p>
+    </div>
+
+    <h3 style="font-family:var(--font-mono);text-transform:uppercase;font-size:12px;color:var(--muted);margin-bottom:10px;">Ay Arşivlerim</h3>
+    <div class="table-scroll" style="margin-bottom:28px;">
+      <table>
+        <thead><tr>
+          <th>Ay</th><th>Arşivlenen Bölümler</th><th class="num">Gelir Kaydı</th><th class="num">Gider Kaydı</th>
+          <th class="num">Net Sonuç</th><th>Arşiv Tarihi</th><th></th>
+        </tr></thead>
+        <tbody id="snapshotBody"></tbody>
+      </table>
+    </div>
+
+    <div class="divider"></div>
+    <h3 style="font-family:var(--font-mono);text-transform:uppercase;font-size:12px;color:var(--muted);margin-bottom:10px;">Otomatik Aylık Özet</h3>
     <div class="table-scroll" style="margin-bottom:28px;">
       <table>
         <thead><tr>
@@ -2845,7 +2879,248 @@
     toast('Arşiv oluşturuldu.');
   }
 
+  // ---- Ay bazlı arşiv: Özet / Gelir / Gider / Stok bölümlerini seçerek arşivle ----
+  let snapshots = [];
+  const SNAP_SECTIONS = [['ozet','Özet'],['gelir','Gelir'],['gider','Gider'],['stok','Stok']];
+
+  function snapMonthRange(key){
+    const [y, m] = key.split('-').map(Number);
+    return { start: key+'-01', end: key+'-'+String(daysInMonth(y, m-1)).padStart(2,'0'), label: MONTHS_TR[m-1]+' '+y };
+  }
+
+  function refreshSnapMonthOptions(){
+    const sel = document.getElementById('snapMonth');
+    if(!sel) return;
+    const keys = new Set();
+    income.forEach(i=>{ if(i.date) keys.add(i.date.slice(0,7)); });
+    expenses.forEach(e=>{ if(e.date) keys.add(e.date.slice(0,7)); });
+    const now = new Date(todayISO()+'T00:00:00');
+    for(let i=0;i<12;i++){ keys.add(monthKeyOf(new Date(now.getFullYear(), now.getMonth()-i, 1))); }
+    const prev = sel.value;
+    const list = [...keys].filter(k=>/^\d{4}-\d{2}$/.test(k)).sort().reverse();
+    sel.innerHTML = list.map(k=>{
+      const has = snapshots.some(s=>s.key===k);
+      return `<option value="${k}">${snapMonthRange(k).label}${has?' ✓ arşivli':''}</option>`;
+    }).join('');
+    if(prev && list.includes(prev)) sel.value = prev;
+    else {
+      // varsayılan: bir önceki ay (ay sonunda arşivlenir), yoksa cari ay
+      const pm = monthKeyOf(new Date(now.getFullYear(), now.getMonth()-1, 1));
+      sel.value = list.includes(pm) ? pm : list[0];
+    }
+  }
+
+  function buildSnapshotSection(sec, key){
+    const {start, end} = snapMonthRange(key);
+    const inc = income.filter(i=>i.date>=start && i.date<=end).sort((a,b)=>a.date.localeCompare(b.date));
+    const exp = expenses.filter(e=>e.date>=start && e.date<=end).sort((a,b)=>a.date.localeCompare(b.date));
+    if(sec === 'ozet'){
+      const sum = buildPeriodSummary(start, end);
+      const byBranch = {};
+      ['Müzik Aleti','Aksesuar','Ders'].forEach(b=>{
+        const rows = inc.filter(i=>i.branch===b);
+        byBranch[b] = { count: rows.length, gross: round2(rows.reduce((s,i)=>s+(i.grossAmount||0),0)), vat: round2(rows.reduce((s,i)=>s+vatOf(i),0)), net: round2(rows.reduce((s,i)=>s+(i.netAmount||0),0)) };
+      });
+      let profitUsd = 0, profitTl = 0, soldQty = 0;
+      inc.filter(i=>i.stockItemId).forEach(i=>{ const p = saleProfits(i); if(p){ profitUsd += p.usd||0; profitTl += p.tl||0; } soldQty += i.qtyUsed||0; });
+      const byExp = {}; exp.forEach(e=>{ byExp[e.category] = round2((byExp[e.category]||0) + e.amount); });
+      return {
+        incomeGross: round2(sum.incomeGross), incomeVat: round2(inc.reduce((s,i)=>s+vatOf(i),0)), incomeNet: round2(sum.incomeNet),
+        expenseTotal: round2(sum.expenseTotal), netResult: round2(sum.netResult),
+        stockProfitUsd: round2(profitUsd), stockProfitTl: round2(profitTl), stockSoldQty: soldQty,
+        usdRate: latestRate('USD', end) || null, byBranch, byExpenseCategory: byExp
+      };
+    }
+    if(sec === 'gelir'){
+      return inc.map(i=>{
+        const p = saleProfits(i);
+        return { date:i.date, branch:i.branch, customer:i.customer||'', description:i.description||'', vatRate:vatRateOf(i),
+                 gross:round2(i.grossAmount), vat:round2(vatOf(i)), net:round2(i.netAmount), qty:i.qtyUsed||null,
+                 profitUsd: p && p.usd!==null ? round2(p.usd) : null, profitTl: p && p.tl!==null ? round2(p.tl) : null };
+      });
+    }
+    if(sec === 'gider'){
+      return exp.map(e=>({ date:e.date, category:e.category, description:e.description||'', amount:round2(e.amount) }));
+    }
+    if(sec === 'stok'){
+      const r0 = firstRate('USD'), rNow = latestRate('USD');
+      const items = stock.map(it=>({ name:it.name, category:it.category, qty:it.qty, price:round2(it.price), usd: r0 ? round2(it.price/r0) : null }))
+                         .sort((a,b)=>a.name.localeCompare(b.name,'tr'));
+      const sales = inc.filter(i=>i.stockItemId).map(i=>{ const p = saleProfits(i);
+        return { date:i.date, name:i.description, qty:i.qtyUsed||0, net:round2(i.netAmount),
+                 profitUsd: p && p.usd!==null ? round2(p.usd) : null, profitTl: p && p.tl!==null ? round2(p.tl) : null }; });
+      return { takenAt: new Date().toISOString(), usdRate: rNow || null, items, totalValue: round2(stock.reduce((s,it)=>s+it.price*it.qty,0)), sales };
+    }
+    return null;
+  }
+
+  async function createSnapshot(){
+    const key = document.getElementById('snapMonth').value;
+    const secs = SNAP_SECTIONS.map(s=>s[0]).filter(k=>document.getElementById('snapSec_'+k).checked);
+    if(!key){ toast('Ay seç.'); return; }
+    if(!secs.length){ toast('En az bir bölüm seç.'); return; }
+    const range = snapMonthRange(key);
+    let snap = snapshots.find(s=>s.key===key);
+    const isNew = !snap;
+    if(!snap) snap = { key, label: range.label, start: range.start, end: range.end, sections: [], at: {} };
+    const nowIso = new Date().toISOString();
+    secs.forEach(sec=>{ snap[sec] = buildSnapshotSection(sec, key); snap.at[sec] = nowIso; if(!snap.sections.includes(sec)) snap.sections.push(sec); });
+    snap.sections = SNAP_SECTIONS.map(s=>s[0]).filter(k=>snap.sections.includes(k));
+    snap.updatedAt = nowIso;
+    snap.final = todayISO() > range.end;
+    snap = JSON.parse(JSON.stringify(snap));            // undefined/NaN değerleri temizle (Firebase uyumu)
+    snapshots = snapshots.filter(s=>s.key!==key); snapshots.push(snap);
+    snapshots.sort((a,b)=>b.key.localeCompare(a.key));
+    await sSet('archive:snapshots', snapshots);
+    renderArchiveView();
+    toast(range.label + (isNew ? ' arşivlendi' : ' arşivi güncellendi') + ' (' + secs.map(k=>SNAP_SECTIONS.find(s=>s[0]===k)[1]).join(', ') + ').');
+  }
+
+  function snapNet(s){
+    if(s.ozet) return s.ozet.netResult;
+    if(s.gelir || s.gider){
+      const n = (s.gelir||[]).reduce((t,i)=>t+(i.net||0),0), g = (s.gider||[]).reduce((t,e)=>t+(e.amount||0),0);
+      return (s.gelir && s.gider) ? n-g : null;
+    }
+    return null;
+  }
+
+  function renderSnapshots(){
+    const body = document.getElementById('snapshotBody');
+    if(!body) return;
+    refreshSnapMonthOptions();
+    if(!snapshots.length){
+      body.innerHTML = `<tr><td colspan="7"><div class="empty-state">Henüz ay arşivi yok. Yukarıdan ay ve bölümleri seçip arşivle.</div></td></tr>`;
+      return;
+    }
+    body.innerHTML = snapshots.map(s=>{
+      const badges = SNAP_SECTIONS.map(([k,l])=> s.sections && s.sections.includes(k) ? `<span class="tag aksesuar" style="margin-right:4px;">${l}</span>` : `<span class="tag" style="margin-right:4px;background:#e7e3ee;color:#9a93a8;">${l}</span>`).join('');
+      const net = snapNet(s);
+      const d = s.updatedAt ? fmtDateTR(s.updatedAt.slice(0,10)) : '';
+      return `<tr>
+        <td><b>${esc(s.label)}</b></td>
+        <td>${badges}</td>
+        <td class="num">${s.gelir ? s.gelir.length : '—'}</td>
+        <td class="num">${s.gider ? s.gider.length : '—'}</td>
+        <td class="num" style="color:${net===null?'inherit':(net>=0?'var(--green)':'var(--red)')}">${net===null?'—':fmtTRY(net)}</td>
+        <td>${d}</td>
+        <td style="white-space:nowrap;">
+          <button class="btn ghost small" data-snapview="${s.key}">Görüntüle</button>
+          <button class="btn ghost small" data-snapxls="${s.key}">Excel</button>
+          <button class="btn danger-ghost" data-snapdel="${s.key}">Sil</button>
+        </td>
+      </tr>`;
+    }).join('');
+    body.querySelectorAll('[data-snapview]').forEach(b=>b.addEventListener('click', ()=>openSnapshotView(b.dataset.snapview)));
+    body.querySelectorAll('[data-snapxls]').forEach(b=>b.addEventListener('click', ()=>{ const s = snapshots.find(x=>x.key===b.dataset.snapxls); if(s) exportSnapshotToExcel(s); }));
+    body.querySelectorAll('[data-snapdel]').forEach(b=>b.addEventListener('click', async ()=>{
+      const s = snapshots.find(x=>x.key===b.dataset.snapdel); if(!s) return;
+      if(!confirm(s.label + ' arşivini silmek istediğine emin misin? (Gelir/gider kayıtların silinmez, sadece bu arşiv kopyası silinir.)')) return;
+      snapshots = snapshots.filter(x=>x.key!==s.key);
+      await sSet('archive:snapshots', snapshots);
+      renderArchiveView(); toast('Arşiv silindi.');
+    }));
+  }
+
+  function openSnapshotView(key){
+    const s = snapshots.find(x=>x.key===key); if(!s) return;
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    const tabs = SNAP_SECTIONS.filter(([k])=>s.sections && s.sections.includes(k));
+    overlay.innerHTML = `
+      <div class="modal wide">
+        <div class="flex-between"><h2 style="margin:0;">${esc(s.label)} — Arşiv</h2><button class="btn ghost small" id="svClose">Kapat</button></div>
+        <div style="display:flex;gap:6px;margin:14px 0;flex-wrap:wrap;" id="svTabs">${tabs.map(([k,l],i)=>`<button class="btn ${i===0?'':'ghost'} small" data-svtab="${k}">${l}</button>`).join('')}</div>
+        <div id="svBody"></div>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.querySelector('#svClose').addEventListener('click', ()=>overlay.remove());
+    overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.remove(); });
+    const tbl = (head, rows, foot) => `<div class="table-scroll" style="max-height:420px;"><table><thead><tr>${head.map(h=>`<th class="${h[1]||''}">${h[0]}</th>`).join('')}</tr></thead><tbody>${rows.join('') || '<tr><td colspan="'+head.length+'"><div class="empty-state">Kayıt yok.</div></td></tr>'}</tbody>${foot||''}</table></div>`;
+    const pc = v => v===null||v===undefined ? '—' : `<span style="color:${v>=0?'var(--green)':'var(--red)'}">${fmtTRY(v)}</span>`;
+    function show(k){
+      const box = overlay.querySelector('#svBody');
+      overlay.querySelectorAll('[data-svtab]').forEach(b=>b.classList.toggle('ghost', b.dataset.svtab!==k));
+      if(k==='ozet'){
+        const o = s.ozet || {};
+        const br = o.byBranch || {}, ex = o.byExpenseCategory || {};
+        box.innerHTML = `
+          <div class="kpi-strip">
+            <div class="kpi"><div class="l">KDV Dahil Gelir</div><div class="v">${fmtTRY(o.incomeGross)}</div></div>
+            <div class="kpi"><div class="l">Toplam KDV</div><div class="v">${fmtTRY(o.incomeVat)}</div></div>
+            <div class="kpi"><div class="l">Net Gelir</div><div class="v">${fmtTRY(o.incomeNet)}</div></div>
+            <div class="kpi"><div class="l">Toplam Gider</div><div class="v">${fmtTRY(o.expenseTotal)}</div></div>
+            <div class="kpi"><div class="l">Net Sonuç</div><div class="v ${o.netResult>=0?'pos':'neg'}">${fmtTRY(o.netResult)}</div></div>
+          </div>
+          <div class="kpi-strip">
+            <div class="kpi"><div class="l">Stok Kârı — Dolar Bazlı</div><div class="v ${o.stockProfitUsd>=0?'pos':'neg'}">${fmtTRY(o.stockProfitUsd)}</div></div>
+            <div class="kpi"><div class="l">Stok Kârı — TL Bazlı</div><div class="v ${o.stockProfitTl>=0?'pos':'neg'}">${fmtTRY(o.stockProfitTl)}</div></div>
+            <div class="kpi"><div class="l">Satılan Stok Adedi</div><div class="v">${o.stockSoldQty||0}</div></div>
+          </div>
+          <div class="sec-title">Branşa Göre</div>
+          ${tbl([['Branş'],['Kayıt','num'],['KDV Dahil','num'],['KDV','num'],['Net','num']], Object.keys(br).map(b=>`<tr><td>${esc(b)}</td><td class="num">${br[b].count}</td><td class="num">${fmtTRY(br[b].gross)}</td><td class="num">${fmtTRY(br[b].vat)}</td><td class="num">${fmtTRY(br[b].net)}</td></tr>`))}
+          <div class="sec-title">Gider Kalemlerine Göre</div>
+          ${tbl([['Kalem'],['Tutar','num']], Object.keys(ex).map(c=>`<tr><td>${esc(c)}</td><td class="num">${fmtTRY(ex[c])}</td></tr>`))}`;
+      } else if(k==='gelir'){
+        const rows = s.gelir || [];
+        const tg = rows.reduce((t,i)=>t+(i.gross||0),0), tv = rows.reduce((t,i)=>t+(i.vat||0),0), tn = rows.reduce((t,i)=>t+(i.net||0),0);
+        box.innerHTML = tbl([['Tarih'],['Branş'],['Ödeyen'],['Açıklama / Ürün'],['Adet','num'],['KDV%','num'],['KDV Dahil','num'],['KDV','num'],['Net','num'],['Kâr ($ bazlı)','num'],['Kâr (TL bazlı)','num']],
+          rows.map(i=>`<tr><td>${fmtDateTR(i.date)}</td><td>${esc(i.branch)}</td><td>${esc(i.customer)}</td><td>${esc(i.description)}</td><td class="num">${i.qty||''}</td><td class="num">%${i.vatRate}</td><td class="num">${fmtTRY(i.gross)}</td><td class="num">${fmtTRY(i.vat)}</td><td class="num">${fmtTRY(i.net)}</td><td class="num">${pc(i.profitUsd)}</td><td class="num">${pc(i.profitTl)}</td></tr>`),
+          `<tfoot><tr style="font-weight:700;border-top:2px solid var(--ink);"><td colspan="6">Toplam</td><td class="num">${fmtTRY(tg)}</td><td class="num">${fmtTRY(tv)}</td><td class="num">${fmtTRY(tn)}</td><td colspan="2"></td></tr></tfoot>`);
+      } else if(k==='gider'){
+        const rows = s.gider || [];
+        box.innerHTML = tbl([['Tarih'],['Kalem'],['Açıklama'],['Tutar','num']],
+          rows.map(e=>`<tr><td>${fmtDateTR(e.date)}</td><td>${esc(e.category)}</td><td>${esc(e.description)}</td><td class="num">${fmtTRY(e.amount)}</td></tr>`),
+          `<tfoot><tr style="font-weight:700;border-top:2px solid var(--ink);"><td colspan="3">Toplam</td><td class="num">${fmtTRY(rows.reduce((t,e)=>t+(e.amount||0),0))}</td></tr></tfoot>`);
+      } else if(k==='stok'){
+        const st = s.stok || {}, items = st.items || [], sales = st.sales || [];
+        box.innerHTML = `
+          <p style="margin:0 0 10px;">Stok durumu arşivlendiği an: ${st.takenAt ? fmtDateTR(st.takenAt.slice(0,10)) : ''} · ${items.length} ürün · toplam değer ${fmtTRY(st.totalValue)}</p>
+          <div class="sec-title">Bu Ay Satılan Stok Ürünleri</div>
+          ${tbl([['Tarih'],['Ürün'],['Adet','num'],['Net Satış','num'],['Kâr ($ bazlı)','num'],['Kâr (TL bazlı)','num']],
+            sales.map(i=>`<tr><td>${fmtDateTR(i.date)}</td><td>${esc(i.name)}</td><td class="num">${i.qty}</td><td class="num">${fmtTRY(i.net)}</td><td class="num">${pc(i.profitUsd)}</td><td class="num">${pc(i.profitTl)}</td></tr>`))}
+          <div class="sec-title">Stok Listesi</div>
+          ${tbl([['Ürün'],['Kategori'],['Adet','num'],['Birim Fiyat (TL)','num'],['USD (sabit)','num']],
+            items.map(it=>`<tr><td>${esc(it.name)}</td><td>${esc(it.category)}</td><td class="num">${it.qty}</td><td class="num">${fmtTRY(it.price)}</td><td class="num">${it.usd!==null&&it.usd!==undefined?fmtUSD(it.usd):'—'}</td></tr>`))}`;
+      }
+    }
+    overlay.querySelectorAll('[data-svtab]').forEach(b=>b.addEventListener('click', ()=>show(b.dataset.svtab)));
+    if(tabs.length) show(tabs[0][0]);
+  }
+
+  function exportSnapshotToExcel(s){
+    if(typeof XLSX === 'undefined'){ toast('Excel kütüphanesi yüklenemedi.'); return; }
+    const wb = XLSX.utils.book_new();
+    const add = (name, rows)=>XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows.length ? rows : [{Not:'Kayıt yok'}]), name);
+    if(s.sections.includes('ozet') && s.ozet){
+      const o = s.ozet;
+      const rows = [
+        {Alan:'Dönem', Değer:s.label}, {Alan:'KDV Dahil Gelir', Değer:o.incomeGross}, {Alan:'Toplam KDV', Değer:o.incomeVat},
+        {Alan:'Net Gelir (KDV Hariç)', Değer:o.incomeNet}, {Alan:'Toplam Gider', Değer:o.expenseTotal}, {Alan:'Net Sonuç', Değer:o.netResult},
+        {Alan:'Stok Kârı — Dolar Bazlı', Değer:o.stockProfitUsd}, {Alan:'Stok Kârı — TL Bazlı', Değer:o.stockProfitTl}, {Alan:'Satılan Stok Adedi', Değer:o.stockSoldQty},
+        {Alan:'', Değer:''}, {Alan:'BRANŞA GÖRE (net)', Değer:''}
+      ];
+      Object.keys(o.byBranch||{}).forEach(b=>rows.push({Alan:b+' ('+o.byBranch[b].count+' kayıt) — KDV dahil / KDV / net', Değer:o.byBranch[b].gross+' / '+o.byBranch[b].vat+' / '+o.byBranch[b].net}));
+      rows.push({Alan:'', Değer:''}, {Alan:'GİDER KALEMLERİ', Değer:''});
+      Object.keys(o.byExpenseCategory||{}).forEach(c=>rows.push({Alan:c, Değer:o.byExpenseCategory[c]}));
+      add('Özet', rows);
+    }
+    if(s.sections.includes('gelir')) add('Gelir', (s.gelir||[]).map(i=>({Tarih:i.date, Branş:i.branch, Ödeyen:i.customer, Açıklama:i.description, Adet:i.qty||'', 'KDV %':i.vatRate, 'KDV Dahil':i.gross, KDV:i.vat, Net:i.net, 'Kâr (Dolar bazlı)':i.profitUsd===null?'':i.profitUsd, 'Kâr (TL bazlı)':i.profitTl===null?'':i.profitTl})));
+    if(s.sections.includes('gider')) add('Gider', (s.gider||[]).map(e=>({Tarih:e.date, Kalem:e.category, Açıklama:e.description, Tutar:e.amount})));
+    if(s.sections.includes('stok') && s.stok){
+      add('Stok Satışları', (s.stok.sales||[]).map(i=>({Tarih:i.date, Ürün:i.name, Adet:i.qty, 'Net Satış':i.net, 'Kâr (Dolar bazlı)':i.profitUsd===null?'':i.profitUsd, 'Kâr (TL bazlı)':i.profitTl===null?'':i.profitTl})));
+      add('Stok Listesi', (s.stok.items||[]).map(it=>({Ürün:it.name, Kategori:it.category, Adet:it.qty, 'Birim Fiyat (TL)':it.price, 'USD (sabit)':it.usd===null?'':it.usd})));
+    }
+    XLSX.writeFile(wb, 'Ay_Arsivi_' + s.key + '.xlsx');
+  }
+
   function setupArchiveView(){
+    document.getElementById('snapCreateBtn').addEventListener('click', createSnapshot);
+    sGet('archive:snapshots').then(v=>{
+      snapshots = Array.isArray(v) ? v : Object.values(v||{});
+      snapshots.forEach(x=>{ x.sections = x.sections || []; x.at = x.at || {}; });
+      renderArchiveView();
+    });
     document.getElementById('forceArchiveBtn').addEventListener('click', forceArchiveNow);
     document.getElementById('exportAllBtn').addEventListener('click', exportFullBackupToExcel);
   }
@@ -2853,6 +3128,7 @@
   function renderArchiveView(){
     const mBody = document.getElementById('monthlyArchiveBody');
     if(!mBody) return;
+    renderSnapshots();
     if(!monthlyArchive.length){
       mBody.innerHTML = `<tr><td colspan="7"><div class="empty-state">Arşiv yok.</div></td></tr>`;
     } else {
