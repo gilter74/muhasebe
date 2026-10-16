@@ -3013,9 +3013,10 @@
     let changed = false;
     for(const t of targets){
       let snap = snapshots.find(x=>x.key===t.key);
-      if(snap && snap.stok && snap.stok.mode==='manual') continue;      // elle alınmış kaydı ezme
-      if(!snap && !stock.length) continue;
       const r = snapMonthRange(t.key);
+      // ay sonundan (veya sonrasında) elle alınmış kaydı ezme; ay ortasında alınmış elle kaydın yerine ay sonu kaydı yazılır
+      if(snap && snap.stok && snap.stok.mode==='manual' && snap.stok.takenAt && dateToISO(new Date(snap.stok.takenAt)) >= r.end) continue;
+      if(!snap && !stock.length) continue;
       if(!snap){ snap = { key:t.key, label:r.label, start:r.start, end:r.end, sections:[], at:{} }; snapshots.push(snap); }
       snap.stok = buildSnapshotSection('stok', t.key);
       snap.stok.mode = 'auto'; snap.stok.late = t.late;
