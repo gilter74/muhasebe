@@ -1636,6 +1636,48 @@
     }
     return canvases;
   }
+  // OCR için gri tonlama + kontrast germe (fotoğraflardaki gölge/soluk mürekkebi azaltır)
+  function enhanceCanvas(cv){
+    try{
+      const cx = cv.getContext('2d'), img = cx.getImageData(0,0,cv.width,cv.height), d = img.data;
+      let lo = 255, hi = 0;
+      for(let i=0;i<d.length;i+=4){ const g = (d[i]*0.299 + d[i+1]*0.587 + d[i+2]*0.114)|0; d[i]=d[i+1]=d[i+2]=g; if(g<lo) lo=g; if(g>hi) hi=g; }
+      const rng = Math.max(1, hi-lo);
+      for(let i=0;i<d.length;i+=4){ let v = (d[i]-lo)/rng; v = v<0.5 ? v*v*2 : 1-(1-v)*(1-v)*2; d[i]=d[i+1]=d[i+2]=Math.max(0,Math.min(255,v*255)); }
+      cx.putImageData(img,0,0);
+    }catch(e){}
+  }
+  // Sayı gibi görünen kelimelerdeki tipik OCR karışıklıklarını düzelt (O→0, l/I→1, S→5)
+  function fixOcrNum(t){
+    if(/\d/.test(t) && /^[\dOoIl|S.,%:]+$/.test(t)) return t.replace(/[Oo]/g,'0').replace(/[Il|]/g,'1').replace(/S/g,'5').replace(/:/g,',');
+    return t;
+  }
+  // OCR metni için esnek okuma: içinde ondalıklı tutar geçen ve ürün adı gibi yazısı olan her satırı kalem yapar
+  function parseOcrLenient(lines){
+    const skip = /TOPLAM|GENEL|YALNIZ|MATRAH|IBAN|VKN|TCKN|ETTN|TELEFON|ADRES|VERG[İI]\s*D|FATURA\s*(NO|TAR)|SAYIN|ÖDENECEK|ODENECEK|HESAPLANAN|D[ÖO]V[İI]Z\s*KURU/i;
+    const moneyRe = /\d{1,3}(?:\.\d{3})+,\d{1,2}|\d+,\d{1,2}|\d+\.\d{2}(?!\d)/g;
+    const rows = [];
+    lines.forEach(line=>{
+      if(skip.test(line)) return;
+      const money = (line.match(moneyRe)||[]).map(trNum).filter(n=>isFinite(n) && n>0);
+      if(!money.length) return;
+      const firstNum = line.search(/\d/);
+      let name = line.replace(/^\s*\d{1,3}[\s.)-]+(?=[A-Za-zÇĞİÖŞÜçğıöşü])/, '');
+      const cut = name.search(/\s\d/);
+      name = (cut > 2 ? name.slice(0, cut) : name.replace(/[\d.,%]+/g,' ')).replace(/\s+/g,' ').trim();
+      if((name.match(/[A-Za-zÇĞİÖŞÜçğıöşü]/g)||[]).length < 3) return;
+      const um = /(\d+)\s*(Adet|ADET|AD|Ad|C62|Paket|Takım|TAKIM|Koli|Set|SET|Kutu|Pk)\b/.exec(line);
+      let qty = um ? parseInt(um[1]) : null;
+      if(!qty){
+        const ints = (line.slice(Math.max(0,name.length)).replace(moneyRe,' ').match(/(?:^|\s)(\d{1,4})(?=\s|$)/g)||[]).map(x=>parseInt(x));
+        qty = ints.find(n=>n>=1 && n<=999) || 1;
+      }
+      const total = Math.max(...money);
+      rows.push({name, category: guessCategory(name), qty, price: Math.round(total/qty*100)/100, warn: 'OCR ile tahmin edildi — adet, fiyat ve KDV\'yi faturadan kontrol et'});
+    });
+    return rows;
+  }
+
   // extractPdfLines ile aynı biçimde döner: satır metinleri + .pages (x, y, w, s) — böylece mevcut fatura okuyucu aynen çalışır
   async function ocrFileLines(file, onInfo){
     if(typeof pdfjsLib !== 'undefined' && (/\.pdf$/i.test(file.name) || file.type === 'application/pdf')){
@@ -1653,26 +1695,22 @@
     });
     const out = [], pageItems = [];
     try{
+      try{ await worker.setParameters({tessedit_pageseg_mode: '6', preserve_interword_spaces: '1'}); }catch(e){}
       for(let i=0; i<canvases.length; i++){
         const {cv, ptW} = canvases[i];
         if(onInfo) onInfo('Yazı okunuyor (OCR)… sayfa '+(i+1)+'/'+canvases.length);
+        enhanceCanvas(cv);
         const r = await worker.recognize(cv);
         const k = ptW / cv.width;               // piksel → "PDF punto" ölçeği (eşikler bu ölçeğe göre)
         const H = cv.height * k;
-        const words = (r.data.words || []).filter(w=>w.text && w.text.trim() && w.confidence > 20);
-        const items = words.map(w=>({x: w.bbox.x0*k, y: H - w.bbox.y1*k, w: (w.bbox.x1-w.bbox.x0)*k, s: w.text.trim()}));
+        const words = (r.data.words || []).filter(w=>w.text && w.text.trim() && w.confidence > 10);
+        const items = words.map(w=>({x: w.bbox.x0*k, y: H - w.bbox.y1*k, w: (w.bbox.x1-w.bbox.x0)*k, s: fixOcrNum(w.text.trim())}));
         pageItems.push(items);
-        const rows = [];
-        items.forEach(it=>{
-          let row = rows.find(rw=>Math.abs(rw.y-it.y) < 4);
-          if(!row){ row = {y: it.y, cells: []}; rows.push(row); }
-          row.cells.push(it);
-        });
-        rows.sort((a,b)=>b.y-a.y);
-        rows.forEach(rw=>{
-          rw.cells.sort((a,b)=>a.x-b.x);
-          out.push(rw.cells.map(c=>c.s).join(' ').replace(/\s+/g,' ').trim());
-        });
+        const tl = (r.data.lines || []).map(l=>(l.words||[]).map(w=>fixOcrNum((w.text||'').trim())).filter(Boolean).join(' ').replace(/\s+/g,' ').trim()).filter(Boolean);
+        if(tl.length){ tl.forEach(l=>out.push(l)); }
+        else {
+          (r.data.text || '').split(/\r?\n/).forEach(l=>{ l = l.replace(/\s+/g,' ').trim(); if(l) out.push(l.split(' ').map(fixOcrNum).join(' ')); });
+        }
       }
     } finally { try{ await worker.terminate(); }catch(e){} }
     const res = out.filter(Boolean);
@@ -2173,7 +2211,18 @@
             <button class="btn primary" id="invConfirm">Stoğa Ekle</button>
           </div>
         </div>
-        ${rawLines.length ? `<details style="margin-top:14px;"><summary style="cursor:pointer;font-size:12.5px;color:var(--muted);">PDF'den okunan ham metin (${rawLines.length} satır)</summary><pre style="font-size:11.5px;white-space:pre-wrap;max-height:220px;overflow:auto;background:#f6f4fa;padding:10px;border-radius:3px;">${esc(rawLines.join('\n'))}</pre></details>` : ''}`;
+        ${(rawLines.length && rawLines.ocr) ? `<details open style="margin-top:14px;"><summary style="cursor:pointer;font-size:12.5px;color:var(--muted);">OCR ile okunan satırlar (${rawLines.length}) — doğru okunmayan kalemi buradan "+ Ekle" ile satır yapıp düzeltebilirsin</summary><div style="max-height:240px;overflow:auto;background:#f6f4fa;padding:8px;border-radius:3px;font-size:12px;">${rawLines.map((l,i)=>`<div style="display:flex;gap:8px;align-items:center;padding:2px 0;border-bottom:1px solid #e6e1f0;"><button class="btn ghost small" data-rawadd="${i}" style="flex:none;">+ Ekle</button><span style="font-family:var(--font-mono);word-break:break-word;">${esc(l)}</span></div>`).join('')}</div></details>` : rawLines.length ? `<details style="margin-top:14px;"><summary style="cursor:pointer;font-size:12.5px;color:var(--muted);">PDF'den okunan ham metin (${rawLines.length} satır)</summary><pre style="font-size:11.5px;white-space:pre-wrap;max-height:220px;overflow:auto;background:#f6f4fa;padding:10px;border-radius:3px;">${esc(rawLines.join('\n'))}</pre></details>` : ''}`;
+      box.querySelectorAll('[data-rawadd]').forEach(b=>b.addEventListener('click', ()=>{
+        const line = rawLines[parseInt(b.dataset.rawadd)];
+        const g = parseOcrLenient([line]);
+        if(g.length) items.push(g[0]);
+        else {
+          const nm = line.replace(/[\d.,%]+/g,' ').replace(/\s+/g,' ').trim();
+          const mm = (line.match(/\d{1,3}(?:\.\d{3})+,\d{1,2}|\d+,\d{1,2}|\d+\.\d{2}/g)||[]).map(trNum);
+          items.push({name: nm || line, category: guessCategory(nm||line), qty: 1, price: mm.length ? Math.max(...mm) : 0, warn: 'Satırdan elle eklendi — kontrol et'});
+        }
+        renderPreview();
+      }));
       box.querySelector('#invAddRow').addEventListener('click', ()=>{
         items.push({name:'', category:'Aksesuar', qty:1, price:0, warn:''});
         renderPreview();
@@ -2290,6 +2339,7 @@
           let parsed = parseByRows(lines.pages, meta);
           if(!parsed.length) parsed = parseByHeader(lines.pages);
           if(!parsed.length) parsed = parseInvoiceLines(lines);
+          if(!parsed.length && lines.ocr) parsed = parseOcrLenient(lines);
           rawLines = lines; previewOn = true;
           if(!parsed.length){
             const hasHdr = (lines.pages||[]).some(pg=>pg.some(i=>/^Miktar/i.test(i.s.trim())));
