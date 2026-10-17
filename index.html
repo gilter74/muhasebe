@@ -555,8 +555,8 @@
     <div class="kpi-strip" id="reportKpis"></div>
     <div class="report-grid">
       <div class="card">
-        <h3>Branşa Göre Net Gelir</h3>
-        <p class="helptext" style="margin:-4px 0 8px;">Ayrıntı için bir branşa tıkla: kimler ödemiş, neler alınmış, KDV ve net tutar.</p>
+        <h3>Branşa Göre Gelir — KDV ve Net</h3>
+        <p class="helptext" style="margin:-4px 0 8px;">Her branşta KDV oranı, KDV tutarı ve KDV'siz net para ayrı gösterilir. Ayrıntı için satıra tıkla.</p>
         <div id="reportIncomeBreakdown"></div>
       </div>
       <div class="card">
@@ -2607,16 +2607,46 @@
       <div class="kpi"><div class="l">Net Kâr / Zarar</div><div class="v ${netResult>=0?'pos':'neg'}">${fmtTRY(netResult)}</div></div>
     `;
 
-    const branches = ['Müzik Aleti','Aksesuar','Ders'];
+    const branches = ['Ders','Müzik Aleti','Aksesuar'];
     const incBox = document.getElementById('reportIncomeBreakdown');
-    incBox.innerHTML = branches.map(b=>{
+    let sumGross = 0, sumVat = 0, sumNet = 0, sumCount = 0;
+    const rateText = rows => {
+      const rates = [...new Set(rows.map(vatRateOf))].sort((a,b)=>b-a);
+      return rates.length ? rates.map(r=>'%'+r).join(' / ') : '—';
+    };
+    const branchRowsHtml = branches.map(b=>{
       const rows = incRows.filter(i=>i.branch===b);
-      const net = rows.reduce((s,i)=>s+i.netAmount,0);
-      return `<div class="breakdown-row clickable" data-branch="${esc(b)}" title="Ayrıntıyı gör">
-        <span class="lbl">${b} (${rows.length} kayıt)<span class="detail-hint">Detay ›</span></span>
-        <span class="val">${fmtTRY(net)}</span>
-      </div>`;
+      const gross = rows.reduce((s,i)=>s+(i.grossAmount||0),0);
+      const vat   = rows.reduce((s,i)=>s+vatOf(i),0);
+      const net   = rows.reduce((s,i)=>s+(i.netAmount||0),0);
+      sumGross += gross; sumVat += vat; sumNet += net; sumCount += rows.length;
+      const eff = net>0 ? (vat/net*100) : 0;
+      return `<tr data-branch="${esc(b)}" style="cursor:pointer;" title="Ayrıntıyı gör">
+        <td><b>${b}</b><div style="font-size:11px;color:var(--muted);">${rows.length} kayıt · Detay ›</div></td>
+        <td class="num">${rateText(rows)}${rows.length>1 ? '<div style="font-size:11px;color:var(--muted);">ort. %'+eff.toFixed(1)+'</div>' : ''}</td>
+        <td class="num">${fmtTRY(gross)}</td>
+        <td class="num" style="color:var(--red);">${fmtTRY(vat)}</td>
+        <td class="num" style="color:var(--green);font-weight:600;">${fmtTRY(net)}</td>
+      </tr>`;
     }).join('');
+    const sumEff = sumNet>0 ? (sumVat/sumNet*100) : 0;
+    incBox.innerHTML = `
+      <div class="table-scroll" style="max-height:none;border:none;">
+        <table>
+          <thead><tr>
+            <th>Branş</th><th class="num">KDV Oranı</th><th class="num">KDV Dahil</th>
+            <th class="num">KDV Tutarı</th><th class="num">KDV'siz Net</th>
+          </tr></thead>
+          <tbody>${branchRowsHtml}</tbody>
+          <tfoot><tr style="font-weight:700;border-top:2px solid var(--ink);">
+            <td>TOPLAM <span style="font-weight:400;font-size:11px;color:var(--muted);">(${sumCount} kayıt)</span></td>
+            <td class="num">ort. %${sumEff.toFixed(1)}</td>
+            <td class="num">${fmtTRY(sumGross)}</td>
+            <td class="num" style="color:var(--red);">${fmtTRY(sumVat)}</td>
+            <td class="num" style="color:var(--green);">${fmtTRY(sumNet)}</td>
+          </tr></tfoot>
+        </table>
+      </div>`;
     incBox.querySelectorAll('[data-branch]').forEach(row=>row.addEventListener('click', ()=>openBranchDetail(row.dataset.branch)));
 
     const catSet = [...new Set(expRows.map(e=>e.category))];
