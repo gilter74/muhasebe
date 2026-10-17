@@ -1589,6 +1589,98 @@
     return rows;
   }
 
+  // ---- Taranmış PDF / fotoğraf için OCR (tesseract.js, tarayıcıda; Türkçe+İngilizce) ----
+  let _tessLoading = null;
+  function loadTesseract(){
+    if(typeof Tesseract !== 'undefined') return Promise.resolve();
+    if(_tessLoading) return _tessLoading;
+    _tessLoading = new Promise((res, rej)=>{
+      const sc = document.createElement('script');
+      sc.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.0/dist/tesseract.min.js';
+      sc.onload = ()=>res();
+      sc.onerror = ()=>{ _tessLoading = null; rej(new Error('OCR kütüphanesi yüklenemedi (internet bağlantısını kontrol et).')); };
+      document.head.appendChild(sc);
+    });
+    return _tessLoading;
+  }
+  // Dosyayı (taranmış PDF veya resim) sayfa resimlerine çevirir
+  async function fileToCanvases(file, onInfo){
+    const isPdf = /\.pdf$/i.test(file.name) || file.type === 'application/pdf';
+    const canvases = [];
+    if(isPdf){
+      const buf = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({data: buf}).promise;
+      const pages = Math.min(pdf.numPages, 10);
+      for(let p=1; p<=pages; p++){
+        if(onInfo) onInfo('Sayfa görüntüsü hazırlanıyor… ('+p+'/'+pages+')');
+        const page = await pdf.getPage(p);
+        const base = page.getViewport({scale:1});
+        const scale = Math.min(3, Math.max(1.5, 2200/base.width));
+        const vp = page.getViewport({scale});
+        const cv = document.createElement('canvas');
+        cv.width = Math.round(vp.width); cv.height = Math.round(vp.height);
+        await page.render({canvasContext: cv.getContext('2d'), viewport: vp}).promise;
+        canvases.push({cv, ptW: base.width});
+      }
+    } else {
+      const url = URL.createObjectURL(file);
+      try{
+        const img = await new Promise((res, rej)=>{ const im = new Image(); im.onload = ()=>res(im); im.onerror = ()=>rej(new Error('Resim açılamadı.')); im.src = url; });
+        const k = Math.min(1, 2800/Math.max(img.naturalWidth, img.naturalHeight));   // çok büyük fotoğrafları küçült
+        const cv = document.createElement('canvas');
+        cv.width = Math.round(img.naturalWidth*k); cv.height = Math.round(img.naturalHeight*k);
+        const cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0,0,cv.width,cv.height);
+        cx.drawImage(img, 0, 0, cv.width, cv.height);
+        canvases.push({cv, ptW: 595});
+      } finally { URL.revokeObjectURL(url); }
+    }
+    return canvases;
+  }
+  // extractPdfLines ile aynı biçimde döner: satır metinleri + .pages (x, y, w, s) — böylece mevcut fatura okuyucu aynen çalışır
+  async function ocrFileLines(file, onInfo){
+    if(typeof pdfjsLib !== 'undefined' && (/\.pdf$/i.test(file.name) || file.type === 'application/pdf')){
+      try{
+        const wr = await fetch('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js');
+        pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(new Blob([await wr.text()], {type:'application/javascript'}));
+      }catch(e){ pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; }
+    }
+    if(onInfo) onInfo('OCR modülü yükleniyor…');
+    await loadTesseract();
+    const canvases = await fileToCanvases(file, onInfo);
+    if(!canvases.length) throw new Error('Okunacak sayfa bulunamadı.');
+    const worker = await Tesseract.createWorker('tur+eng', 1, {
+      logger: m=>{ if(onInfo && m.status === 'recognizing text') onInfo('Yazı okunuyor (OCR)… %' + Math.round((m.progress||0)*100)); else if(onInfo && /loading|initializ/.test(m.status||'')) onInfo('OCR dil verisi yükleniyor…'); }
+    });
+    const out = [], pageItems = [];
+    try{
+      for(let i=0; i<canvases.length; i++){
+        const {cv, ptW} = canvases[i];
+        if(onInfo) onInfo('Yazı okunuyor (OCR)… sayfa '+(i+1)+'/'+canvases.length);
+        const r = await worker.recognize(cv);
+        const k = ptW / cv.width;               // piksel → "PDF punto" ölçeği (eşikler bu ölçeğe göre)
+        const H = cv.height * k;
+        const words = (r.data.words || []).filter(w=>w.text && w.text.trim() && w.confidence > 20);
+        const items = words.map(w=>({x: w.bbox.x0*k, y: H - w.bbox.y1*k, w: (w.bbox.x1-w.bbox.x0)*k, s: w.text.trim()}));
+        pageItems.push(items);
+        const rows = [];
+        items.forEach(it=>{
+          let row = rows.find(rw=>Math.abs(rw.y-it.y) < 4);
+          if(!row){ row = {y: it.y, cells: []}; rows.push(row); }
+          row.cells.push(it);
+        });
+        rows.sort((a,b)=>b.y-a.y);
+        rows.forEach(rw=>{
+          rw.cells.sort((a,b)=>a.x-b.x);
+          out.push(rw.cells.map(c=>c.s).join(' ').replace(/\s+/g,' ').trim());
+        });
+      }
+    } finally { try{ await worker.terminate(); }catch(e){} }
+    const res = out.filter(Boolean);
+    res.pages = pageItems;
+    res.ocr = true;
+    return res;
+  }
+
   // ---- PDF fatura okuma (pdf.js, tarayıcıda) ----
   async function extractPdfLines(file){
     if(typeof pdfjsLib === 'undefined') throw new Error('PDF kütüphanesi yüklenemedi (internet bağlantısını kontrol et).');
@@ -2012,8 +2104,8 @@
           <h2 style="margin:0;">Faturadan Stok Ekle</h2>
           <button class="btn ghost small" id="invClose">Kapat</button>
         </div>
-        <p style="margin:6px 0 12px;"><b>Fatura PDF'ini</b> seç, satırlar otomatik okunur (metin içeren e-fatura PDF'leri). Birim fiyatlar <b>KDV dahil</b> TL'ye çevrilir. Kontrol edip düzeltmeden stoğa yazılmaz. İstersen Claude'un hazırladığı JSON'u da seçebilir veya yapıştırabilirsin.</p>
-        <input type="file" id="invFile" accept=".pdf,.json,.txt,application/pdf,application/json" style="margin-bottom:10px;">
+        <p style="margin:6px 0 12px;"><b>Fatura PDF'ini veya fotoğrafını</b> seç, satırlar otomatik okunur (e-fatura PDF'lerinde doğrudan; taranmış PDF ve fotoğraflarda OCR ile — okuma biraz sürer, sonucu mutlaka kontrol et). Birim fiyatlar <b>KDV dahil</b> TL'ye çevrilir. Kontrol edip düzeltmeden stoğa yazılmaz. İstersen Claude'un hazırladığı JSON'u da seçebilir veya yapıştırabilirsin.</p>
+        <input type="file" id="invFile" accept=".pdf,.json,.txt,.jpg,.jpeg,.png,.webp,.heic,application/pdf,application/json,image/*" style="margin-bottom:10px;">
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px;font-size:12.5px;">
           <span style="color:var(--muted);">Döviz faturası için:</span>
           <select id="invCur" style="width:auto;"><option value="USD">USD</option><option value="EUR">EUR</option></select>
@@ -2179,10 +2271,21 @@
     overlay.querySelector('#invFile').addEventListener('change', async (e)=>{
       const f = e.target.files[0]; if(!f) return;
       const status = overlay.querySelector('#invStatus');
-      if(/\.pdf$/i.test(f.name) || f.type==='application/pdf'){
-        status.textContent = 'PDF okunuyor…';
+      const isImg = /\.(jpe?g|png|webp|gif|bmp)$/i.test(f.name) || /^image\//.test(f.type);
+      if(/\.pdf$/i.test(f.name) || f.type==='application/pdf' || isImg){
+        status.textContent = isImg ? 'Fotoğraf okunuyor…' : 'PDF okunuyor…';
         try{
-          const lines = await extractPdfLines(f);
+          let lines;
+          if(isImg){
+            lines = await ocrFileLines(f, t=>{ status.textContent = t; });
+          } else {
+            lines = await extractPdfLines(f);
+            if(lines.length === 0){
+              status.textContent = 'PDF taranmış/fotoğraf; OCR ile okunuyor (ilk seferde dil verisi indirilir, biraz sürebilir)…';
+              try{ lines = await ocrFileLines(f, t=>{ status.textContent = t; }); }
+              catch(oe){ console.error(oe); status.textContent = 'OCR çalışmadı: ' + (oe && oe.message ? oe.message : oe) + ' "+ Satır ekle" ile elle girebilirsin.'; rawLines = []; previewOn = true; items = []; renderPreview(); return; }
+            }
+          }
           const meta = extractInvoiceMeta(lines);
           let parsed = parseByRows(lines.pages, meta);
           if(!parsed.length) parsed = parseByHeader(lines.pages);
@@ -2191,8 +2294,8 @@
           if(!parsed.length){
             const hasHdr = (lines.pages||[]).some(pg=>pg.some(i=>/^Miktar/i.test(i.s.trim())));
             status.textContent = lines.length === 0
-              ? 'Bu PDF\'de okunabilir metin yok (taranmış veya fotoğraf olarak kaydedilmiş). Metin okuyucu çalışmaz; "+ Satır ekle" ile elle girebilirsin.'
-              : 'PDF\'den ' + lines.length + ' satır metin okundu, ' + (hasHdr ? '"Miktar" başlığı bulundu ama satırlar eşleşmedi.' : '"Miktar" başlığı bulunamadı.') + ' Ham metin tablonun altında; "+ Satır ekle" ile elle de girebilirsin.';
+              ? 'Dosyada okunabilir yazı bulunamadı (görüntü çok bulanık/karanlık olabilir). Daha net bir fotoğraf dene veya "+ Satır ekle" ile elle gir.'
+              : (lines.ocr ? 'OCR ile ' : 'PDF\'den ') + lines.length + ' satır metin okundu, ' + (hasHdr ? '"Miktar" başlığı bulundu ama satırlar eşleşmedi.' : '"Miktar" başlığı bulunamadı.') + ' Ham metin tablonun altında; "+ Satır ekle" ile elle de girebilirsin.';
             items = [];
             renderPreview();
             return;
@@ -2228,7 +2331,7 @@
             const dv = Math.abs(sumTL - refTL)/refTL;
             chk = dv < 0.01 ? ' ✔ Okunan toplam fatura toplamıyla uyuşuyor.' : ' ⚠ Okunan toplam fatura toplamından %' + (dv*100).toFixed(1) + ' farklı; satırları kontrol et.';
           }
-          status.textContent = parsed.length + ' kalem okundu.' + chk;
+          status.textContent = parsed.length + ' kalem okundu' + (lines.ocr ? ' (OCR ile — harf/rakam hatası olabilir, her satırı kontrol et)' : '') + '.' + chk;
           renderPreview();
         }catch(err){
           console.error(err);
