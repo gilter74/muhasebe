@@ -1652,6 +1652,79 @@
     if(/\d/.test(t) && /^[\dOoIl|S.,%:]+$/.test(t)) return t.replace(/[Oo]/g,'0').replace(/[Il|]/g,'1').replace(/S/g,'5').replace(/:/g,',');
     return t;
   }
+  // OCR satırlarından fatura kalemleri: "[kod] Ürün adı  2 Adet  16,6650 USD  [% iskonto]  % 20,00  6,06 USD  30,30 USD"
+  // Para birimi (USD/EUR/TL), KDV oranı ve KDV dahil birim fiyat satırdan çıkarılır; USD/EUR ise kurla TL'ye çevrilir.
+  function parseOcrRows(lines){
+    const unitRe = /(\d+(?:[.,]\d+)?)\s*(Adet|ADET|Ade[tl1]|AD|Ad|C62|Paket|PAKET|Takım|TAKIM|Koli|KOLİ|Set|SET|Kutu|KUTU|Metre|MT|Düzine|DZN|NIU|Pk)\b/;
+    const moneyRe = /\d{1,3}(?:\.\d{3})+,\d+|\d+,\d+|\d+\.\d{2,4}(?!\d)/g;
+    const allTxt = lines.join(' ');
+    const nUsd = (allTxt.match(/\bUSD\b|\$/g)||[]).length, nEur = (allTxt.match(/\bEUR\b|€/g)||[]).length;
+    const docCur = nUsd || nEur ? (nEur > nUsd ? 'EUR' : 'USD') : 'TRY';
+    const rows = [];
+    lines.forEach(line=>{
+      const m = unitRe.exec(line);
+      if(!m) return;
+      let name = line.slice(0, m.index).replace(/[|\[\]_~—=\\]+/g,' ').replace(/\s+/g,' ').trim();
+      name = name.replace(/^\d{1,3}\s+(?=\S)/,'');
+      let toks = name.split(' ').filter(Boolean);
+      // baştaki stok kodunu at (PK300, PHX-S, UK1 gibi)
+      while(toks.length > 1 && (/\d/.test(toks[0]) || /^[A-Za-z]{2,5}-[A-Za-z0-9]{1,3}$/.test(toks[0]) || (/^[a-zçğıöşü]/.test(toks[0]) && /^[A-ZÇĞİÖŞÜ]/.test(toks[1])) || toks[0].length <= 2)) toks.shift();
+      name = toks.join(' ').replace(/[\s.\-:;,]+$/,'');
+      if((name.match(/[A-Za-zÇĞİÖŞÜçğıöşü]/g)||[]).length < 3) return;
+      const qty = trNum(m[1].replace(/\.(?=\d{3}\b)/g,''));
+      if(!(qty > 0 && qty < 100000)) return;
+      const rest = line.slice(m.index + m[0].length);
+      const VAT_RATES = [0,1,8,10,18,20];
+      const isRate = v => isFinite(v) && VAT_RATES.includes(Math.round(v)) && Math.abs(v-Math.round(v)) < 0.01;
+      const pcts = [...rest.matchAll(/%\s*(\d+(?:[.,]\d+)?)/g)].map(x=>trNum(x[1])).filter(isRate);
+      // yalnızca gerçek KDV oranı olan "% xx" ifadeleri sayı listesinden çıkarılır; "% 4,39" gibi bozuk okumalar tutar olarak kalır
+      const nums = (rest.replace(/%\s*(\d+(?:[.,]\d+)?)/g,(mm,g1)=> isRate(trNum(g1)) ? ' ' : ' '+g1+' ').match(moneyRe)||[]).map(trNum).filter(n=>isFinite(n) && n>0);
+      if(!nums.length) return;
+      const cm = /\b(USD|EUR|TL|TRY)\b|(\$|€|₺)/.exec(rest);
+      const cur = cm ? ({USD:'USD',EUR:'EUR',TL:'TRY',TRY:'TRY','$':'USD','€':'EUR','₺':'TRY'}[cm[1]||cm[2]]) : docCur;
+      const birim = nums[0];
+      const tutar = nums.length >= 2 ? nums[nums.length-1] : null;
+      const mid = nums.length >= 3 ? nums.slice(1, -1) : [];
+      const lineNet = birim*qty;
+      let warn = '';
+      let rate = pcts.length ? Math.round(pcts[pcts.length-1]) : null;
+      const rateCands = rate !== null ? [rate] : [20,10,8,1,0];
+      const inRange = v => v <= lineNet*1.02 && v >= lineNet*0.3;
+      let gross = null;
+      // 1) satır tutarı + KDV tutarı çifti (KDV = tutar × oran)
+      if(tutar !== null && inRange(tutar)){
+        for(const r of rateCands){
+          const b = mid.find(v=>Math.abs(tutar*r/100 - v) < 0.03 + tutar*0.01);
+          if(b !== undefined){ gross = tutar + b; rate = r; break; }
+        }
+      }
+      // 2) satır tutarı okunamadıysa KDV tutarından geri hesapla (net = KDV ÷ oran)
+      if(gross === null){
+        for(const r of rateCands.filter(r=>r>0)){
+          const hit = nums.slice(1).find(v=>inRange(v*100/r));
+          if(hit !== undefined){ gross = hit*100/r + hit; rate = r; warn = 'Satır tutarı KDV tutarından hesaplandı'; break; }
+        }
+      }
+      // 3) yalnızca satır tutarı
+      if(gross === null && tutar !== null && inRange(tutar)){
+        if(rate === null){ rate = 20; warn = 'KDV oranı okunamadı, %20 varsayıldı'; }
+        gross = tutar*(1+rate/100);
+        warn = warn || 'KDV tutarı okunamadı, orandan hesaplandı';
+      }
+      // 4) son çare: miktar × birim fiyat
+      if(gross === null){
+        if(rate === null){ rate = 20; warn = 'KDV oranı okunamadı, %20 varsayıldı'; }
+        gross = lineNet*(1+rate/100);
+        warn = warn || 'Satır tutarı okunamadı, birim fiyattan hesaplandı (iskonto yok sayıldı)';
+      }
+      const unitGross = gross / qty;
+      name = name.replace(/[°*“”‘’"`´]+/g,' ').replace(/\s+/g,' ').trim();
+      if(name.split(' ').some(t=>t.length<=2 && !/^\d+$/.test(t)) || name.length < 6) warn = (warn ? warn + '; ' : '') + 'Ürün adı net okunamadı, kontrol et';
+      rows.push({name, category: guessCategory(name), qty, price: 0, warn, vat: rate, cur, unitGross, g1: unitGross, g2: birim*(1+rate/100), tlNet: null});
+    });
+    return rows;
+  }
+
   // OCR metni için esnek okuma: içinde ondalıklı tutar geçen ve ürün adı gibi yazısı olan her satırı kalem yapar
   function parseOcrLenient(lines){
     const skip = /TOPLAM|GENEL|YALNIZ|MATRAH|IBAN|VKN|TCKN|ETTN|TELEFON|ADRES|VERG[İI]\s*D|FATURA\s*(NO|TAR)|SAYIN|ÖDENECEK|ODENECEK|HESAPLANAN|D[ÖO]V[İI]Z\s*KURU/i;
@@ -1679,6 +1752,108 @@
   }
 
   // extractPdfLines ile aynı biçimde döner: satır metinleri + .pages (x, y, w, s) — böylece mevcut fatura okuyucu aynen çalışır
+  // ---- OCR ön işleme: döndür, gölgeyi gider, tablo çizgilerini sil ----
+  function rotateCanvas(src, deg){            // deg: saat yönünde, herhangi bir açı; boş köşeler beyaz
+    if(!deg) return src;
+    const w = src.width, h = src.height, rad = deg*Math.PI/180;
+    const cs = Math.abs(Math.cos(rad)), sn = Math.abs(Math.sin(rad));
+    const sw = Math.round(w*cs + h*sn), sh = Math.round(w*sn + h*cs);
+    const c = document.createElement('canvas'); c.width = sw; c.height = sh;
+    const x = c.getContext('2d'); x.imageSmoothingQuality = 'high';
+    x.fillStyle = '#fff'; x.fillRect(0,0,sw,sh);
+    x.translate(sw/2, sh/2); x.rotate(rad); x.drawImage(src, -w/2, -h/2);
+    return c;
+  }
+  // Hafif eğiklik (fotoğraf açısı): yazı satırları en net ayrıştığı açıyı bul (-9°..+9°)
+  function findSkew(cleanCv){
+    const sm = resizeLong(cleanCv, 1000, 1);
+    const score = ang=>{
+      const c = rotateCanvas(sm, ang), w = c.width, h = c.height;
+      const d = c.getContext('2d').getImageData(0,0,w,h).data, rs = new Float64Array(h);
+      for(let y=0;y<h;y++){ let n=0; for(let x=0;x<w;x++) if(d[(y*w+x)*4] < 128) n++; rs[y]=n; }
+      let m=0; for(let y=0;y<h;y++) m+=rs[y]; m/=h; let v=0; for(let y=0;y<h;y++){ const t=rs[y]-m; v+=t*t; } return v;
+    };
+    let best = 0, bs = score(0);
+    for(let a=-9;a<=9;a+=1.5){ if(a===0) continue; const sc = score(a); if(sc > bs){ bs = sc; best = a; } }
+    const c0 = best;
+    for(let a=c0-1.25;a<=c0+1.25;a+=0.5){ const sc = score(a); if(sc > bs){ bs = sc; best = a; } }
+    return best;
+  }
+  function resizeLong(src, longTarget, maxUp){
+    const long = Math.max(src.width, src.height);
+    const k = Math.min(longTarget/long, maxUp);
+    if(Math.abs(k-1) < 0.02) return src;
+    const c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(src.width*k)); c.height = Math.max(1, Math.round(src.height*k));
+    const x = c.getContext('2d'); x.imageSmoothingQuality = 'high';
+    x.fillStyle = '#fff'; x.fillRect(0,0,c.width,c.height);
+    x.drawImage(src, 0, 0, c.width, c.height);
+    return c;
+  }
+  // Yerel eşikleme (gölge/aydınlık farkını yok eder) + uzun yatay/dikey çizgileri (tablo kenarlıkları) siler.
+  // Döner: {cv: beyaz zemin siyah yazı canvas, rowVar, colVar (yazı yönü tespiti için)}
+  function cleanForOcr(src){
+    const w = src.width, h = src.height, long = Math.max(w, h);
+    const d = src.getContext('2d').getImageData(0,0,w,h).data;
+    const g = new Uint8Array(w*h);
+    for(let i=0,j=0;i<g.length;i++,j+=4) g[i] = (d[j]*77 + d[j+1]*150 + d[j+2]*29) >> 8;
+    const W = w+1, I = new Uint32Array(W*(h+1));
+    for(let y=0;y<h;y++){ let row = 0; for(let x=0;x<w;x++){ row += g[y*w+x]; I[(y+1)*W+x+1] = I[y*W+x+1] + row; } }
+    const r = Math.max(8, Math.round(long/110));
+    const ink = new Uint8Array(w*h);
+    for(let y=0;y<h;y++){
+      const y0 = Math.max(0,y-r), y1 = Math.min(h,y+r+1);
+      for(let x=0;x<w;x++){
+        const x0 = Math.max(0,x-r), x1 = Math.min(w,x+r+1);
+        const sum = I[y1*W+x1] - I[y0*W+x1] - I[y1*W+x0] + I[y0*W+x0];
+        const bg = sum / ((y1-y0)*(x1-x0));
+        if(bg - g[y*w+x] > 18) ink[y*w+x] = 1;
+      }
+    }
+    const L = Math.max(40, Math.round(long/48)), kill = new Uint8Array(w*h);
+    for(let y=0;y<h;y++){ let s0 = -1; for(let x=0;x<=w;x++){ const on = x<w && ink[y*w+x]; if(on){ if(s0<0) s0=x; } else if(s0>=0){ if(x-s0>=L) for(let k=s0;k<x;k++) kill[y*w+k]=1; s0=-1; } } }
+    for(let x=0;x<w;x++){ let s0 = -1; for(let y=0;y<=h;y++){ const on = y<h && ink[y*w+x]; if(on){ if(s0<0) s0=y; } else if(s0>=0){ if(y-s0>=L) for(let k=s0;k<y;k++) kill[k*w+x]=1; s0=-1; } } }
+    for(let y=0;y<h;y++) for(let x=0;x<w;x++) if(kill[y*w+x]){
+      for(let dy=-1;dy<=1;dy++){ const yy=y+dy; if(yy<0||yy>=h) continue; for(let dx=-1;dx<=1;dx++){ const xx=x+dx; if(xx>=0&&xx<w) ink[yy*w+xx]=0; } }
+    }
+    const rs = new Float64Array(h), cs = new Float64Array(w);
+    const out = document.createElement('canvas'); out.width = w; out.height = h;
+    const ox = out.getContext('2d'), oi = ox.createImageData(w,h), od = oi.data;
+    for(let y=0;y<h;y++) for(let x=0;x<w;x++){
+      const v = ink[y*w+x], p = (y*w+x)*4;
+      if(v){ rs[y]++; cs[x]++; od[p]=od[p+1]=od[p+2]=0; } else { od[p]=od[p+1]=od[p+2]=255; }
+      od[p+3] = 255;
+    }
+    ox.putImageData(oi,0,0);
+    const vr = (arr, n)=>{ let m=0; for(let i=0;i<arr.length;i++) m += arr[i]/n; m /= arr.length; let v=0; for(let i=0;i<arr.length;i++){ const t = arr[i]/n - m; v += t*t; } return v/arr.length; };
+    return {cv: out, rowVar: vr(rs, w), colVar: vr(cs, h)};
+  }
+  // Tesseract sonucunun "okunabilirlik puanı": güvenli, harf içeren kelime sayısı
+  function ocrScore(data){
+    return (data.words||[]).reduce((t,w)=> t + ((w.confidence>60 && /[A-Za-zÇĞİÖŞÜçğıöşü]{3,}/.test(w.text||'')) ? 1 : 0), 0);
+  }
+  // Kelime kutularını satırlara böl: dikey merkezi yakın olanlar aynı satır (Tesseract'ın kendi satır bölümlemesi tablolarda hücreleri ayırabiliyor)
+  function wordsToLines(words){
+    const ws = words.map(w=>({s:w.text, x0:w.bbox.x0, x1:w.bbox.x1, cy:(w.bbox.y0+w.bbox.y1)/2, h:w.bbox.y1-w.bbox.y0}));
+    if(!ws.length) return [];
+    const hs = ws.map(w=>w.h).sort((a,b)=>a-b), med = hs[Math.floor(hs.length/2)] || 10;
+    ws.sort((a,b)=>a.cy-b.cy);
+    const rows = [];
+    ws.forEach(w=>{
+      let best = null, bd = 1e9;
+      rows.forEach(r=>{ const d = Math.abs(r.cy - w.cy); if(d < bd){ bd = d; best = r; } });
+      if(best && bd < med*0.55){ best.w.push(w); best.cy = best.w.reduce((t,x)=>t+x.cy,0)/best.w.length; }
+      else rows.push({cy:w.cy, w:[w]});
+    });
+    rows.sort((a,b)=>a.cy-b.cy);
+    return rows.map(r=>r.w.sort((a,b)=>a.x0-b.x0).map(w=>fixOcrNum(w.s.trim())).filter(Boolean).join(' ').replace(/\s+/g,' ').trim()).filter(Boolean);
+  }
+  // OCR'ın para birimi / TL karışıklıklarını düzelt (USO→USD, TY→TL ...)
+  function fixOcrCur(line){
+    return line.replace(/(\d)\s*(?:U\s?[S5]\s?[DO0Q]\b|USO\b|US\b)/g, '$1 USD').replace(/(\d)\s*(?:TY|TI|T1|Tl)\b/g, '$1 TL');
+  }
+
+  // extractPdfLines ile aynı biçimde döner: satır metinleri + .pages (x, y, w, s) — böylece mevcut fatura okuyucu aynen çalışır
   async function ocrFileLines(file, onInfo){
     if(typeof pdfjsLib !== 'undefined' && (/\.pdf$/i.test(file.name) || file.type === 'application/pdf')){
       try{
@@ -1698,19 +1873,30 @@
       try{ await worker.setParameters({tessedit_pageseg_mode: '6', preserve_interword_spaces: '1'}); }catch(e){}
       for(let i=0; i<canvases.length; i++){
         const {cv, ptW} = canvases[i];
-        if(onInfo) onInfo('Yazı okunuyor (OCR)… sayfa '+(i+1)+'/'+canvases.length);
-        enhanceCanvas(cv);
-        const r = await worker.recognize(cv);
-        const k = ptW / cv.width;               // piksel → "PDF punto" ölçeği (eşikler bu ölçeğe göre)
-        const H = cv.height * k;
-        const words = (r.data.words || []).filter(w=>w.text && w.text.trim() && w.confidence > 10);
-        const items = words.map(w=>({x: w.bbox.x0*k, y: H - w.bbox.y1*k, w: (w.bbox.x1-w.bbox.x0)*k, s: fixOcrNum(w.text.trim())}));
-        pageItems.push(items);
-        const tl = (r.data.lines || []).map(l=>(l.words||[]).map(w=>fixOcrNum((w.text||'').trim())).filter(Boolean).join(' ').replace(/\s+/g,' ').trim()).filter(Boolean);
-        if(tl.length){ tl.forEach(l=>out.push(l)); }
-        else {
-          (r.data.text || '').split(/\r?\n/).forEach(l=>{ l = l.replace(/\s+/g,' ').trim(); if(l) out.push(l.split(' ').map(fixOcrNum).join(' ')); });
+        // 1) yön tespiti: küçük temiz kopyada yazı satırlarının yönüne bak, sonra iki olası yönü OCR puanıyla karşılaştır
+        if(onInfo) onInfo('Sayfa yönü belirleniyor… ('+(i+1)+'/'+canvases.length+')');
+        const q = cleanForOcr(resizeLong(cv, 2400, 1));
+        const cands = (q.rowVar >= q.colVar) ? [0,180] : [90,270];
+        let bestAng = cands[0], bestSc = -1;
+        for(const ang of cands){
+          const rr = await worker.recognize(rotateCanvas(q.cv, ang));
+          const sc = ocrScore(rr.data);
+          if(sc > bestSc){ bestSc = sc; bestAng = ang; }
         }
+        // 2) tam çözünürlükte döndür + temizle + oku
+        if(onInfo) onInfo('Yazı okunuyor (OCR)… sayfa '+(i+1)+'/'+canvases.length);
+        let skew = 0;
+        try{ skew = findSkew(rotateCanvas(q.cv, bestAng)); }catch(e){}
+        const big = rotateCanvas(resizeLong(cv, 3800, 3), bestAng + skew);
+        const clean = cleanForOcr(big).cv;
+        const r = await worker.recognize(clean);
+        const k = ptW / clean.width;            // piksel → "PDF punto" ölçeği
+        const H = clean.height * k;
+        const words = (r.data.words || []).filter(w=>w.text && w.text.trim() && w.confidence > 10);
+        pageItems.push(words.map(w=>({x: w.bbox.x0*k, y: H - w.bbox.y1*k, w: (w.bbox.x1-w.bbox.x0)*k, s: fixOcrNum(w.text.trim())})));
+        let tl = wordsToLines(words);
+        if(!tl.length) tl = (r.data.text || '').split(/\r?\n/).map(l=>l.split(/\s+/).map(fixOcrNum).join(' ').trim()).filter(Boolean);
+        tl.forEach(l=>out.push(fixOcrCur(l)));
       }
     } finally { try{ await worker.terminate(); }catch(e){} }
     const res = out.filter(Boolean);
@@ -2336,7 +2522,8 @@
             }
           }
           const meta = extractInvoiceMeta(lines);
-          let parsed = parseByRows(lines.pages, meta);
+          let parsed = lines.ocr ? parseOcrRows(lines) : [];
+          if(!parsed.length) parsed = parseByRows(lines.pages, meta);
           if(!parsed.length) parsed = parseByHeader(lines.pages);
           if(!parsed.length) parsed = parseInvoiceLines(lines);
           if(!parsed.length && lines.ocr) parsed = parseOcrLenient(lines);
