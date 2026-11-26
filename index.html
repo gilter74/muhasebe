@@ -985,6 +985,21 @@
   function fmtPct(n){ const s = (n>=0?'+':'') + (n*100).toFixed(1) + '%'; return s; }
   function monthKey(dateStr){ return dateStr ? dateStr.slice(0,7) : ''; }
   function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function trNorm(s){
+    return String(s==null?'':s).toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ı/g,'i');
+  }
+  function fixRange(from,to){
+    if(from && from < '1900') from = '';
+    if(to && to < '1900') to = '';
+    if(from && to && from > to){ const t=from; from=to; to=t; }
+    return [from,to];
+  }
+  function matchTokens(q, text){
+    const tokens = trNorm(q).split(/\s+/).filter(Boolean);
+    if(!tokens.length) return true;
+    const hay = trNorm(text);
+    return tokens.every(t=>hay.includes(t));
+  }
   function fmtDateTR(iso){ if(!iso) return ''; const p = iso.split('-'); return p.length===3 ? (p[2]+'.'+p[1]+'.'+p[0]) : iso; }
 
   function toast(msg){
@@ -1463,16 +1478,18 @@
     if(qe) qe.addEventListener('click',()=>{const f=document.getElementById('expDate');f.scrollIntoView({behavior:'smooth',block:'center'});f.focus();});
     const apply=document.getElementById('applyReportRangeBtn');
     const clear=document.getElementById('clearReportRangeBtn');
-    if(apply) apply.addEventListener('click',()=>{
-      const from=document.getElementById('reportRangeFrom').value, to=document.getElementById('reportRangeTo').value;
-      if(!from||!to||from>to){toast('Geçerli başlangıç ve bitiş tarihleri seç.');return;}
-      renderCustomRangeReport(from,to);
-    });
-    if(clear) clear.addEventListener('click',()=>{
-      document.getElementById('reportRangeFrom').value='';
-      document.getElementById('reportRangeTo').value='';
-      renderReport();
-    });
+    function applyCustom(){
+      const [from,to] = fixRange(document.getElementById('reportRangeFrom').value, document.getElementById('reportRangeTo').value);
+      if(!from || !to) return false;
+      customRange = {from, to};
+      renderCustomRangeReport(from, to);
+      return true;
+    }
+    if(apply) apply.addEventListener('click',()=>{ if(!applyCustom()) toast('Başlangıç ve bitiş tarihlerini seç.'); });
+    ['reportRangeFrom','reportRangeTo'].forEach(id=>{ const el=document.getElementById(id); if(el) ['input','change'].forEach(ev=>el.addEventListener(ev, applyCustom)); });
+    if(clear) clear.addEventListener('click',()=>{ clearCustomRange(); renderReport(); });
+    document.addEventListener('change', e=>{ if(['reportMonth','reportYear','reportWeek','reportDay'].includes(e.target.id)) clearCustomRange(); }, true);
+    document.addEventListener('click', e=>{ if(e.target.closest('#reportModeDaily,#reportModeWeekly,#reportModeMonthly,#reportDayPrev,#reportDayNext,#reportDayToday')) clearCustomRange(); }, true);
   }
   function renderCustomRangeReport(from,to){
     const trend=[];
@@ -1484,7 +1501,6 @@
       const sm=buildPeriodSummary(st,end);
       trend.push({label:st.slice(5),value:sm.netResult});
     }
-    const final=buildPeriodSummary(from,to);
     renderPeriodReport(from,to,trend,`Seçili Dönem — ${from} / ${to}`);
   }
 
@@ -1562,10 +1578,7 @@
     document.getElementById('incVatRate').addEventListener('change', updateVatReadout);
     document.getElementById('incomeForm').addEventListener('submit', onIncomeSubmit);
 
-    document.getElementById('incFilterSearch').addEventListener('input', renderIncomeTable);
-    document.getElementById('incFilterBranch').addEventListener('change', renderIncomeTable);
-    document.getElementById('incDateFrom').addEventListener('change', renderIncomeTable);
-    document.getElementById('incDateTo').addEventListener('change', renderIncomeTable);
+    ['incFilterSearch','incFilterBranch','incDateFrom','incDateTo'].forEach(id=>{ const el=document.getElementById(id); ['input','change','keyup'].forEach(ev=>el.addEventListener(ev, renderIncomeTable)); });
     document.getElementById('exportIncomeFilteredBtn').addEventListener('click', exportFilteredIncomeToExcel);
     document.getElementById('clearIncomeFiltersBtn').addEventListener('click', ()=>{
       ['incDateFrom','incDateTo','incFilterSearch','incFilterBranch'].forEach(id=>document.getElementById(id).value='');
@@ -1661,15 +1674,7 @@
   }
 
   function renderIncomeTable(){
-    const q = (document.getElementById('incFilterSearch').value||'').toUpperCase();
-    const branchFilter = document.getElementById('incFilterBranch').value;
-    const from = document.getElementById('incDateFrom').value;
-    const to = document.getElementById('incDateTo').value;
-    let rows = [...income].sort((a,b)=>b.date.localeCompare(a.date));
-    if(from) rows = rows.filter(r=>r.date>=from);
-    if(to) rows = rows.filter(r=>r.date<=to);
-    if(branchFilter) rows = rows.filter(r=>r.branch===branchFilter);
-    if(q) rows = rows.filter(r=>(r.description+' '+(r.customer||'')).toUpperCase().includes(q));
+    const rows = getFilteredIncomeRows().reverse();
     const totalGross = rows.reduce((sum,r)=>sum+(Number(r.grossAmount)||0),0);
     const totalVat = rows.reduce((sum,r)=>sum+(Number(r.vat)||0),0);
     const totalNet = rows.reduce((sum,r)=>sum+(Number(r.netAmount)||0),0);
@@ -1737,10 +1742,7 @@
 
   function setupExpenseForm(){
     document.getElementById('expenseForm').addEventListener('submit', onExpenseSubmit);
-    document.getElementById('expFilterSearch').addEventListener('input', renderExpenseTable);
-    document.getElementById('expFilterCategory').addEventListener('change', renderExpenseTable);
-    document.getElementById('expDateFrom').addEventListener('change', renderExpenseTable);
-    document.getElementById('expDateTo').addEventListener('change', renderExpenseTable);
+    ['expFilterSearch','expFilterCategory','expDateFrom','expDateTo'].forEach(id=>{ const el=document.getElementById(id); ['input','change','keyup'].forEach(ev=>el.addEventListener(ev, renderExpenseTable)); });
     document.getElementById('exportExpenseFilteredBtn').addEventListener('click', exportFilteredExpensesToExcel);
     document.getElementById('clearExpenseFiltersBtn').addEventListener('click', ()=>{
       ['expDateFrom','expDateTo','expFilterSearch','expFilterCategory'].forEach(id=>document.getElementById(id).value='');
@@ -1851,15 +1853,7 @@
   }
 
   function renderExpenseTable(){
-    const q = (document.getElementById('expFilterSearch').value||'').toUpperCase();
-    const catFilter = document.getElementById('expFilterCategory').value;
-    const from = document.getElementById('expDateFrom').value;
-    const to = document.getElementById('expDateTo').value;
-    let rows = [...expenses].sort((a,b)=>b.date.localeCompare(a.date));
-    if(from) rows = rows.filter(r=>r.date>=from);
-    if(to) rows = rows.filter(r=>r.date<=to);
-    if(catFilter) rows = rows.filter(r=>r.category===catFilter);
-    if(q) rows = rows.filter(r=> (r.description||'').toUpperCase().includes(q) || r.category.toUpperCase().includes(q));
+    const rows = getFilteredExpenseRows().reverse();
     const total = rows.reduce((sum,r)=>sum+(Number(r.amount)||0),0);
     document.getElementById('expenseFilterSummary').textContent =
       `${rows.length} kayıt · Toplam gider ${fmtTRY(total)}`;
@@ -3089,6 +3083,8 @@
 
   const MONTHS_TR = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
   let reportMode = 'monthly';
+  let customRange=null;
+  function clearCustomRange(){ customRange=null; const a=document.getElementById('reportRangeFrom'), b=document.getElementById('reportRangeTo'); if(a) a.value=''; if(b) b.value=''; }
   let currentPeriod = { start: '', end: '' };
 
   function setReportMode(mode){
@@ -3413,6 +3409,7 @@
   }
 
   function renderReport(){
+    if(customRange){ renderCustomRangeReport(customRange.from, customRange.to); return; }
     if(reportMode==='weekly') renderWeeklyReport();
     else if(reportMode==='daily') renderDailyReport();
     else renderMonthlyReport();
@@ -4011,22 +4008,20 @@
   }
 
   function getFilteredIncomeRows(){
-    const from=document.getElementById('incDateFrom').value, to=document.getElementById('incDateTo').value;
-    const branch=document.getElementById('incFilterBranch').value;
-    const q=(document.getElementById('incFilterSearch').value||'').trim().toLocaleUpperCase('tr-TR');
-    if(from && to && from>to){ toast('Başlangıç tarihi bitiş tarihinden sonra olamaz.'); return null; }
+    const [from,to] = fixRange(document.getElementById('incDateFrom').value, document.getElementById('incDateTo').value);
+    const branch = document.getElementById('incFilterBranch').value;
+    const q = document.getElementById('incFilterSearch').value;
     return [...income].filter(r=>(!from||r.date>=from)&&(!to||r.date<=to)&&(!branch||r.branch===branch)&&
-      (!q||(String(r.description||'')+' '+String(r.customer||'')).toLocaleUpperCase('tr-TR').includes(q)))
+      matchTokens(q,(r.description||'')+' '+(r.customer||'')+' '+(r.branch||'')))
       .sort((a,b)=>a.date.localeCompare(b.date));
   }
 
   function getFilteredExpenseRows(){
-    const from=document.getElementById('expDateFrom').value, to=document.getElementById('expDateTo').value;
-    const category=document.getElementById('expFilterCategory').value;
-    const q=(document.getElementById('expFilterSearch').value||'').trim().toLocaleUpperCase('tr-TR');
-    if(from && to && from>to){ toast('Başlangıç tarihi bitiş tarihinden sonra olamaz.'); return null; }
+    const [from,to] = fixRange(document.getElementById('expDateFrom').value, document.getElementById('expDateTo').value);
+    const category = document.getElementById('expFilterCategory').value;
+    const q = document.getElementById('expFilterSearch').value;
     return [...expenses].filter(r=>(!from||r.date>=from)&&(!to||r.date<=to)&&(!category||r.category===category)&&
-      (!q||(String(r.description||'')+' '+String(r.category||'')).toLocaleUpperCase('tr-TR').includes(q)))
+      matchTokens(q,(r.description||'')+' '+(r.category||'')))
       .sort((a,b)=>a.date.localeCompare(b.date));
   }
 
