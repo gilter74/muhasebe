@@ -950,29 +950,93 @@
 
   function fbPath(key){ return 'workspaces/'+fbWorkspaceCode+'/'+key.split(':').join('/'); }
 
+  // Bulut verisi okunmadan gelir/gider listesi asla Firebase'e yazılmaz.
+  // Böylece bağlantı/izin hatasında eski yerel kopyanın buluttaki güncel listenin üzerine
+  // yazılması engellenir. Firebase'de düğüm yoksa ve yerelde kayıt varsa da yazma kilitlenir.
+  const cloudListReadState = Object.create(null);
+  const CLOUD_LIST_KEYS = new Set(['income:list','expense:list']);
+
   async function sGet(key){
     if(fbReady && !LOCAL_ONLY_KEYS.has(key)){
       try{
         const snap = await fbDb.ref(fbPath(key)).once('value');
         if(snap.exists()){
           const val = snap.val();
-          try{ await window.storage.set(key, JSON.stringify(val), false); }catch(e){}
+          if(CLOUD_LIST_KEYS.has(key)) cloudListReadState[key] = true;
+          try{
+            if(window.storage) await window.storage.set(key, JSON.stringify(val), false);
+            else localStorage.setItem('rockjazz:'+key, JSON.stringify(val));
+          }catch(e){}
           return val;
         }
-      }catch(e){ console.warn('Firebase okuma hatası:', e); }
+        // Bulutta düğüm yoksa, eski yerel veriyi boş liste sanıp buluta yazma.
+        if(CLOUD_LIST_KEYS.has(key)){
+          cloudListReadState[key] = false;
+          let localHasRecords = false;
+          try{
+            let raw = null;
+            if(window.storage){ const r = await window.storage.get(key, false); raw = r && r.value; }
+            if(!raw) raw = localStorage.getItem('rockjazz:'+key);
+            if(raw){ const parsed = JSON.parse(raw); localHasRecords = Array.isArray(parsed) && parsed.length > 0; }
+          }catch(e){}
+          if(localHasRecords){
+            toast('Güvenlik kilidi: Bulutta '+key+' bulunamadı, yerel kayıtlar korunuyor.');
+            return null;
+          }
+        }
+        if(CLOUD_LIST_KEYS.has(key)) cloudListReadState[key] = true;
+        return null;
+      }catch(e){
+        if(CLOUD_LIST_KEYS.has(key)) cloudListReadState[key] = false;
+        console.error('Firebase okuma hatası:', key, e);
+        if(CLOUD_LIST_KEYS.has(key)){
+          toast('Firebase verisi okunamadı. Gelir/gider kaydı buluta yazma kilidine alındı.');
+          return null;
+        }
+      }
     }
-    try{ const r = await window.storage.get(key, false); return r ? JSON.parse(r.value) : null; }
+    try{
+      if(window.storage){ const r = await window.storage.get(key, false); if(r) return JSON.parse(r.value); }
+    }catch(e){ console.warn('Yerel depolama okunamadı:', key, e); }
+    try{ const raw = localStorage.getItem('rockjazz:'+key); return raw===null ? null : JSON.parse(raw); }
     catch(e){ return null; }
   }
+
   async function sSet(key, value){
-    let ok = false;
-    try{ const r = await window.storage.set(key, JSON.stringify(value), false); ok = !!r; }
-    catch(e){ console.error('storage set failed', key, e); }
-    if(fbReady && !LOCAL_ONLY_KEYS.has(key)){
-      try{ await fbDb.ref(fbPath(key)).set(value); }
-      catch(e){ console.warn('Firebase yazma hatası:', e); }
+    if(fbReady && CLOUD_LIST_KEYS.has(key) && cloudListReadState[key] !== true){
+      console.error('Güvenlik kilidi: Firebase listesi doğrulanmadan yazma engellendi.', key);
+      toast('Kayıt korunuyor: Firebase listesi doğrulanamadığı için buluta yazılmadı.');
+      return false;
     }
-    return ok;
+    const serialized = JSON.stringify(value);
+    // Bir önceki yerel kopyayı, yeni değer yazılmadan önce kurtarma alanında sakla.
+    if(CLOUD_LIST_KEYS.has(key)){
+      try{
+        let previous = null;
+        if(window.storage){ const r = await window.storage.get(key, false); previous = r && r.value; }
+        if(!previous) previous = localStorage.getItem('rockjazz:'+key);
+        if(previous) localStorage.setItem('rockjazz:recovery:'+key, previous);
+      }catch(e){ console.warn('Yerel kurtarma kopyası oluşturulamadı:', key, e); }
+    }
+    let localOk = false;
+    try{
+      if(window.storage){ const r = await window.storage.set(key, serialized, false); localOk = !!r; }
+    }catch(e){ console.warn('Yerel storage yazma hatası:', key, e); }
+    if(!localOk){
+      try{ localStorage.setItem('rockjazz:'+key, serialized); localOk = true; }
+      catch(e){ console.error('Yerel kayıt başarısız:', key, e); }
+    }
+    if(fbReady && !LOCAL_ONLY_KEYS.has(key)){
+      try{
+        await fbDb.ref(fbPath(key)).set(value);
+        if(CLOUD_LIST_KEYS.has(key)) cloudListReadState[key] = true;
+      }catch(e){
+        console.error('Firebase yazma hatası:', key, e);
+        toast('Firebase kaydı başarısız. Yerel kopya korunuyor; tekrar deneyin.');
+        return false;
+      }
+    }
+    return localOk;
   }
 
   function uid(prefix){ return prefix + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
