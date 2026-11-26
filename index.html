@@ -677,6 +677,11 @@
             <option value="Aksesuar">Aksesuar</option>
             <option value="Ders">Ders</option>
           </select>
+          <button type="button" class="btn small" id="incSearchBtn" style="background:var(--ink);color:#fff;">Ara</button>
+          <button type="button" class="btn ghost small" data-quick="inc:month">Bu ay</button>
+          <button type="button" class="btn ghost small" data-quick="inc:prev">Geçen ay</button>
+          <button type="button" class="btn ghost small" data-quick="inc:year">Bu yıl</button>
+          <button type="button" class="btn ghost small" data-quick="inc:all">Tümü</button>
           <button type="button" class="btn primary small" id="exportIncomeFilteredBtn">Excel'e Aktar</button>
           <button type="button" class="btn ghost small" id="clearIncomeFiltersBtn">Filtreleri Temizle</button>
         </div>
@@ -731,6 +736,11 @@
           <select id="expFilterCategory">
             <option value="">Tüm Kalemler</option>
           </select>
+          <button type="button" class="btn small" id="expSearchBtn" style="background:var(--ink);color:#fff;">Ara</button>
+          <button type="button" class="btn ghost small" data-quick="exp:month">Bu ay</button>
+          <button type="button" class="btn ghost small" data-quick="exp:prev">Geçen ay</button>
+          <button type="button" class="btn ghost small" data-quick="exp:year">Bu yıl</button>
+          <button type="button" class="btn ghost small" data-quick="exp:all">Tümü</button>
           <button type="button" class="btn primary small" id="exportExpenseFilteredBtn">Excel'e Aktar</button>
           <button type="button" class="btn ghost small" id="clearExpenseFiltersBtn">Filtreleri Temizle</button>
         </div>
@@ -1472,7 +1482,24 @@
     const st=document.getElementById('dashboardStockAlerts');
     if(st) st.innerHTML=`<div class="stock-stat"><span>Toplam ürün çeşidi</span><b>${stock.length}</b></div><div class="stock-stat"><span>Stokta toplam adet</span><b>${stock.reduce((a,x)=>a+(Number(x.qty)||0),0)}</b></div><div class="stock-stat"><span>Kayıtlı stok değeri</span><b>${fmtTRY(total)}</b></div><div class="stock-alert-note ${low.length?'has-alert':''}">${low.length?`Düşük stok uyarısı: ${low.length} ürün (2 adet veya altı)`:'Düşük stok uyarısı bulunmuyor.'}</div>`;
   }
+  function setupQuickRanges(){
+    const iso=d=>dateToISO(d);
+    document.querySelectorAll('[data-quick]').forEach(b=>b.addEventListener('click',()=>{
+      const [pre,kind]=b.dataset.quick.split(':');
+      const n=new Date(); let f='',t='';
+      if(kind==='month'){ f=iso(new Date(n.getFullYear(),n.getMonth(),1)); t=iso(new Date(n.getFullYear(),n.getMonth()+1,0)); }
+      else if(kind==='prev'){ f=iso(new Date(n.getFullYear(),n.getMonth()-1,1)); t=iso(new Date(n.getFullYear(),n.getMonth(),0)); }
+      else if(kind==='year'){ f=n.getFullYear()+'-01-01'; t=n.getFullYear()+'-12-31'; }
+      document.getElementById(pre+'DateFrom').value=f;
+      document.getElementById(pre+'DateTo').value=t;
+      (pre==='inc'?renderIncomeTable:renderExpenseTable)();
+    }));
+    const si=document.getElementById('incSearchBtn'), se=document.getElementById('expSearchBtn');
+    if(si) si.addEventListener('click',renderIncomeTable);
+    if(se) se.addEventListener('click',renderExpenseTable);
+  }
   function setupQuickActions(){
+    setupQuickRanges();
     const qi=document.getElementById('quickIncomeBtn'), qe=document.getElementById('quickExpenseBtn');
     if(qi) qi.addEventListener('click',()=>{const f=document.getElementById('incDate');f.scrollIntoView({behavior:'smooth',block:'center'});f.focus();});
     if(qe) qe.addEventListener('click',()=>{const f=document.getElementById('expDate');f.scrollIntoView({behavior:'smooth',block:'center'});f.focus();});
@@ -1679,7 +1706,7 @@
     const totalVat = rows.reduce((sum,r)=>sum+(Number(r.vat)||0),0);
     const totalNet = rows.reduce((sum,r)=>sum+(Number(r.netAmount)||0),0);
     document.getElementById('incomeFilterSummary').textContent =
-      `${rows.length} kayıt · KDV dahil ${fmtTRY(totalGross)} · KDV ${fmtTRY(totalVat)} · Net ${fmtTRY(totalNet)}`;
+      `${rows.length} / ${income.length} kayıt · KDV dahil ${fmtTRY(totalGross)} · KDV ${fmtTRY(totalVat)} · Net ${fmtTRY(totalNet)}`;
 
     const tbody = document.getElementById('incomeTableBody');
     if(!rows.length){
@@ -1856,7 +1883,7 @@
     const rows = getFilteredExpenseRows().reverse();
     const total = rows.reduce((sum,r)=>sum+(Number(r.amount)||0),0);
     document.getElementById('expenseFilterSummary').textContent =
-      `${rows.length} kayıt · Toplam gider ${fmtTRY(total)}`;
+      `${rows.length} / ${expenses.length} kayıt · Toplam gider ${fmtTRY(total)}`;
 
     const tbody = document.getElementById('expenseTableBody');
     if(!rows.length){
