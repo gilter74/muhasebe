@@ -998,9 +998,27 @@
   function trNorm(s){
     return String(s==null?'':s).toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ı/g,'i');
   }
+  // Tarihleri tek biçime getirir: YYYY-MM-DD.
+  // Eski kayıtlarda DD.MM.YYYY / DD-MM-YYYY / DD/MM/YYYY biçimleri varsa da filtreler.
+  function normalizeRecordDate(value){
+    if(value===null || value===undefined || value==='') return '';
+    if(value instanceof Date && !Number.isNaN(value.getTime())) return dateToISO(value);
+    const raw = String(value).trim();
+    if(!raw) return '';
+    const iso = raw.match(/^(\\d{4})-(\\d{1,2})-(\\d{1,2})/);
+    if(iso) return iso[1]+'-'+String(iso[2]).padStart(2,'0')+'-'+String(iso[3]).padStart(2,'0');
+    const local = raw.match(/^(\\d{1,2})[.\\/-](\\d{1,2})[.\\/-](\\d{4})$/);
+    if(local) return local[3]+'-'+String(local[2]).padStart(2,'0')+'-'+String(local[1]).padStart(2,'0');
+    const parsed = new Date(raw);
+    return Number.isNaN(parsed.getTime()) ? '' : dateToISO(parsed);
+  }
+  function isDateWithinRange(value, from, to){
+    const d = normalizeRecordDate(value);
+    return !!d && (!from || d>=from) && (!to || d<=to);
+  }
   function fixRange(from,to){
-    if(from && from < '1900') from = '';
-    if(to && to < '1900') to = '';
+    from = normalizeRecordDate(from);
+    to = normalizeRecordDate(to);
     if(from && to && from > to){ const t=from; from=to; to=t; }
     return [from,to];
   }
@@ -1506,14 +1524,24 @@
     const apply=document.getElementById('applyReportRangeBtn');
     const clear=document.getElementById('clearReportRangeBtn');
     function applyCustom(){
-      const [from,to] = fixRange(document.getElementById('reportRangeFrom').value, document.getElementById('reportRangeTo').value);
+      const rawFrom = document.getElementById('reportRangeFrom').value;
+      const rawTo = document.getElementById('reportRangeTo').value;
+      const [from,to] = fixRange(rawFrom,rawTo);
       if(!from || !to) return false;
       customRange = {from, to};
       renderCustomRangeReport(from, to);
       return true;
     }
-    if(apply) apply.addEventListener('click',()=>{ if(!applyCustom()) toast('Başlangıç ve bitiş tarihlerini seç.'); });
-    ['reportRangeFrom','reportRangeTo'].forEach(id=>{ const el=document.getElementById(id); if(el) ['input','change'].forEach(ev=>el.addEventListener(ev, applyCustom)); });
+    if(apply) apply.addEventListener('click',()=>{
+      if(!applyCustom()) toast('Lütfen başlangıç ve bitiş tarihlerini seç.');
+    });
+    ['reportRangeFrom','reportRangeTo'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el) el.addEventListener('change',()=>{
+        const otherId = id==='reportRangeFrom' ? 'reportRangeTo' : 'reportRangeFrom';
+        if(document.getElementById(otherId).value) applyCustom();
+      });
+    });
     if(clear) clear.addEventListener('click',()=>{ clearCustomRange(); renderReport(); });
     document.addEventListener('change', e=>{ if(['reportMonth','reportYear','reportWeek','reportDay'].includes(e.target.id)) clearCustomRange(); }, true);
     document.addEventListener('click', e=>{ if(e.target.closest('#reportModeDaily,#reportModeWeekly,#reportModeMonthly,#reportDayPrev,#reportDayNext,#reportDayToday')) clearCustomRange(); }, true);
@@ -3231,8 +3259,8 @@
 
   function openBranchDetail(branch){
     const rows = income
-      .filter(i=>i.date>=currentPeriod.start && i.date<=currentPeriod.end && i.branch===branch)
-      .sort((a,b)=>a.date.localeCompare(b.date));
+      .filter(i=>isDateWithinRange(i.date,currentPeriod.start,currentPeriod.end) && i.branch===branch)
+      .sort((a,b)=>normalizeRecordDate(a.date).localeCompare(normalizeRecordDate(b.date)));
     if(!rows.length){ toast('Bu dönemde '+branch+' kaydı yok.'); return; }
 
     const isStock = branch !== 'Ders';
@@ -3327,8 +3355,8 @@
 
   function renderPeriodReport(startDate, endDate, trendPoints, chartTitle){
     currentPeriod = { start: startDate, end: endDate };
-    const incRows = income.filter(i=>i.date>=startDate && i.date<=endDate);
-    const expRows = expenses.filter(e=>e.date>=startDate && e.date<=endDate);
+    const incRows = income.filter(i=>isDateWithinRange(i.date,startDate,endDate));
+    const expRows = expenses.filter(e=>isDateWithinRange(e.date,startDate,endDate));
 
     const netIncome = incRows.reduce((s,i)=>s+i.netAmount,0);
     const totalExpense = expRows.reduce((s,e)=>s+e.amount,0);
@@ -3531,8 +3559,8 @@
   }
 
   function buildPeriodSummary(startDateStr, endDateStr){
-    const incRows = income.filter(i=>i.date>=startDateStr && i.date<=endDateStr);
-    const expRows = expenses.filter(e=>e.date>=startDateStr && e.date<=endDateStr);
+    const incRows = income.filter(i=>isDateWithinRange(i.date,startDateStr,endDateStr));
+    const expRows = expenses.filter(e=>isDateWithinRange(e.date,startDateStr,endDateStr));
     const incomeGross = incRows.reduce((s,i)=>s+i.grossAmount,0);
     const incomeNet = incRows.reduce((s,i)=>s+i.netAmount,0);
     const expenseTotal = expRows.reduce((s,e)=>s+e.amount,0);
@@ -3688,8 +3716,8 @@
 
   function buildSnapshotSection(sec, key){
     const {start, end} = snapMonthRange(key);
-    const inc = income.filter(i=>i.date>=start && i.date<=end).sort((a,b)=>a.date.localeCompare(b.date));
-    const exp = expenses.filter(e=>e.date>=start && e.date<=end).sort((a,b)=>a.date.localeCompare(b.date));
+    const inc = income.filter(i=>isDateWithinRange(i.date,start,end)).sort((a,b)=>normalizeRecordDate(a.date).localeCompare(normalizeRecordDate(b.date)));
+    const exp = expenses.filter(e=>isDateWithinRange(e.date,start,end)).sort((a,b)=>normalizeRecordDate(a.date).localeCompare(normalizeRecordDate(b.date)));
     if(sec === 'ozet'){
       const sum = buildPeriodSummary(start, end);
       const byBranch = {};
@@ -4038,18 +4066,18 @@
     const [from,to] = fixRange(document.getElementById('incDateFrom').value, document.getElementById('incDateTo').value);
     const branch = document.getElementById('incFilterBranch').value;
     const q = document.getElementById('incFilterSearch').value;
-    return [...income].filter(r=>(!from||r.date>=from)&&(!to||r.date<=to)&&(!branch||r.branch===branch)&&
-      matchTokens(q,(r.description||'')+' '+(r.customer||'')+' '+(r.branch||'')))
-      .sort((a,b)=>a.date.localeCompare(b.date));
+    return [...income].filter(r=>isDateWithinRange(r.date,from,to)&&(!branch||r.branch===branch)&&
+      matchTokens(q,[r.description,r.customer,r.branch,normalizeRecordDate(r.date)].filter(Boolean).join(' ')))
+      .sort((a,b)=>normalizeRecordDate(b.date).localeCompare(normalizeRecordDate(a.date)));
   }
 
   function getFilteredExpenseRows(){
     const [from,to] = fixRange(document.getElementById('expDateFrom').value, document.getElementById('expDateTo').value);
     const category = document.getElementById('expFilterCategory').value;
     const q = document.getElementById('expFilterSearch').value;
-    return [...expenses].filter(r=>(!from||r.date>=from)&&(!to||r.date<=to)&&(!category||r.category===category)&&
-      matchTokens(q,(r.description||'')+' '+(r.category||'')))
-      .sort((a,b)=>a.date.localeCompare(b.date));
+    return [...expenses].filter(r=>isDateWithinRange(r.date,from,to)&&(!category||r.category===category)&&
+      matchTokens(q,[r.description,r.category,normalizeRecordDate(r.date)].filter(Boolean).join(' ')))
+      .sort((a,b)=>normalizeRecordDate(b.date).localeCompare(normalizeRecordDate(a.date)));
   }
 
   function exportFilteredIncomeToExcel(){
@@ -4094,8 +4122,8 @@
 
   function exportPeriodToExcel(period, kind){
     if(typeof XLSX === 'undefined'){ toast('Excel kütüphanesi yüklenemedi.'); return; }
-    const incRows = income.filter(i=>i.date>=period.start && i.date<=period.end).sort((a,b)=>a.date.localeCompare(b.date));
-    const expRows = expenses.filter(e=>e.date>=period.start && e.date<=period.end).sort((a,b)=>a.date.localeCompare(b.date));
+    const incRows = income.filter(i=>isDateWithinRange(i.date,period.start,period.end)).sort((a,b)=>normalizeRecordDate(a.date).localeCompare(normalizeRecordDate(b.date)));
+    const expRows = expenses.filter(e=>isDateWithinRange(e.date,period.start,period.end)).sort((a,b)=>normalizeRecordDate(a.date).localeCompare(normalizeRecordDate(b.date)));
 
     const wb = XLSX.utils.book_new();
     const summaryData = [
