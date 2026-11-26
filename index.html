@@ -355,7 +355,7 @@
       </div>
     </div>
     <div class="divider"></div>
-    <p class="panel-desc">Kur mantığı: her stok kalemi, sisteme ilk girildiği günkü kur üzerinden sabit bir dolar değerine çevrilir. Ürün 1 yıl satılmadan beklerse, o dolar değeri güncel kur ile yeniden TL'ye çevrilince, TL'nin erimesi otomatik olarak görünür. Detaylar için <b>Stok</b> sekmesine bakabilirsin.</p>
+    <p class="panel-desc">Stok maliyeti: aynı ürünün yeni alışları faturadan stoğa eklendiğinde ağırlıklı ortalama TL maliyeti güncellenir. Döviz maliyeti yalnızca alış anında kaydedilmiş kur bilgisi bulunan stok girişlerinde hesaplanır; eski kayıtların alış kuru tahmin edilmez. Detaylar için <b>Stok</b> sekmesine bakabilirsin.</p>
     <p class="panel-desc"><b>Gider düzenleme:</b> Giderler tablosundan daha önce girdiğiniz herhangi bir giderin tarihini, kalemini, açıklamasını veya tutarını doğrudan tablodan kolayca düzenleyebilir veya silebilirsiniz.</p>
   </section>
 
@@ -373,6 +373,7 @@
           <select id="incBranch" required>
             <option value="Müzik Aleti">Müzik Aleti</option>
             <option value="Aksesuar">Aksesuar</option>
+            <option value="Metod/Kitap">Metod/Kitap</option>
             <option value="Ders">Ders</option>
           </select>
 
@@ -422,11 +423,15 @@
 
       <div>
         <div class="table-toolbar">
+          <input type="date" id="incDateFrom" title="Başlangıç tarihi" style="max-width:155px;">
+          <input type="date" id="incDateTo" title="Bitiş tarihi" style="max-width:155px;">
+          <button type="button" class="btn ghost small" id="incDateClear">Tarihleri Temizle</button>
           <input type="text" id="incFilterSearch" placeholder="Kayıtlarda ara…">
           <select id="incFilterBranch">
             <option value="">Tüm Branşlar</option>
             <option value="Müzik Aleti">Müzik Aleti</option>
             <option value="Aksesuar">Aksesuar</option>
+            <option value="Metod/Kitap">Metod/Kitap</option>
             <option value="Ders">Ders</option>
           </select>
         </div>
@@ -463,8 +468,18 @@
           <input type="text" id="expDesc" placeholder="Örn: ev elektrik, dükkan telefonu…">
           <p class="helptext">Hangi hesabı / nereyi ödediğini buraya yaz.</p>
 
-          <label>Tutar (TL)</label>
+          <label>Tutar (KDV Dahil, TL)</label>
           <input type="number" id="expAmount" min="0" step="0.01" placeholder="0,00" required>
+          <label>Gider KDV Oranı (biliniyorsa)</label>
+          <select id="expVatRate">
+            <option value="0" selected>%0 / Bilinmiyor / KDV ayrıştırılmayacak</option>
+            <option value="20">%20</option><option value="10">%10</option><option value="8">%8</option><option value="1">%1</option>
+          </select>
+          <div class="vat-readout" id="expVatReadout">
+            <div class="row"><span>KDV Dahil Ödeme</span><span id="expGrossRead">0,00 ₺</span></div>
+            <div class="row"><span>Hesaplanan KDV</span><span id="expVatRead">0,00 ₺</span></div>
+            <div class="row net"><span>Gider (KDV Hariç)</span><b id="expNetRead">0,00 ₺</b></div>
+          </div>
 
           <div style="margin-top:18px;">
             <button type="submit" class="btn primary">Gideri Kaydet</button>
@@ -474,6 +489,9 @@
 
       <div>
         <div class="table-toolbar">
+          <input type="date" id="expDateFrom" title="Başlangıç tarihi" style="max-width:155px;">
+          <input type="date" id="expDateTo" title="Bitiş tarihi" style="max-width:155px;">
+          <button type="button" class="btn ghost small" id="expDateClear">Tarihleri Temizle</button>
           <input type="text" id="expFilterSearch" placeholder="Kayıtlarda ara…">
           <select id="expFilterCategory">
             <option value="">Tüm Kalemler</option>
@@ -482,7 +500,7 @@
         <div class="table-scroll">
           <table>
             <thead><tr>
-              <th>Tarih</th><th>Kalem</th><th>Açıklama</th><th class="num">Tutar</th><th></th>
+              <th>Tarih</th><th>Kalem</th><th>Açıklama</th><th class="num">Tutar (KDV Dahil)</th><th class="num">KDV %</th><th></th>
             </tr></thead>
             <tbody id="expenseTableBody"></tbody>
           </table>
@@ -552,6 +570,12 @@
     <div id="reportWeeklyControls" class="month-picker" style="display:none;">
       <select id="reportWeek" style="min-width:220px;"></select>
     </div>
+    <div class="month-picker" id="reportCustomControls" style="flex-wrap:wrap;">
+      <b style="font-size:12px;color:var(--muted);">ÖZEL DÖNEM</b>
+      <input type="date" id="reportCustomStart" aria-label="Rapor başlangıç tarihi">
+      <span>–</span><input type="date" id="reportCustomEnd" aria-label="Rapor bitiş tarihi">
+      <button class="btn primary small" id="reportCustomApply">Raporla</button>
+    </div>
     <div class="kpi-strip" id="reportKpis"></div>
     <div class="report-grid">
       <div class="card">
@@ -566,8 +590,8 @@
     </div>
     <div class="divider"></div>
     <div class="card">
-      <h3>Stok Satışı — Dolar Bazlı ve TL Bazlı Gerçek Kâr</h3>
-      <p class="panel-desc" style="margin-bottom:14px;"><b>Dolar bazlı:</b> satılan ürünün dolar-bazlı maliyeti, satış günkü kurla güncel TL'ye çevrilip net satış tutarından düşülür (enflasyon/kur farkı dahil gerçek kâr). <b>TL bazlı:</b> ürünün stoğa girdiği TL alış fiyatı net satış tutarından düşülür (kur farkı hesaba katılmaz).</p>
+      <h3>Stok Satışı — Döviz Maliyetine Göre ve Nominal TL Kârı</h3>
+      <p class="panel-desc" style="margin-bottom:14px;"><b>Döviz maliyetine göre:</b> alışta kaydedilmiş USD birim maliyetinin satış günündeki kura çevrilmiş TL karşılığı düşülür. Alış kur bilgisi olmayan eski stoklarda bu değer gösterilmez. <b>Nominal TL:</b> ürünün kayıtlı ortalama TL alış maliyeti net satıştan düşülür.</p>
       <div id="reportStockProfit"></div>
     </div>
     <div class="divider"></div>
@@ -683,32 +707,36 @@
     if(el) el.style.display = 'none';
   }
   const LOCAL_ONLY_KEYS = new Set(['meta:firebaseConfig','meta:workspaceCode']);
+  const APP_SCHEMA_VERSION = 2;
 
   function fbPath(key){ return 'workspaces/'+fbWorkspaceCode+'/'+key.split(':').join('/'); }
 
   async function sGet(key){
     if(fbReady && !LOCAL_ONLY_KEYS.has(key)){
       try{
-        const snap = await fbDb.ref(fbPath(key)).once('value');
+        const snap=await fbDb.ref(fbPath(key)).once('value');
         if(snap.exists()){
-          const val = snap.val();
-          try{ await window.storage.set(key, JSON.stringify(val), false); }catch(e){}
+          const val=snap.val();
+          try{ if(window.storage) await window.storage.set(key,JSON.stringify(val),false); else localStorage.setItem('rockjazz:'+key,JSON.stringify(val)); }catch(e){}
           return val;
         }
-      }catch(e){ console.warn('Firebase okuma hatası:', e); }
+      }catch(e){ lastSyncError='Firebase okuma hatası'; console.warn('Firebase okuma hatası:',e); renderSyncBadge(); }
     }
-    try{ const r = await window.storage.get(key, false); return r ? JSON.parse(r.value) : null; }
-    catch(e){ return null; }
+    try{
+      if(window.storage){ const r=await window.storage.get(key,false); if(r) return JSON.parse(r.value); }
+    }catch(e){ console.warn('Yerel depolama arayüzü kullanılamadı:',e); }
+    try{ const raw=localStorage.getItem('rockjazz:'+key); return raw===null?null:JSON.parse(raw); }catch(e){ return null; }
   }
-  async function sSet(key, value){
-    let ok = false;
-    try{ const r = await window.storage.set(key, JSON.stringify(value), false); ok = !!r; }
-    catch(e){ console.error('storage set failed', key, e); }
+  async function sSet(key,value){
+    let localOk=false, cloudOk=!fbReady || LOCAL_ONLY_KEYS.has(key);
+    try{ if(window.storage){ const r=await window.storage.set(key,JSON.stringify(value),false); localOk=!!r; } }catch(e){ console.warn('storage set failed',key,e); }
+    if(!localOk){ try{ localStorage.setItem('rockjazz:'+key,JSON.stringify(value)); localOk=true; }catch(e){ console.error('Yerel kayıt başarısız',key,e); } }
     if(fbReady && !LOCAL_ONLY_KEYS.has(key)){
-      try{ await fbDb.ref(fbPath(key)).set(value); }
-      catch(e){ console.warn('Firebase yazma hatası:', e); }
+      try{ await fbDb.ref(fbPath(key)).set(value); cloudOk=true; lastSyncError=null; }
+      catch(e){ cloudOk=false; lastSyncError='Firebase yazma hatası'; console.warn('Firebase yazma hatası:',e); }
     }
-    return ok;
+    renderSyncBadge();
+    return localOk && cloudOk;
   }
 
   function uid(prefix){ return prefix + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
@@ -835,6 +863,10 @@
       stock = JSON.parse(raw);
     }
 
+    normalizeLegacyData();
+    await sSet('meta:schemaVersion',APP_SCHEMA_VERSION);
+    if(savedStock && seededFlag) await sSet('stock:list',stock);
+    if(savedExpenses) await sSet('expense:list',expenses);
     if(!ratesList('USD').length){
       const live = await fetchLiveRates();
       if(live!==null){
@@ -912,14 +944,11 @@
     });
   }
 
+  let archiveRefreshTimer=null;
   function renderAll(){
-    renderFxBadge();
-    renderOzet();
-    renderIncomeTable();
-    renderExpenseTable();
-    renderStockTable();
-    renderReport();
-    renderArchiveView();
+    renderFxBadge(); renderOzet(); renderIncomeTable(); renderExpenseTable(); renderStockTable(); renderReport(); renderArchiveView();
+    if(archiveRefreshTimer) clearTimeout(archiveRefreshTimer);
+    archiveRefreshTimer=setTimeout(()=>{ runAutoArchiving().catch(err=>console.warn('Arşiv yeniden hesaplanamadı:',err)); },500);
   }
 
   function setupTabs(){
@@ -1034,19 +1063,13 @@
     await connectFirebase(cfgRaw, code, {silent:true});
   }
 
-  async function safeLocalSet(key, value){
-    try{
-      if(typeof window.storage === 'undefined' || !window.storage) return false;
-      await window.storage.set(key, JSON.stringify(value), false);
-      return true;
-    }catch(e){ return false; }
+  async function safeLocalSet(key,value){
+    try{ if(window.storage){ await window.storage.set(key,JSON.stringify(value),false); return true; } }catch(e){}
+    try{ if(value===null) localStorage.removeItem('rockjazz:'+key); else localStorage.setItem('rockjazz:'+key,JSON.stringify(value)); return true; }catch(e){ return false; }
   }
   async function safeLocalGet(key){
-    try{
-      if(typeof window.storage === 'undefined' || !window.storage) return null;
-      const r = await window.storage.get(key, false);
-      return r ? JSON.parse(r.value) : null;
-    }catch(e){ return null; }
+    try{ if(window.storage){ const r=await window.storage.get(key,false); if(r) return JSON.parse(r.value); } }catch(e){}
+    try{ const raw=localStorage.getItem('rockjazz:'+key); return raw===null?null:JSON.parse(raw); }catch(e){ return null; }
   }
 
   async function connectFirebase(config, code, opts){
@@ -1090,7 +1113,8 @@
   function renderSyncBadge(){
     const el = document.getElementById('syncBadgeText');
     if(!el) return;
-    if(fbReady){ el.textContent = '☁ Senkron: ' + fbWorkspaceCode; }
+    if(fbReady && lastSyncError){ el.textContent = '☁ Senkron hatası — dokun'; }
+    else if(fbReady){ el.textContent = '☁ Senkron: ' + fbWorkspaceCode; }
     else if(lastSyncError){ el.textContent = '☁ Bağlanamadı — dokun'; }
     else { el.textContent = '☁ Yerel (senkron kapalı)'; }
   }
@@ -1157,12 +1181,14 @@
     const expThisMonth = expenses.filter(e=>monthKey(e.date)===thisMonth);
     const netIncome = incThisMonth.reduce((s,i)=>s+i.netAmount,0);
     const totalExpense = expThisMonth.reduce((s,e)=>s+e.amount,0);
-    const netResult = netIncome - totalExpense;
+    const netExpense = expThisMonth.reduce((s,e)=>s+expenseNetOf(e),0);
+    const stockCost = incThisMonth.filter(i=>i.stockItemId).reduce((s,i)=>s+(saleProfits(i)?.costTL||0),0);
+    const netResult = netIncome - netExpense - stockCost;
 
     const kpis = [
       {l:'Bu Ay Net Gelir (KDV Hariç)', v: fmtTRY(netIncome), cls:''},
-      {l:'Bu Ay Toplam Gider', v: fmtTRY(totalExpense), cls:''},
-      {l:'Bu Ay Net Sonuç', v: fmtTRY(netResult), cls: netResult>=0?'pos':'neg'},
+      {l:'Bu Ay Gider (KDV Dahil)', v: fmtTRY(totalExpense), cls:''},
+      {l:'Bu Ay Gerçek Faaliyet Kârı', v: fmtTRY(netResult), cls: netResult>=0?'pos':'neg'},
     ];
     document.getElementById('ozetKpis').innerHTML = kpis.map(k=>`
       <div class="kpi"><div class="l">${k.l}</div><div class="v ${k.cls}">${k.v}</div></div>
@@ -1195,7 +1221,7 @@
       const q = searchInput.value.trim().toUpperCase();
       const branch = branchSel.value;
       if(q.length < 1){ resultsBox.style.display='none'; return; }
-      const matches = stock.filter(it => it.category===branch && it.name.toUpperCase().includes(q) && it.qty>0).slice(0,25);
+      const matches = stock.filter(it => (branch==='Metod/Kitap' ? it.category==='Metod/Kitap' : it.category===branch) && it.name.toUpperCase().includes(q) && it.qty>0).slice(0,25);
       if(!matches.length){
         resultsBox.innerHTML = '<div class="empty">Eşleşen ürün yok</div>';
       } else {
@@ -1227,6 +1253,8 @@
 
     document.getElementById('incFilterSearch').addEventListener('input', renderIncomeTable);
     document.getElementById('incFilterBranch').addEventListener('change', renderIncomeTable);
+    ['incDateFrom','incDateTo'].forEach(id=>document.getElementById(id).addEventListener('change', renderIncomeTable));
+    document.getElementById('incDateClear').addEventListener('click', ()=>{ document.getElementById('incDateFrom').value=''; document.getElementById('incDateTo').value=''; renderIncomeTable(); });
   }
 
   function renderPickedChip(){
@@ -1286,11 +1314,10 @@
       stockItemId = pickedStockItem.id;
       qtyUsed = qty;
 
-      const rate0 = firstRate('USD');
-      const rateNow = latestRate('USD', date) || rate0;
-      unitCostUsd = rate0 ? (pickedStockItem.price / rate0) : 0;
-      unitCostTRY = pickedStockItem.price;
-      const costBasisNow = unitCostUsd * rateNow * qty;
+      const rateNow = latestRate('USD', date);
+      unitCostTRY = averageUnitCost(pickedStockItem);
+      unitCostUsd = averageUnitCostUsd(pickedStockItem);
+      const costBasisNow = unitCostTRY * qty;
       profitTRY = net - costBasisNow;
 
       pickedStockItem.qty -= qty;
@@ -1316,11 +1343,52 @@
     renderAll();
   }
 
+  function openIncomeEditModal(id){
+    const rec=income.find(x=>x.id===id); if(!rec) return;
+    const overlay=document.createElement('div'); overlay.className='modal-overlay';
+    overlay.innerHTML=`<div class="modal">
+      <h2>Gelir Kaydını Düzenle</h2>
+      <p>Stok satışında ürün ve maliyet kaydı korunur. Tarih, müşteri, açıklama, adet, tutar ve KDV alanlarını düzenleyebilirsin.</p>
+      <label>Tarih</label><input type="date" id="eiDate" value="${esc(rec.date)}">
+      <label>Branş</label><input value="${esc(rec.branch)}" disabled>
+      <label>Ödeyen / Müşteri</label><input id="eiCustomer" value="${esc(rec.customer||'')}">
+      <label>Açıklama</label><input id="eiDesc" value="${esc(rec.description||'')}">
+      ${rec.stockItemId?`<label>Satılan Adet</label><input type="number" id="eiQty" min="1" step="1" value="${Number(rec.qtyUsed)||1}">`:''}
+      <label>Tutar (KDV Dahil, TL)</label><input type="number" id="eiGross" min="0.01" step="0.01" value="${Number(rec.grossAmount)||0}">
+      <label>KDV Oranı</label><select id="eiVat"><option value="20">%20</option><option value="10">%10</option><option value="8">%8</option><option value="1">%1</option><option value="0">%0</option></select>
+      <div class="flex-between" style="margin-top:18px;"><button class="btn primary" id="eiSave">Değişiklikleri Kaydet</button><button class="btn ghost" id="eiCancel">Vazgeç</button></div>
+    </div>`;
+    document.body.appendChild(overlay);
+    overlay.querySelector('#eiVat').value=String(vatRateOf(rec));
+    overlay.querySelector('#eiCancel').addEventListener('click',()=>overlay.remove());
+    overlay.querySelector('#eiSave').addEventListener('click',async()=>{
+      const date=overlay.querySelector('#eiDate').value, gross=Number(overlay.querySelector('#eiGross').value), rate=Number(overlay.querySelector('#eiVat').value)||0;
+      const qtyEl=overlay.querySelector('#eiQty'), newQty=qtyEl?Number(qtyEl.value):null;
+      if(!date||!Number.isFinite(gross)||gross<=0){toast('Tarih ve geçerli tutar gerekli.');return;}
+      if(rec.stockItemId){
+        const item=stock.find(x=>x.id===rec.stockItemId);
+        if(!item){toast('Bu satışın stok ürünü bulunamadı; kayıt korunarak değişiklik yapılmadı.');return;}
+        if(!Number.isInteger(newQty)||newQty<1){toast('Satılan adet en az 1 olmalı.');return;}
+        const available=Number(item.qty)||0;
+        if(newQty>(Number(rec.qtyUsed)||0)+available){toast('Yeni satış adedi için stok yetersiz.');return;}
+        item.qty=available+(Number(rec.qtyUsed)||0)-newQty;
+        rec.qtyUsed=newQty;
+      }
+      rec.date=date; rec.customer=overlay.querySelector('#eiCustomer').value.trim(); rec.description=overlay.querySelector('#eiDesc').value.trim();
+      rec.grossAmount=gross; rec.vatRate=rate; rec.netAmount=gross/(1+rate/100); rec.vat=gross-rec.netAmount;
+      if(rec.stockItemId){ rec.unitCostTRY=Number(rec.unitCostTRY)||0; rec.profitTRY=rec.netAmount-rec.unitCostTRY*rec.qtyUsed; }
+      await sSet('stock:list',stock); await sSet('income:list',income);
+      overlay.remove(); toast('Gelir kaydı güncellendi.'); renderAll();
+    });
+  }
+
   function renderIncomeTable(){
     const q = (document.getElementById('incFilterSearch').value||'').toUpperCase();
     const branchFilter = document.getElementById('incFilterBranch').value;
     let rows = [...income].sort((a,b)=>b.date.localeCompare(a.date));
     if(branchFilter) rows = rows.filter(r=>r.branch===branchFilter);
+    const from=document.getElementById('incDateFrom').value, to=document.getElementById('incDateTo').value;
+    if(from) rows=rows.filter(r=>r.date>=from); if(to) rows=rows.filter(r=>r.date<=to);
     if(q) rows = rows.filter(r=>(r.description+' '+(r.customer||'')).toUpperCase().includes(q));
 
     const tbody = document.getElementById('incomeTableBody');
@@ -1339,9 +1407,10 @@
         <td class="num">%${rate}</td>
         <td class="num">${fmtTRY(r.grossAmount)}</td>
         <td class="num">${fmtTRY(r.netAmount)}</td>
-        <td><button class="btn danger-ghost" data-del="${r.id}">Sil</button></td>
+        <td style="white-space:nowrap;"><button class="btn edit-ghost" data-editinc="${r.id}">Düzenle</button> <button class="btn danger-ghost" data-del="${r.id}">Sil</button></td>
       </tr>`;
     }).join('');
+    tbody.querySelectorAll('[data-editinc]').forEach(b=>b.addEventListener('click', ()=>openIncomeEditModal(b.dataset.editinc)));
     tbody.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click', async ()=>{
       if(!confirm('Silmek istediğine emin misin?')) return;
       const rec = income.find(x=>x.id===b.dataset.del);
@@ -1386,6 +1455,11 @@
     document.getElementById('expenseForm').addEventListener('submit', onExpenseSubmit);
     document.getElementById('expFilterSearch').addEventListener('input', renderExpenseTable);
     document.getElementById('expFilterCategory').addEventListener('change', renderExpenseTable);
+    ['expDateFrom','expDateTo'].forEach(id=>document.getElementById(id).addEventListener('change', renderExpenseTable));
+    document.getElementById('expDateClear').addEventListener('click', ()=>{ document.getElementById('expDateFrom').value=''; document.getElementById('expDateTo').value=''; renderExpenseTable(); });
+    document.getElementById('expAmount').addEventListener('input', updateExpenseVatReadout);
+    document.getElementById('expVatRate').addEventListener('change', updateExpenseVatReadout);
+    updateExpenseVatReadout();
     document.getElementById('manageCatBtn').addEventListener('click', openManageCategoriesModal);
     renderExpenseCategorySelects();
   }
@@ -1453,6 +1527,8 @@
         if(expenseCategories.length<=1){ toast('En az bir kalem kalmalı.'); return; }
         if(!confirm('Bu kalemi silmek istediğine emin misin?')) return;
         const i = parseInt(b.dataset.remove);
+        const used=expenses.some(e=>e.category===expenseCategories[i]);
+        if(used){ toast('Bu kalem geçmiş giderlerde kullanılmış. Geçmiş kayıtları korumak için silinemez; önce yeni bir kaleme taşı.'); return; }
         expenseCategories.splice(i,1);
         await sSet('expense:categories', expenseCategories);
         renderList(); renderExpenseCategorySelects();
@@ -1474,6 +1550,14 @@
     overlay.querySelector('#catCloseBtn').addEventListener('click', ()=>overlay.remove());
   }
 
+  function updateExpenseVatReadout(){
+    const gross=Number(document.getElementById('expAmount').value)||0, rate=Number(document.getElementById('expVatRate').value)||0;
+    const net=rate>0?gross/(1+rate/100):gross, vat=gross-net;
+    document.getElementById('expGrossRead').textContent=fmtTRY(gross);
+    document.getElementById('expVatRead').textContent=fmtTRY(vat);
+    document.getElementById('expNetRead').textContent=fmtTRY(net);
+  }
+
   async function onExpenseSubmit(e){
     e.preventDefault();
     const date = document.getElementById('expDate').value;
@@ -1482,10 +1566,12 @@
     const amount = parseFloat(document.getElementById('expAmount').value);
     if(!date || !amount || amount<=0){ toast('Tarih ve tutar gerekli.'); return; }
 
-    expenses.push({ id: uid('exp'), date, category, description, amount });
+    const vatRate=Number(document.getElementById('expVatRate').value)||0;
+    expenses.push({ id: uid('exp'), date, category, description, amount, vatRate, vatAmount: amount-(vatRate>0?amount/(1+vatRate/100):amount), netAmount: vatRate>0?amount/(1+vatRate/100):amount });
     await sSet('expense:list', expenses);
     document.getElementById('expenseForm').reset();
     document.getElementById('expDate').value = todayISO();
+    document.getElementById('expVatRate').value='0'; updateExpenseVatReadout();
     toast('Gider kaydedildi.');
     renderAll();
   }
@@ -1495,11 +1581,13 @@
     const catFilter = document.getElementById('expFilterCategory').value;
     let rows = [...expenses].sort((a,b)=>b.date.localeCompare(a.date));
     if(catFilter) rows = rows.filter(r=>r.category===catFilter);
+    const from=document.getElementById('expDateFrom').value, to=document.getElementById('expDateTo').value;
+    if(from) rows=rows.filter(r=>r.date>=from); if(to) rows=rows.filter(r=>r.date<=to);
     if(q) rows = rows.filter(r=> (r.description||'').toUpperCase().includes(q) || r.category.toUpperCase().includes(q));
 
     const tbody = document.getElementById('expenseTableBody');
     if(!rows.length){
-      tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state">Gider kaydı yok.</div></td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state">Gider kaydı yok.</div></td></tr>`;
       return;
     }
     tbody.innerHTML = rows.map(r=>{
@@ -1509,6 +1597,7 @@
         <td><select data-expcat="${r.id}" style="padding:4px 6px;font-size:12px;border:1px solid transparent;background:none;" onfocus="this.style.border='1px solid #cfc6b4';this.style.background='#fffdf9';" onblur="this.style.border='1px solid transparent';this.style.background='none';">${options}</select></td>
         <td><input type="text" data-expdesc="${r.id}" value="${(r.description||'').replace(/"/g,'&quot;')}" style="width:100%;min-width:140px;padding:4px 6px;font-size:13px;border:1px solid transparent;background:none;" onfocus="this.style.border='1px solid #cfc6b4';this.style.background='#fffdf9';" onblur="this.style.border='1px solid transparent';this.style.background='none';"></td>
         <td class="num"><input type="number" step="0.01" min="0" data-expamt="${r.id}" value="${r.amount}" style="width:96px;padding:4px 6px;font-size:13px;text-align:right;border:1px solid transparent;background:none;" onfocus="this.style.border='1px solid #cfc6b4';this.style.background='#fffdf9';" onblur="this.style.border='1px solid transparent';this.style.background='none';"></td>
+        <td class="num"><select data-expvat="${r.id}" style="width:75px;padding:4px 3px;font-size:12px;"><option value="0" ${expenseVatRateOf(r)===0?'selected':''}>%0</option><option value="1" ${expenseVatRateOf(r)===1?'selected':''}>%1</option><option value="8" ${expenseVatRateOf(r)===8?'selected':''}>%8</option><option value="10" ${expenseVatRateOf(r)===10?'selected':''}>%10</option><option value="20" ${expenseVatRateOf(r)===20?'selected':''}>%20</option></select></td>
         <td style="white-space:nowrap;"><button class="btn danger-ghost" data-delexp="${r.id}">Sil</button></td>
       </tr>`;
     }).join('');
@@ -1545,6 +1634,11 @@
       await sSet('expense:list', expenses);
       toast('Tutar güncellendi.');
       renderAll();
+    }));
+    tbody.querySelectorAll('[data-expvat]').forEach(sel=>sel.addEventListener('change',async()=>{
+      const item=expenses.find(x=>x.id===sel.dataset.expvat); if(!item)return;
+      item.vatRate=Number(sel.value)||0; item.netAmount=expenseNetOf(item); item.vatAmount=expenseVatOf(item);
+      await sSet('expense:list',expenses); toast('Gider KDV oranı güncellendi.'); renderAll();
     }));
     tbody.querySelectorAll('[data-delexp]').forEach(b=>b.addEventListener('click', async ()=>{
       if(!confirm('Bu gider kaydını silmek istediğine emin misin?')) return;
@@ -2248,9 +2342,9 @@
         if(!valid.length){ toast('Eklenecek satır yok.'); return; }
         let added = 0, merged = 0;
         valid.forEach(r=>{
-          const ex = stock.find(s=>normName(s.name)===normName(r.name) && Math.abs(s.price-r.price)<0.01);
-          if(ex){ ex.qty += r.qty; merged++; }
-          else { stock.push({id: uid('stk'), name: r.name, qty: r.qty, price: r.price, category: r.category}); added++; }
+          const ex = stock.find(s=>normName(s.name)===normName(r.name));
+          if(ex){ const oldQty=Number(ex.qty)||0, oldCost=averageUnitCost(ex), incomingQty=Number(r.qty)||0; const incomingCost=Number(r.price)||0; const totalQty=oldQty+incomingQty; if(totalQty>0) ex.avgCostTL=round2(((oldQty*oldCost)+(incomingQty*incomingCost))/totalQty); const usdNow=latestRate('USD'); if(totalQty>0 && ex.avgCostUSD!==undefined && ex.avgCostUSD!==null && usdNow) ex.avgCostUSD=((oldQty*Number(ex.avgCostUSD))+(incomingQty*incomingCost/usdNow))/totalQty; ex.price=ex.avgCostTL; ex.qty=totalQty; ex.lastPurchasePrice=incomingCost; ex.lastPurchaseDate=todayISO(); merged++; }
+          else { stock.push({id: uid('stk'), name: r.name, qty: r.qty, price: r.price, avgCostTL:r.price, avgCostUSD:latestRate('USD') ? r.price/latestRate('USD') : null, category: r.category, lastPurchasePrice:r.price, lastPurchaseDate:todayISO()}); added++; }
         });
         await sSet('stock:list', stock);
         overlay.remove();
@@ -2426,7 +2520,7 @@
       const qty = parseFloat(document.getElementById('newStockQty').value) || 0;
       const price = parseFloat(document.getElementById('newStockPrice').value) || 0;
       if(!name || price<=0){ toast('Ürün adı ve fiyat gerekli.'); return; }
-      stock.push({ id: uid('stk'), name, qty, price, category });
+      stock.push({ id: uid('stk'), name, qty, price, avgCostTL:price, lastPurchasePrice:price, lastPurchaseDate:todayISO(), category });
       await sSet('stock:list', stock);
       overlay.remove();
       toast('Ürün eklendi.');
@@ -2500,7 +2594,7 @@
       if(!item) return;
       const val = parseFloat(inp.value);
       if(isNaN(val) || val<0){ toast('Geçersiz fiyat.'); inp.value = item.price; return; }
-      item.price = val;
+      item.price = val; item.avgCostTL=val; const usdNow=latestRate('USD'); item.avgCostUSD=usdNow ? val/usdNow : null;
       await sSet('stock:list', stock);
       renderStockTable();
     }));
@@ -2586,6 +2680,7 @@
     document.getElementById('reportModeDaily').addEventListener('click', ()=>setReportMode('daily'));
     document.getElementById('reportModeWeekly').addEventListener('click', ()=>setReportMode('weekly'));
     document.getElementById('reportModeMonthly').addEventListener('click', ()=>setReportMode('monthly'));
+    document.getElementById('reportCustomApply').addEventListener('click', ()=>{ const a=document.getElementById('reportCustomStart').value,b=document.getElementById('reportCustomEnd').value; if(!a||!b||a>b){toast('Geçerli başlangıç ve bitiş tarihleri seç.');return;} const sum=buildPeriodSummary(a,b); renderPeriodReport(a,b,[{label:'Dönem',value:sum.netResult}],'Özel Dönem — Gerçek Faaliyet Kârı'); });
   }
 
   function buildRecentWeekOptions(n){
@@ -2627,23 +2722,33 @@
     </svg>`;
   }
 
-  // Bir stok satışının iki farklı kârı: dolar bazlı (kayıtlı) ve TL bazlı (nominal alış fiyatı)
+  // Kâr karşılaştırması: nominal TL maliyeti ve satış gününe taşınmış döviz maliyeti.
   function saleProfits(i){
     if(!i.stockItemId) return null;
-    const usd = (i.profitTRY!==undefined && i.profitTRY!==null) ? i.profitTRY : null;
-    const qty = i.qtyUsed || 0;
-    let costTL = null;
-    if(i.unitCostTRY!==undefined && i.unitCostTRY!==null){
-      costTL = i.unitCostTRY * qty;
-    } else if(i.unitCostUsd!==undefined && i.unitCostUsd!==null && firstRate('USD')){
-      costTL = i.unitCostUsd * firstRate('USD') * qty;   // eski kayıtlar: alış fiyatını sabit dolardan geri kur
-    }
-    const tl = costTL!==null ? (i.netAmount - costTL) : null;
-    return { usd, tl, costTL };
+    const qty=Number(i.qtyUsed)||0;
+    let costTL=null;
+    if(i.unitCostTRY!==undefined && i.unitCostTRY!==null) costTL=Number(i.unitCostTRY)*qty;
+    else if(i.unitCostUsd!==undefined && i.unitCostUsd!==null){ const r=latestRate('USD',i.date); if(r) costTL=Number(i.unitCostUsd)*r*qty; }
+    let fxCostTL=null;
+    if(i.unitCostUsd!==undefined && i.unitCostUsd!==null){ const r=latestRate('USD',i.date); if(r) fxCostTL=Number(i.unitCostUsd)*r*qty; }
+    const nominalProfit=costTL!==null ? Number(i.netAmount||0)-costTL : null;
+    const fxProfit=fxCostTL!==null ? Number(i.netAmount||0)-fxCostTL : null;
+    return { usd:fxProfit, tl:nominalProfit, costTL, fxCostTL };
   }
   function profitColor(v){ return v===null ? 'inherit' : (v>=0 ? 'var(--green)' : 'var(--red)'); }
   function vatOf(i){ return (i.vat!==undefined && i.vat!==null) ? i.vat : ((i.grossAmount||0) - (i.netAmount||0)); }
   function vatRateOf(i){ return (i.vatRate!==undefined && i.vatRate!==null) ? i.vatRate : 20; }
+  // Eski gider kayıtları değiştirilmez: KDV oranı bilinmiyorsa %0 kabul edilir.
+  function expenseVatRateOf(e){ return (e.vatRate!==undefined && e.vatRate!==null) ? Number(e.vatRate) : 0; }
+  function expenseNetOf(e){ const rate=expenseVatRateOf(e); return rate>0 ? (Number(e.amount)||0)/(1+rate/100) : (Number(e.amount)||0); }
+  function expenseVatOf(e){ return (Number(e.amount)||0)-expenseNetOf(e); }
+  function averageUnitCost(item){ return Number(item && (item.avgCostTL ?? item.price)) || 0; }
+  function averageUnitCostUsd(item){ return item && item.avgCostUSD!==undefined && item.avgCostUSD!==null ? Number(item.avgCostUSD) : null; }
+  function normalizeLegacyData(){
+    // Sadece yeni şema alanları eklenir; geçmiş tutar, tarih, adet ve kur kayıtları değiştirilmez.
+    stock.forEach(it=>{ if(it.avgCostTL===undefined && Number.isFinite(Number(it.price))) it.avgCostTL=Number(it.price); });
+    expenses.forEach(e=>{ if(e.vatRate===undefined) e.vatRate=0; });
+  }
 
   function periodText(p){
     return p.start===p.end ? fmtDateTR(p.start) : (fmtDateTR(p.start)+' – '+fmtDateTR(p.end));
@@ -2694,7 +2799,7 @@
       </tr>`;
     }).join('');
 
-    const profHead = isStock ? '<th class="num">Kâr ($ bazlı)</th><th class="num">Kâr (TL bazlı)</th>' : '';
+    const profHead = isStock ? '<th class="num">Kâr (Döviz maliyetine göre, TL)</th><th class="num">Kâr (Nominal TL)</th>' : '';
     const qtyHead = isStock ? '<th class="num">Adet</th>' : '';
     const colSpanBefore = isStock ? 5 : 4;   // Tarih, Ödeyen, Açıklama, (Adet), KDV%
     const profTotals = isStock ? `
@@ -2752,15 +2857,18 @@
 
     const netIncome = incRows.reduce((s,i)=>s+i.netAmount,0);
     const totalExpense = expRows.reduce((s,e)=>s+e.amount,0);
-    const netResult = netIncome - totalExpense;
+    const netExpense = expRows.reduce((s,e)=>s+expenseNetOf(e),0);
+    const expenseVat = expRows.reduce((s,e)=>s+expenseVatOf(e),0);
+    const stockCost = incRows.filter(i=>i.stockItemId).reduce((s,i)=>s+(saleProfits(i)?.costTL||0),0);
+    const netResult = netIncome - netExpense - stockCost;
 
     document.getElementById('reportKpis').innerHTML = `
       <div class="kpi"><div class="l">Net Gelir (KDV Hariç)</div><div class="v">${fmtTRY(netIncome)}</div></div>
-      <div class="kpi"><div class="l">Toplam Gider</div><div class="v">${fmtTRY(totalExpense)}</div></div>
-      <div class="kpi"><div class="l">Net Kâr / Zarar</div><div class="v ${netResult>=0?'pos':'neg'}">${fmtTRY(netResult)}</div></div>
+      <div class="kpi"><div class="l">Toplam Ödenen Gider (KDV Dahil)</div><div class="v">${fmtTRY(totalExpense)}</div><div class="sub">KDV: ${fmtTRY(expenseVat)} · Net gider: ${fmtTRY(netExpense)}</div></div>
+      <div class="kpi"><div class="l">Gerçek Faaliyet Kârı</div><div class="v ${netResult>=0?'pos':'neg'}">${fmtTRY(netResult)}</div><div class="sub">Stok maliyeti dahil: ${fmtTRY(stockCost)}</div></div>
     `;
 
-    const branches = ['Ders','Müzik Aleti','Aksesuar'];
+    const branches = ['Ders','Müzik Aleti','Aksesuar','Metod/Kitap'];
     const incBox = document.getElementById('reportIncomeBreakdown');
     let sumGross = 0, sumVat = 0, sumNet = 0, sumCount = 0;
     const rateText = rows => {
@@ -2838,7 +2946,7 @@
           <table>
             <thead><tr>
               <th>Ürün</th><th class="num">Adet</th><th class="num">Net Satış</th><th class="num">Alış Maliyeti (TL)</th>
-              <th class="num">Kâr — Dolar Bazlı</th><th class="num">Kâr — TL Bazlı</th>
+              <th class="num">Kâr — Döviz Maliyetine Göre (TL)</th><th class="num">Kâr — Nominal TL</th>
             </tr></thead>
             <tbody>${rowsHtml}</tbody>
             <tfoot><tr style="font-weight:700;border-top:2px solid var(--ink);">
@@ -2950,23 +3058,19 @@
   }
 
   function buildPeriodSummary(startDateStr, endDateStr){
-    const incRows = income.filter(i=>i.date>=startDateStr && i.date<=endDateStr);
-    const expRows = expenses.filter(e=>e.date>=startDateStr && e.date<=endDateStr);
-    const incomeGross = incRows.reduce((s,i)=>s+i.grossAmount,0);
-    const incomeNet = incRows.reduce((s,i)=>s+i.netAmount,0);
-    const expenseTotal = expRows.reduce((s,e)=>s+e.amount,0);
-    const stockProfitTotal = incRows.filter(i=>i.stockItemId).reduce((s,i)=>s+(i.profitTRY||0),0);
-    const byBranch = {};
-    ['Müzik Aleti','Aksesuar','Ders'].forEach(b=>{
-      byBranch[b] = incRows.filter(i=>i.branch===b).reduce((s,i)=>s+i.netAmount,0);
-    });
-    const byExpenseCategory = {};
-    expRows.forEach(e=>{ byExpenseCategory[e.category] = (byExpenseCategory[e.category]||0) + e.amount; });
-    return {
-      incomeGross, incomeNet, expenseTotal, netResult: incomeNet-expenseTotal,
-      stockProfitTotal, byBranch, byExpenseCategory,
-      incomeCount: incRows.length, expenseCount: expRows.length
-    };
+    const incRows=income.filter(i=>i.date>=startDateStr && i.date<=endDateStr);
+    const expRows=expenses.filter(e=>e.date>=startDateStr && e.date<=endDateStr);
+    const incomeGross=incRows.reduce((a,i)=>a+(Number(i.grossAmount)||0),0);
+    const incomeNet=incRows.reduce((a,i)=>a+(Number(i.netAmount)||0),0);
+    const expenseGross=expRows.reduce((a,e)=>a+(Number(e.amount)||0),0);
+    const expenseNet=expRows.reduce((a,e)=>a+expenseNetOf(e),0);
+    const expenseVat=expRows.reduce((a,e)=>a+expenseVatOf(e),0);
+    const stockCost=incRows.filter(i=>i.stockItemId).reduce((a,i)=>a+(saleProfits(i)?.costTL||0),0);
+    const stockProfitTotal=incRows.filter(i=>i.stockItemId).reduce((a,i)=>a+(saleProfits(i)?.tl||0),0);
+    const byBranch={};
+    ['Müzik Aleti','Aksesuar','Metod/Kitap','Ders'].forEach(b=>{byBranch[b]=incRows.filter(i=>i.branch===b).reduce((a,i)=>a+(Number(i.netAmount)||0),0);});
+    const byExpenseCategory={}; expRows.forEach(e=>{byExpenseCategory[e.category]=(byExpenseCategory[e.category]||0)+(Number(e.amount)||0);});
+    return {incomeGross,incomeNet,expenseTotal:expenseGross,expenseGross,expenseNet,expenseVat,stockCost,netResult:incomeNet-expenseNet-stockCost,operatingCashResult:incomeNet-expenseGross,stockProfitTotal,byBranch,byExpenseCategory,incomeCount:incRows.length,expenseCount:expRows.length};
   }
 
   async function autoArchiveMonths(firstUseDateStr){
@@ -2983,15 +3087,13 @@
       const end = key+'-'+String(dim).padStart(2,'0');
       const label = MONTHS_TR[cur.getMonth()]+' '+cur.getFullYear();
       if(isCurrentMonth){
-        if(today.getDate() === dim){
-          const summary = buildPeriodSummary(start, end);
-          map[key] = Object.assign({key, label, start, end, final:false, createdAt:new Date().toISOString()}, summary);
-          changed = true;
-        }
+        const summary=buildPeriodSummary(start,todayISO());
+        map[key]=Object.assign({key,label,start,end:todayISO(),final:false,createdAt:(map[key]&&map[key].createdAt)||new Date().toISOString(),recalculatedAt:new Date().toISOString()},summary);
+        changed=true;
       } else {
-        if(!map[key] || !map[key].final){
+        {
           const summary = buildPeriodSummary(start, end);
-          map[key] = Object.assign({key, label, start, end, final:true, createdAt:new Date().toISOString()}, summary);
+          map[key] = Object.assign({key, label, start, end, final:true, createdAt:(map[key]&&map[key].createdAt)||new Date().toISOString(), recalculatedAt:new Date().toISOString()}, summary);
           changed = true;
         }
       }
@@ -3018,15 +3120,13 @@
         const range = isoWeekRange(w.isoYear, w.isoWeek);
         const isCurrentWeek = key === todayKey;
         if(isCurrentWeek){
-          if(today.getDay() === 0){
-            const summary = buildPeriodSummary(range.start, range.end);
-            map[key] = Object.assign({key, label: range.start+' – '+range.end, start:range.start, end:range.end, final:false, createdAt:new Date().toISOString()}, summary);
-            changed = true;
-          }
+          const summary=buildPeriodSummary(range.start,todayISO());
+          map[key]=Object.assign({key,label:range.start+' – '+todayISO(),start:range.start,end:todayISO(),final:false,createdAt:(map[key]&&map[key].createdAt)||new Date().toISOString(),recalculatedAt:new Date().toISOString()},summary);
+          changed=true;
         } else {
-          if(!map[key] || !map[key].final){
+          {
             const summary = buildPeriodSummary(range.start, range.end);
-            map[key] = Object.assign({key, label: range.start+' – '+range.end, start:range.start, end:range.end, final:true, createdAt:new Date().toISOString()}, summary);
+            map[key] = Object.assign({key, label: range.start+' – '+range.end, start:range.start, end:range.end, final:true, createdAt:(map[key]&&map[key].createdAt)||new Date().toISOString(), recalculatedAt:new Date().toISOString()}, summary);
             changed = true;
           }
         }
@@ -3042,6 +3142,16 @@
     const first = await getFirstUseDate();
     monthlyArchive = await autoArchiveMonths(first);
     weeklyArchive = await autoArchiveWeeks(first);
+    // Seçilmiş ay arşivlerinin gelir/gider/özet bölümleri canlı kayıtlardan yeniden hesaplanır.
+    if(snapshotsLoaded && snapshots.length){
+      let touched=false;
+      snapshots.forEach(snap=>{
+        let snapTouched=false;
+        (snap.sections||[]).forEach(sec=>{ if(['ozet','gelir','gider'].includes(sec)){ snap[sec]=buildSnapshotSection(sec,snap.key); snap.at=snap.at||{}; snap.at[sec]=new Date().toISOString(); touched=true; snapTouched=true; } });
+        if(snapTouched) snap.recalculatedAt=new Date().toISOString();
+      });
+      if(touched) await sSet('archive:snapshots',snapshots);
+    }
     renderArchiveView();
     autoStockSnapshot();
   }
@@ -3050,7 +3160,7 @@
     const today = new Date(todayISO()+'T00:00:00');
     const mKey = monthKeyOf(today);
     const dim = daysInMonth(today.getFullYear(), today.getMonth());
-    const mStart = mKey+'-01', mEnd = mKey+'-'+String(dim).padStart(2,'0');
+    const mStart = mKey+'-01', mEnd = todayISO();
     const mSummary = buildPeriodSummary(mStart, mEnd);
     let monthly = (await sGet('archive:monthly')) || [];
     monthly = monthly.filter(m=>m.key!==mKey);
@@ -3062,10 +3172,10 @@
     const w = getISOWeekInfo(today);
     const wKey = w.isoYear+'-W'+String(w.isoWeek).padStart(2,'0');
     const range = isoWeekRange(w.isoYear, w.isoWeek);
-    const wSummary = buildPeriodSummary(range.start, range.end);
+    const wSummary = buildPeriodSummary(range.start, todayISO());
     let weekly = (await sGet('archive:weekly')) || [];
     weekly = weekly.filter(x=>x.key!==wKey);
-    weekly.push(Object.assign({key:wKey, label:range.start+' – '+range.end, start:range.start, end:range.end, final:false, createdAt:new Date().toISOString()}, wSummary));
+    weekly.push(Object.assign({key:wKey, label:range.start+' – '+todayISO(), start:range.start, end:todayISO(), final:false, createdAt:new Date().toISOString()}, wSummary));
     weekly.sort((a,b)=>b.key.localeCompare(a.key));
     await sSet('archive:weekly', weekly);
     weeklyArchive = weekly;
@@ -3112,7 +3222,7 @@
     if(sec === 'ozet'){
       const sum = buildPeriodSummary(start, end);
       const byBranch = {};
-      ['Müzik Aleti','Aksesuar','Ders'].forEach(b=>{
+      ['Müzik Aleti','Aksesuar','Metod/Kitap','Ders'].forEach(b=>{
         const rows = inc.filter(i=>i.branch===b);
         byBranch[b] = { count: rows.length, gross: round2(rows.reduce((s,i)=>s+(i.grossAmount||0),0)), vat: round2(rows.reduce((s,i)=>s+vatOf(i),0)), net: round2(rows.reduce((s,i)=>s+(i.netAmount||0),0)) };
       });
@@ -3121,7 +3231,7 @@
       const byExp = {}; exp.forEach(e=>{ byExp[e.category] = round2((byExp[e.category]||0) + e.amount); });
       return {
         incomeGross: round2(sum.incomeGross), incomeVat: round2(inc.reduce((s,i)=>s+vatOf(i),0)), incomeNet: round2(sum.incomeNet),
-        expenseTotal: round2(sum.expenseTotal), netResult: round2(sum.netResult),
+        expenseTotal: round2(sum.expenseTotal), expenseNet:round2(sum.expenseNet), expenseVat:round2(sum.expenseVat), stockCost:round2(sum.stockCost), netResult: round2(sum.netResult),
         stockProfitUsd: round2(profitUsd), stockProfitTl: round2(profitTl), stockSoldQty: soldQty,
         usdRate: latestRate('USD', end) || null, byBranch, byExpenseCategory: byExp
       };
@@ -3135,11 +3245,11 @@
       });
     }
     if(sec === 'gider'){
-      return exp.map(e=>({ date:e.date, category:e.category, description:e.description||'', amount:round2(e.amount) }));
+      return exp.map(e=>({ date:e.date, category:e.category, description:e.description||'', amount:round2(e.amount), vatRate:expenseVatRateOf(e), vat:round2(expenseVatOf(e)), net:round2(expenseNetOf(e)) }));
     }
     if(sec === 'stok'){
-      const r0 = firstRate('USD'), rNow = latestRate('USD');
-      const items = stock.map(it=>({ name:it.name, category:it.category, qty:it.qty, price:round2(it.price), usd: r0 ? round2(it.price/r0) : null }))
+      const rNow = latestRate('USD');
+      const items = stock.map(it=>({ name:it.name, category:it.category, qty:it.qty, price:round2(it.price), avgCostUSD:averageUnitCostUsd(it), usd: averageUnitCostUsd(it)!==null ? round2(averageUnitCostUsd(it)) : null }))
                          .sort((a,b)=>a.name.localeCompare(b.name,'tr'));
       const sales = inc.filter(i=>i.stockItemId).map(i=>{ const p = saleProfits(i);
         return { date:i.date, name:i.description, qty:i.qtyUsed||0, net:round2(i.netAmount),
@@ -3324,7 +3434,7 @@
             <div class="kpi"><div class="l">Net Sonuç</div><div class="v ${o.netResult>=0?'pos':'neg'}">${fmtTRY(o.netResult)}</div></div>
           </div>
           <div class="kpi-strip">
-            <div class="kpi"><div class="l">Stok Kârı — Dolar Bazlı</div><div class="v ${o.stockProfitUsd>=0?'pos':'neg'}">${fmtTRY(o.stockProfitUsd)}</div></div>
+            <div class="kpi"><div class="l">Stok Kârı — Döviz Maliyetine Göre (TL)</div><div class="v ${o.stockProfitUsd>=0?'pos':'neg'}">${fmtTRY(o.stockProfitUsd)}</div></div>
             <div class="kpi"><div class="l">Stok Kârı — TL Bazlı</div><div class="v ${o.stockProfitTl>=0?'pos':'neg'}">${fmtTRY(o.stockProfitTl)}</div></div>
             <div class="kpi"><div class="l">Satılan Stok Adedi</div><div class="v">${o.stockSoldQty||0}</div></div>
           </div>
@@ -3335,7 +3445,7 @@
       } else if(k==='gelir'){
         const rows = s.gelir || [];
         const tg = rows.reduce((t,i)=>t+(i.gross||0),0), tv = rows.reduce((t,i)=>t+(i.vat||0),0), tn = rows.reduce((t,i)=>t+(i.net||0),0);
-        box.innerHTML = tbl([['Tarih'],['Branş'],['Ödeyen'],['Açıklama / Ürün'],['Adet','num'],['KDV%','num'],['KDV Dahil','num'],['KDV','num'],['Net','num'],['Kâr ($ bazlı)','num'],['Kâr (TL bazlı)','num']],
+        box.innerHTML = tbl([['Tarih'],['Branş'],['Ödeyen'],['Açıklama / Ürün'],['Adet','num'],['KDV%','num'],['KDV Dahil','num'],['KDV','num'],['Net','num'],['Kâr (Döviz maliyetine göre, TL)','num'],['Kâr (TL bazlı)','num']],
           rows.map(i=>`<tr><td>${fmtDateTR(i.date)}</td><td>${esc(i.branch)}</td><td>${esc(i.customer)}</td><td>${esc(i.description)}</td><td class="num">${i.qty||''}</td><td class="num">%${i.vatRate}</td><td class="num">${fmtTRY(i.gross)}</td><td class="num">${fmtTRY(i.vat)}</td><td class="num">${fmtTRY(i.net)}</td><td class="num">${pc(i.profitUsd)}</td><td class="num">${pc(i.profitTl)}</td></tr>`),
           `<tfoot><tr style="font-weight:700;border-top:2px solid var(--ink);"><td colspan="6">Toplam</td><td class="num">${fmtTRY(tg)}</td><td class="num">${fmtTRY(tv)}</td><td class="num">${fmtTRY(tn)}</td><td colspan="2"></td></tr></tfoot>`);
       } else if(k==='gider'){
@@ -3348,10 +3458,10 @@
         box.innerHTML = `
           <p style="margin:0 0 10px;">Stok durumu arşivlendiği an: ${st.takenAt ? fmtDateTR(st.takenAt.slice(0,10)) : ''} · ${items.length} ürün · toplam değer ${fmtTRY(st.totalValue)}</p>
           <div class="sec-title">Bu Ay Satılan Stok Ürünleri</div>
-          ${tbl([['Tarih'],['Ürün'],['Adet','num'],['Net Satış','num'],['Kâr ($ bazlı)','num'],['Kâr (TL bazlı)','num']],
+          ${tbl([['Tarih'],['Ürün'],['Adet','num'],['Net Satış','num'],['Kâr (Döviz maliyetine göre, TL)','num'],['Kâr (TL bazlı)','num']],
             sales.map(i=>`<tr><td>${fmtDateTR(i.date)}</td><td>${esc(i.name)}</td><td class="num">${i.qty}</td><td class="num">${fmtTRY(i.net)}</td><td class="num">${pc(i.profitUsd)}</td><td class="num">${pc(i.profitTl)}</td></tr>`))}
           <div class="sec-title">Stok Listesi</div>
-          ${tbl([['Ürün'],['Kategori'],['Adet','num'],['Birim Fiyat (TL)','num'],['USD (sabit)','num']],
+          ${tbl([['Ürün'],['Kategori'],['Adet','num'],['Birim Fiyat (TL)','num'],['USD Alış Maliyeti','num']],
             items.map(it=>`<tr><td>${esc(it.name)}</td><td>${esc(it.category)}</td><td class="num">${it.qty}</td><td class="num">${fmtTRY(it.price)}</td><td class="num">${it.usd!==null&&it.usd!==undefined?fmtUSD(it.usd):'—'}</td></tr>`))}`;
       }
     }
@@ -3368,8 +3478,8 @@
       const o = s.ozet;
       const rows = [
         {Alan:'Dönem', Değer:s.label}, {Alan:'KDV Dahil Gelir', Değer:o.incomeGross}, {Alan:'Toplam KDV', Değer:o.incomeVat},
-        {Alan:'Net Gelir (KDV Hariç)', Değer:o.incomeNet}, {Alan:'Toplam Gider', Değer:o.expenseTotal}, {Alan:'Net Sonuç', Değer:o.netResult},
-        {Alan:'Stok Kârı — Dolar Bazlı', Değer:o.stockProfitUsd}, {Alan:'Stok Kârı — TL Bazlı', Değer:o.stockProfitTl}, {Alan:'Satılan Stok Adedi', Değer:o.stockSoldQty},
+        {Alan:'Net Gelir (KDV Hariç)', Değer:o.incomeNet}, {Alan:'Toplam Gider (KDV Dahil)', Değer:o.expenseTotal}, {Alan:'Net Gider', Değer:o.expenseNet}, {Alan:'Gider KDV', Değer:o.expenseVat}, {Alan:'Stok Maliyeti', Değer:o.stockCost}, {Alan:'Gerçek Faaliyet Kârı', Değer:o.netResult},
+        {Alan:'Stok Kârı — Döviz Maliyetine Göre (TL)', Değer:o.stockProfitUsd}, {Alan:'Stok Kârı — TL Bazlı', Değer:o.stockProfitTl}, {Alan:'Satılan Stok Adedi', Değer:o.stockSoldQty},
         {Alan:'', Değer:''}, {Alan:'BRANŞA GÖRE (net)', Değer:''}
       ];
       Object.keys(o.byBranch||{}).forEach(b=>rows.push({Alan:b+' ('+o.byBranch[b].count+' kayıt) — KDV dahil / KDV / net', Değer:o.byBranch[b].gross+' / '+o.byBranch[b].vat+' / '+o.byBranch[b].net}));
@@ -3377,11 +3487,11 @@
       Object.keys(o.byExpenseCategory||{}).forEach(c=>rows.push({Alan:c, Değer:o.byExpenseCategory[c]}));
       add('Özet', rows);
     }
-    if(want('gelir')) add('Gelir', (s.gelir||[]).map(i=>({Tarih:i.date, Branş:i.branch, Ödeyen:i.customer, Açıklama:i.description, Adet:i.qty||'', 'KDV %':i.vatRate, 'KDV Dahil':i.gross, KDV:i.vat, Net:i.net, 'Kâr (Dolar bazlı)':i.profitUsd===null?'':i.profitUsd, 'Kâr (TL bazlı)':i.profitTl===null?'':i.profitTl})));
-    if(want('gider')) add('Gider', (s.gider||[]).map(e=>({Tarih:e.date, Kalem:e.category, Açıklama:e.description, Tutar:e.amount})));
+    if(want('gelir')) add('Gelir', (s.gelir||[]).map(i=>({Tarih:i.date, Branş:i.branch, Ödeyen:i.customer, Açıklama:i.description, Adet:i.qty||'', 'KDV %':i.vatRate, 'KDV Dahil':i.gross, KDV:i.vat, Net:i.net, 'Kâr (Döviz maliyetine göre TL)':i.profitUsd===null?'':i.profitUsd, 'Kâr (TL bazlı)':i.profitTl===null?'':i.profitTl})));
+    if(want('gider')) add('Gider', (s.gider||[]).map(e=>({Tarih:e.date, Kalem:e.category, Açıklama:e.description, 'KDV Dahil':e.amount, 'KDV %':e.vatRate||0, KDV:e.vat||0, 'Net Gider':e.net??e.amount})));
     if(want('stok') && s.stok){
-      add('Stok Satışları', (s.stok.sales||[]).map(i=>({Tarih:i.date, Ürün:i.name, Adet:i.qty, 'Net Satış':i.net, 'Kâr (Dolar bazlı)':i.profitUsd===null?'':i.profitUsd, 'Kâr (TL bazlı)':i.profitTl===null?'':i.profitTl})));
-      add('Stok Listesi', (s.stok.items||[]).map(it=>({Ürün:it.name, Kategori:it.category, Adet:it.qty, 'Birim Fiyat (TL)':it.price, 'USD (sabit)':it.usd===null?'':it.usd})));
+      add('Stok Satışları', (s.stok.sales||[]).map(i=>({Tarih:i.date, Ürün:i.name, Adet:i.qty, 'Net Satış':i.net, 'Kâr (Döviz maliyetine göre TL)':i.profitUsd===null?'':i.profitUsd, 'Kâr (TL bazlı)':i.profitTl===null?'':i.profitTl})));
+      add('Stok Listesi', (s.stok.items||[]).map(it=>({Ürün:it.name, Kategori:it.category, Adet:it.qty, 'Birim Fiyat (TL)':it.price, 'USD Alış Maliyeti':it.usd===null?'':it.usd})));
     }
     XLSX.writeFile(wb, 'Ay_Arsivi_' + s.key + '.xlsx');
   }
@@ -3393,7 +3503,7 @@
       snapshots.forEach(x=>{ x.sections = x.sections || []; x.at = x.at || {}; });
       snapshotsLoaded = true;
       renderArchiveView();
-      autoStockSnapshot();
+      runAutoArchiving();
     });
     document.getElementById('forceArchiveBtn').addEventListener('click', forceArchiveNow);
     document.getElementById('exportAllBtn').addEventListener('click', exportFullBackupToExcel);
@@ -3456,7 +3566,7 @@
       {Alan:'Toplam Net Gelir (KDV Hariç)', Değer: round2(period.incomeNet)},
       {Alan:'Toplam Gider', Değer: round2(period.expenseTotal)},
       {Alan:'Net Kâr/Zarar', Değer: round2(period.netResult)},
-      {Alan:'Stok Satışı Dolar Bazlı Kâr', Değer: round2(period.stockProfitTotal)},
+      {Alan:'Stok Satışı Döviz Maliyetine Göre Kâr (TL)', Değer: round2(period.stockProfitTotal)},
       {Alan:'Durum', Değer: period.final ? 'Kesinleşti' : 'Geçici'}
     ];
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryData, {skipHeader:true}), 'Özet');
@@ -3464,21 +3574,19 @@
   }
 
   function exportFullBackupToExcel(){
-    if(typeof XLSX === 'undefined'){ toast('Excel kütüphanesi yüklenemedi.'); return; }
-    const wb = XLSX.utils.book_new();
-
-    const incomeSheetData = [...income].sort((a,b)=>a.date.localeCompare(b.date)).map(i=>({
-      Tarih:i.date, Branş:i.branch, Ödeyen:i.customer||'', Açıklama:i.description, 'KDV %': i.vatRate||20,
-      'KDV Dahil':round2(i.grossAmount), 'Net Tutar':round2(i.netAmount)
-    }));
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(incomeSheetData.length?incomeSheetData:[{Not:'Kayıt yok'}]), 'Gelir');
-
-    const expenseSheetData = [...expenses].sort((a,b)=>a.date.localeCompare(b.date)).map(e=>({
-      Tarih:e.date, Kalem:e.category, Açıklama:e.description||'', Tutar:round2(e.amount)
-    }));
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(expenseSheetData.length?expenseSheetData:[{Not:'Kayıt yok'}]), 'Gider');
-
-    XLSX.writeFile(wb, 'RockJazz_Muhasebe_Yedek_'+todayISO()+'.xlsx');
+    if(typeof XLSX==='undefined'){toast('Excel kütüphanesi yüklenemedi.');return;}
+    const wb=XLSX.utils.book_new();
+    const add=(name,rows)=>XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows.length?rows:[{Not:'Kayıt yok'}]),name);
+    add('Gelir',[...income].sort((a,b)=>a.date.localeCompare(b.date)).map(i=>({...i})));
+    add('Gider',[...expenses].sort((a,b)=>a.date.localeCompare(b.date)).map(e=>({...e, KDV_Orani:expenseVatRateOf(e), KDV_Tutari:expenseVatOf(e), Net_Gider:expenseNetOf(e)})));
+    add('Stok',stock.map(it=>({...it, Ortalama_Maliyet_TL:averageUnitCost(it)})));
+    add('Doviz_Kurlari',[...ratesList('USD').map(r=>({...r,currency:'USD'})),...ratesList('EUR').map(r=>({...r,currency:'EUR'}))]);
+    add('Gider_Kategorileri',expenseCategories.map((category,order)=>({Sira:order+1,Kalem:category})));
+    add('Aylik_Arsiv',monthlyArchive.map(x=>({Anahtar:x.key,Durum:x.final?'Kesin':'Geçici',Kayit_JSON:JSON.stringify(x)})));
+    add('Haftalik_Arsiv',weeklyArchive.map(x=>({Anahtar:x.key,Durum:x.final?'Kesin':'Geçici',Kayit_JSON:JSON.stringify(x)})));
+    add('Manuel_Arsiv',snapshots.map(x=>({Anahtar:x.key,Etiket:x.label,Kayit_JSON:JSON.stringify(x)})));
+    add('Stok_Hareketleri',income.filter(i=>i.stockItemId).map(i=>({Tarih:i.date,Urun:i.description,Stok_ID:i.stockItemId,Adet:i.qtyUsed,Alis_Birim_TL:i.unitCostTRY,Alis_Birim_USD:i.unitCostUsd,Satis_KDV_Dahil:i.grossAmount,Satis_Net:i.netAmount,Kar_Doviz_Maliyeti_TL:saleProfits(i)?.usd,Kar_Nominal_TL:saleProfits(i)?.tl})));
+    XLSX.writeFile(wb,'RockJazz_Tam_Muhasebe_Yedek_'+todayISO()+'.xlsx');
   }
 
   window.addEventListener('error', (e)=>{
